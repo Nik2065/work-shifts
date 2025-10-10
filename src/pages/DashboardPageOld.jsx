@@ -29,7 +29,7 @@ import 'react-calendar/dist/Calendar.css';
 
 
 
-const DashboardPage = () => {
+const DashboardPageOld = () => {
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 10)); // 10 октября 2025
   const [currentMonth, setCurrentMonth] = useState(9); // Октябрь
   const [currentYear, setCurrentYear] = useState(2025);
@@ -89,7 +89,13 @@ const DashboardPage = () => {
     updateEmployeesData(updatedEmployees);
   };
 
-
+  const handleStopTimer = (id) => {
+    const currentEmployees = getCurrentEmployeesData();
+    const updatedEmployees = currentEmployees.map(emp =>
+      emp.id === id ? { ...emp, isActive: false, hours: emp.hours + 0.1 } : emp
+    );
+    updateEmployeesData(updatedEmployees);
+  };
 
   const handleAddHours = (id, hours) => {
     const currentEmployees = getCurrentEmployeesData();
@@ -147,7 +153,106 @@ const DashboardPage = () => {
     updateEmployeesData(updatedEmployees);
   };
 
-  
+  // Компонент календаря
+  const CalendarComponent = () => {
+    const daysInMonth = 31; // Октябрь
+    const firstDay = 3; // 1 октября 2025 - среда
+    
+    const days = [];
+    // Пустые ячейки для первых дней
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    // Дни месяца
+    for (let day = 1; day <= daysInMonth; day++) {
+      days.push(day);
+    }
+
+    const handleDateClick = (day) => {
+      const newDate = new Date(currentYear, currentMonth, day);
+      setSelectedDate(newDate);
+    };
+
+    const handlePrevMonth = () => {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear(currentYear - 1);
+      } else {
+        setCurrentMonth(currentMonth - 1);
+      }
+    };
+
+    const handleNextMonth = () => {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear(currentYear + 1);
+      } else {
+        setCurrentMonth(currentMonth + 1);
+      }
+    };
+
+    const isSelected = (day) => {
+      return day === selectedDate.getDate() && 
+             currentMonth === selectedDate.getMonth() && 
+             currentYear === selectedDate.getFullYear();
+    };
+
+    const hasData = (day) => {
+      const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      return employeesData[dateKey] && employeesData[dateKey].length > 0;
+    };
+
+    return (
+      <Card className="border-0 shadow-sm h-100">
+        <Card.Body>
+          <div className="d-flex align-items-center justify-content-between mb-3">
+            <Button 
+              variant="outline-secondary" 
+              size="sm" 
+              onClick={handlePrevMonth}
+            >
+              <ChevronLeft size={16} />
+            </Button>
+            <h5 className="mb-0 fw-semibold">октябрь 2025 г.</h5>
+            <Button 
+              variant="outline-secondary" 
+              size="sm" 
+              onClick={handleNextMonth}
+            >
+              <ChevronRight size={16} />
+            </Button>
+          </div>
+          
+          <Row className="mb-2">
+            {['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(day => (
+              <Col key={day} className="text-center p-1">
+                <small className="text-muted fw-medium">{day}</small>
+              </Col>
+            ))}
+          </Row>
+          
+          <Row className="g-1">
+            {days.map((day, index) => (
+              <Col key={index} xs={12} className="p-1">
+                <Button
+                  variant={
+                    isSelected(day) ? 'primary' :
+                    hasData(day) ? 'outline-success' : 'outline-secondary'
+                  }
+                  size="sm"
+                  className={`w-100 ${!day ? 'invisible' : ''}`}
+                  onClick={() => day && handleDateClick(day)}
+                  disabled={!day}
+                >
+                  {day}
+                </Button>
+              </Col>
+            ))}
+          </Row>
+        </Card.Body>
+      </Card>
+    );
+  };
 
   const currentEmployees = getCurrentEmployeesData();
   const totalHours = currentEmployees.reduce((sum, emp) => sum + emp.hours, 0);
@@ -158,6 +263,7 @@ const DashboardPage = () => {
       <Col lg={3} className="mb-4">
         <Calendar  />
 
+        <CalendarComponent />
       </Col>
       
       <Col lg={9}>
@@ -356,4 +462,4 @@ const DashboardPage = () => {
   );
 };
 
-export default DashboardPage;
+export default DashboardPageOld;
