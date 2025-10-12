@@ -1,0 +1,58 @@
+.min-vh-100 {
+  min-height: 100vh;
+}
+
+/* Стили для пунктов меню */
+.nav-item {
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  padding: 8px 12px;
+}
+
+.nav-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.nav-item.active {
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* Улучшение для карточек */
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* Стили для таблицы */
+.table th {
+  border-top: none;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.875rem;
+  background-color: #f8f9fa;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .d-none-mobile {
+    display: none !important;
+  }
+}
+
+/* Улучшение для футера */
+footer {
+  font-size: 0.875rem;
+}
+
+/* Стили для бейджей */
+.badge {
+  font-size: 0.7em;
+}

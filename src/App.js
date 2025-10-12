@@ -5,6 +5,11 @@ import DashboardPage from './pages/DashboardPage.jsx';
 import EmployeesPage from './pages/EmployeesPage.jsx';
 import {LoginPage} from './pages/LoginPage.jsx';
 import DashboardLayout from './components/DashboardLayout.js';
+import { MainPage } from './pages/MainPage.jsx';
+import { MainPage2 } from './pages_new/MainPage2.jsx';
+import { MpSiteUsersPage } from './pages_new/MpSiteUsersPage.jsx';
+import {MpEmploeesPage} from './pages_new/MpEmploeesPage.jsx';
+
 
 // Контекст аутентификации
 export const AuthContext = createContext();
@@ -45,7 +50,11 @@ const App = () => {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          
+          <Route path="/main" element={<MainPage />} />
+          <Route path="/main2" element={<MainPage2 />} />
+          <Route path="/siteusers" element={<MpSiteUsersPage />} />
+          <Route path="/employees" element={<MpEmploeesPage />} />
+
           <Route path="/" element={
             <ProtectedRoute>
               <DashboardLayout />
@@ -53,7 +62,7 @@ const App = () => {
             }>
             
             <Route index element={<DashboardPage />} />
-            <Route path="employees" element={<EmployeesPage />} />
+            <Route path="employees2" element={<EmployeesPage />} />
           </Route>
            
         </Routes>

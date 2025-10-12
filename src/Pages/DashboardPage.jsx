@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { 
   Container, 
   Row, 
@@ -29,10 +29,17 @@ import 'react-calendar/dist/Calendar.css';
 
 
 
-const DashboardPage = () => {
+export function DashboardPage() {
+
+  useEffect(() => {
+    const today = new Date();
+    //запрашиваем данные с сервера за выбранную дату
+    
+  }, []);
+
   const [selectedDate, setSelectedDate] = useState(new Date(2025, 9, 10)); // 10 октября 2025
-  const [currentMonth, setCurrentMonth] = useState(9); // Октябрь
-  const [currentYear, setCurrentYear] = useState(2025);
+  //const [currentMonth, setCurrentMonth] = useState(9); // Октябрь
+  //const [currentYear, setCurrentYear] = useState(2025);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [newEmployee, setNewEmployee] = useState({ name: '', position: '', status: 'active' });
@@ -187,7 +194,7 @@ const DashboardPage = () => {
                 }}
               >
                 <Plus size={16} className="me-2" />
-                Добавить сотрудника
+                Добавить запись о времени
               </Button>
             </div>
           </Card.Body>

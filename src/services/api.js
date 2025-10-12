@@ -1,4 +1,4 @@
-const baseUrl = ""
+import { baseUrl } from "./const"; 
 
 
 export const getEmployees = async () => {
@@ -63,7 +63,7 @@ const getEmployeesResponse = {
     ]
 }
 
-
+/*
 function MyFetchMockSuccess(data){
 
 
@@ -78,11 +78,11 @@ function MyFetchMockSuccess(data){
             resolve(o);
         }, 2000);
     });
-}
+}*/
 
 
 // Создаем заглушку, которая возвращает промис с объектом, похожим на Response
-function mockFetch(mockData) {
+export function mockFetch(mockData) {
   return Promise.resolve({
     ok: true,
     status: 200,
