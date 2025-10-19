@@ -88,7 +88,7 @@ const LoginForm = () => {
           
           <div className="text-center mt-3">
             <small className="text-muted">
-              Для демо используйте: admin / password
+              Для демо используйте: admin@company.com / password123
             </small>
           </div>
         </Card.Body>

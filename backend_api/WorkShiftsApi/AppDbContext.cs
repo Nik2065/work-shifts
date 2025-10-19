@@ -11,6 +11,7 @@ namespace WorkShiftsApi
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<SiteUserDb> SiteUsers { get; set; }
+        public DbSet<EmployeesDb> Employees { get; set; }
     }
 
 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Jumbotron, Button } from 'react-bootstrap';
+import { Container,  Button } from 'react-bootstrap';
 import { Link } from 'react-router-dom';
 
 const Home = () => {

@@ -18,6 +18,30 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Добавляем сервисы
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Настройка CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigin", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:3000",  // React dev server
+                "http://localhost:4200",  // Angular dev server
+                "http://localhost:8080",  // Vue dev server
+                "https://myfrontend.com"  // Production frontend
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // Если используете cookies/authentication
+    });
+
+    // Альтернативная политика для разработки - разрешает все
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Добавляем сервисы аутентификации
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -53,6 +77,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     //app.MapOpenApi();
+
+    // В разработке используем политику AllowAll
+    app.UseCors("AllowAll");
 }
 
 app.UseAuthentication();

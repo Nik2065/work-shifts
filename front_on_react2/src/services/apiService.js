@@ -13,8 +13,15 @@ export function mockFetch(mockData) {
 
 export async function GetEmployee(employeeId) {
 
-    //return GetEmployeeServer(employeeId);
-    return GetEmployeeMock(employeeId);
+    return GetEmployeeFromApi(employeeId);
+    //return GetEmployeeMock(employeeId);
+
+};
+
+export async function GetEmployeeList() {
+
+    return GetEmployeeListFromApi();
+    //return GetEmployeeMock();
 
 };
 
@@ -22,13 +29,47 @@ export async function GetEmployee(employeeId) {
 
 function GetEmployeeMock() {
 
-    const  token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBjb21wYW55LmNvbSIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6ImFkbWluIiwianRpIjoiYTk3NWM1YjItN2UwNS00MjcyLWI3YjUtMjM3YjZjNzE5NDMyIiwiZXhwIjoxNzYwODc3NjAxLCJpc3MiOiJteWFwaS5jb20iLCJhdWQiOiJteWFwaS51c2VycyJ9.iRQw0r4_s8r-owSakai9iwl0QKJbd9Q1WP0zaZTg5Oc";
-    localStorage.setItem('token', token);
-    setToken(token);
-
-    // Декодируем токен и сохраняем данные пользователя
-    const userData = JSON.parse(atob(token.split('.')[1]));
-    setUser(userData);
-    
-    return true;
+    return mockFetch({});
 }
+
+async function GetEmployeeFromApi(employeeId) {
+    try {
+        const response = await fetch(`${baseUrl}/api/employee/?employeeId=${employeeId}`);
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Ошибка при получении данных сотрудника:', error);
+        throw error;
+    }
+}
+
+async function GetEmployeeListFromApi() {
+    /*try {
+        const response = await fetch(`${baseUrl}/api/employee/getEmployeeList}`);
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
+        }
+        return response.json();
+    } catch (error) {
+        console.error('Ошибка при получении данных сотрудников:', error);
+        throw error;
+    }*/
+
+    const url = baseUrl + '/api/employee/getEmployeeList';
+
+    console.log(localStorage.getItem('token'));
+
+    return fetch(url, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                'Autorization': 'Bearer ' + localStorage.getItem('token'),
+            },
+        }
+    );
+}
+
+
+

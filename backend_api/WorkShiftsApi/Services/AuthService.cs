@@ -29,7 +29,7 @@ namespace WorkShiftsApi.Services
         }
 
 
-        public async Task<SiteUserDb> RegisterAsync(string username, string password, string? email = null)
+        /*public async Task<SiteUserDb> RegisterAsync(string username, string password, string? email = null)
         {
             if (await UserExistsAsync(username))
                 throw new Exception("Username already exists");
@@ -47,7 +47,7 @@ namespace WorkShiftsApi.Services
             await _context.SaveChangesAsync();
 
             return user;
-        }
+        }*/
 
         public async Task<bool> UserExistsAsync(string login)
         {

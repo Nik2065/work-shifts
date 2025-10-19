@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
 
 namespace WorkShiftsApi.Controllers
@@ -9,50 +10,94 @@ namespace WorkShiftsApi.Controllers
     [Authorize]
     public class EmployeeController : ControllerBase
     {
-        private readonly IConfiguration _config;
-        private EmployeeService employeeService; 
-        EmployeeController(IConfiguration config) 
+        //private IEmployeeService _employeeService;
+        private readonly AppDbContext _context;
+
+        public EmployeeController( AppDbContext context) 
         {
-            _config = config;
-            employeeService = new EmployeeService(_config);
+            //_employeeService = employeeService;
+            _context = context;
         }
 
+        [HttpGet("test")]
+        [AllowAnonymous]
+        public IActionResult Test()
+        {
+            return Ok();
+        }
 
         [HttpGet("GetEmployee")]
         public IActionResult GetEmployee([FromQuery] int employeeId) 
         {
+            var result = new GetEmployeeResponse { IsSuccess = true, Message = ""};
             try
             {
-
+                var one = _context.Employees.FirstOrDefault(x => x.Id == employeeId);
+                if (one != null)
+                {
+                    result.Employee = new EmployeeDto
+                    {
+                        Id = one.Id,
+                        Fio = one.Fio,
+                        Created = one.Created
+                    };
+                    
+                }
             }
-            catch 
-            { 
-            
-            
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
             }
 
 
 
-            return Ok("test");
+            return Ok(result);
         }
 
         [HttpGet("GetEmployeeList")]
-        public IActionResult GetEmployeeList([FromQuery] int employeeId)
+        public IActionResult GetEmployeeList()
         {
+
+            var result = new GetEmployeeListResponse { IsSuccess = true, Message = "" };
+
             try
             {
-
+                result.EmployeesList = _context.Employees
+                    .Select(x => new EmployeeDto 
+                    { 
+                        Created = x.Created, 
+                        Fio = x.Fio, 
+                        Id = x.Id
+                    })
+                    .ToList();
             }
-            catch
+            catch (Exception ex)
             {
-
-
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
             }
 
-
-
-            return Ok("test");
+            return Ok(result);
         }
 
     }
+
+    public class GetEmployeeResponse : ResponseBase
+    {
+        public EmployeeDto? Employee { get; set; }
+    }
+
+    public class GetEmployeeListResponse : ResponseBase
+    {
+        public List<EmployeeDto> EmployeesList { get; set; }
+    }
+
+    public class EmployeeDto
+    {
+        public int Id { get; set; }
+        public string Fio { get; set; }
+        public DateTime Created { get; set; }
+    }
+
 }

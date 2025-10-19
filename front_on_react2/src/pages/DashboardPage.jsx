@@ -14,6 +14,7 @@ import Calendar from 'react-calendar';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
+import {GetEmployeeList } from '../services/apiService';
 
 
 export function DashboardPage () {
@@ -21,6 +22,47 @@ export function DashboardPage () {
     const [showEmpModal, setShowEmpModal] = useState(false);
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
+
+
+    useEffect(() => {
+        
+         const url = 'http://localhost:5221/api/Employee/getemployeeList';
+        
+            //console.log(localStorage.getItem('token'));
+        
+            fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Autorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBjb21wYW55LmNvbSIsImp0aSI6ImYxMjczMjJiLTVkZGEtNDE5NC04NzlhLThmMzhjYjdjNWZlNiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMSIsImV4cCI6MTc2MDkwNTg4NCwiaXNzIjoibXlhcGkuY29tIiwiYXVkIjoibXlhcGkudXNlcnMifQ.BD4gsMiv3pcdGGAXNHzUsc9i2mdgl3fqLhbboXeCp-Q'
+                    },
+                }
+            ).then((response) => {
+                if(response.ok)
+                    response.json();
+                else if(response.status === 401) {
+                    //todo 
+                }
+            })
+            .then((data) => {
+                console.log(data);
+            })
+            .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
+
+
+
+        
+        /*GetEmployeeList()
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+
+        })
+        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));*/
+    
+    
+    }      
+        , []);
 
 
     function handleEmployeeClick(id) {

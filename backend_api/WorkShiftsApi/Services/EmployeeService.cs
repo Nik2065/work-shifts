@@ -1,5 +1,11 @@
 ﻿namespace WorkShiftsApi.Services
 {
+    public interface IEmployeeService
+    {
+
+    }
+
+
     public class EmployeeService
     {
 

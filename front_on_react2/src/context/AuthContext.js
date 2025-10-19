@@ -1,5 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { jwtDecode } from 'jwt-decode';
+import {authService} from '../services/authService';
 
 const AuthContext = createContext();
 
@@ -42,9 +43,13 @@ export const AuthProvider = ({ children }) => {
   };
 
   const login = async (credentials) => {
+
+    console.log("credentials", credentials );
+    
     try {
       // Имитация API запроса
-      const response = await mockLogin(credentials);
+      //const response = await mockLogin(credentials);
+      const response = await authService.login(credentials);
       
       localStorage.setItem('token', response.token);
       const decoded = jwtDecode(response.token);
@@ -79,6 +84,11 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+
+const loginFromApi = (credentials) => {
+    return authService.login(credentials);
+}
 
 // Имитация сервиса авторизации
 const mockLogin = (credentials) => {
