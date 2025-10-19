@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using WorkShiftsApi.Services;
 
 namespace WorkShiftsApi.Controllers
 {
@@ -9,9 +10,11 @@ namespace WorkShiftsApi.Controllers
     public class EmployeeController : ControllerBase
     {
         private readonly IConfiguration _config;
+        private EmployeeService employeeService; 
         EmployeeController(IConfiguration config) 
         {
             _config = config;
+            employeeService = new EmployeeService(_config);
         }
 
 
@@ -26,6 +29,24 @@ namespace WorkShiftsApi.Controllers
             { 
             
             
+            }
+
+
+
+            return Ok("test");
+        }
+
+        [HttpGet("GetEmployeeList")]
+        public IActionResult GetEmployeeList([FromQuery] int employeeId)
+        {
+            try
+            {
+
+            }
+            catch
+            {
+
+
             }
 
 

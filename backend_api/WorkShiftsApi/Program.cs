@@ -3,8 +3,20 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using WorkShiftsApi;
+using WorkShiftsApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
+// Добавляем DbContext
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
+    ));
+
+// Добавляем сервисы
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 
 // Добавляем сервисы аутентификации
@@ -26,9 +38,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 builder.Services.AddControllers();
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
+
 
 // Настройка Swagger для тестирования
 builder.Services.AddEndpointsApiExplorer();
