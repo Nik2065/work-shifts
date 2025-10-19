@@ -1,4 +1,5 @@
 /front_on_react/node_modules/
+/front_on_react2/node_modules/
 *.lock
 *.log
 *.pem

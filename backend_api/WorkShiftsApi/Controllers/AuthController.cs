@@ -27,7 +27,7 @@ namespace WorkShiftsApi.Controllers
         public IActionResult Login([FromBody] LoginRequest request)
         {
             // Заглушка для проверки пользователя
-            if (request.Username == "test" && request.Password == "password")
+            if (request.Username == "admin@company.com" && request.Password == "password123")
             {
                 var token = GenerateJwtToken(request.Username);
                 return Ok(new { token });
@@ -44,6 +44,8 @@ namespace WorkShiftsApi.Controllers
             var claims = new[]
             {
             new Claim(JwtRegisteredClaimNames.Sub, username),
+            new Claim(ClaimTypes.Role, "admin"),
+            //new Claim("role", "admin"),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
@@ -51,7 +53,7 @@ namespace WorkShiftsApi.Controllers
                 issuer: _config["Jwt:Issuer"],
                 audience: _config["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.Now.AddHours(5),
+                expires: DateTime.Now.AddHours(24),
                 signingCredentials: credentials
             );
 

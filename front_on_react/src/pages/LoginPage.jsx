@@ -1,12 +1,33 @@
 import React, { useContext, useState } from "react";
+import {  useNavigate } from "react-router-dom";
 import { Container, Row, Col, Card, Form, Button, Alert } from "react-bootstrap";
 import { AuthContext } from "../App";
 import { Calendar,  Mail } from 'lucide-react';
-
+//import {Login} from '../services/auth-api';
 
 export function LoginPage() {
 
+  const navigate = useNavigate();
   const { login } = useContext(AuthContext);
+
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [error, setError] = useState('');
+  
+    const handleSubmit = async (e) => {
+    e.preventDefault();
+    const {email, password } = form;
+    const success = await login({ email, password });
+    if (!success) {
+      alert('Login failed!');
+    }
+    else {
+      //переходим на внутрении страницы
+      //navigate('/main')
+      navigate('/')
+    }
+  };
+
+  /*const { login } = useContext(AuthContext);
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState('');
 
@@ -19,7 +40,7 @@ export function LoginPage() {
     else {
       //переходим на внутрении страницы
     }
-  };
+  };*/
 
   return (
     <Container fluid className="min-vh-100 bg-light d-flex align-items-center justify-content-center">
