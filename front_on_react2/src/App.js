@@ -17,6 +17,8 @@ import Profile from './pages/Profile';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { DashboardPage } from './pages/DashboardPage';
+import DashboardLayout from './pages/DashboardLayout.jsx';
+
 
 function App() {
   return (
@@ -44,6 +46,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route 
+              path="/dashboard3" 
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout />
                 </ProtectedRoute>
               }
             />

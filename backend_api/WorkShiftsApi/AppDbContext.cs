@@ -25,22 +25,22 @@ namespace WorkShiftsApi
         [Column("email_as_login")]
         public string EmailAsLogin { get; set; }
 
-
         [Required]
         [Column("password_hash")]
-        public string PasswordHash { get; set; } = string.Empty;
+        public string PasswordHash { get; set; }
 
         [Required]
         [Column("salt")]
         public string Salt { get; set; } = string.Empty;
 
-
         [Column("created")]
         public DateTime Created { get; set; } = DateTime.Now;
 
         [Column("deleted")]
-        public bool Deleted { get; set; } = true;
+        public bool Deleted { get; set; }
 
+        [Column("role")]
+        public string Role { get; set; }
 
     }
 
@@ -65,6 +65,15 @@ namespace WorkShiftsApi
 
         [Column("chop_certificate")]
         public bool ChopCertificate { get; set; }
+
+        [Column("object")]
+        public string? Object { get; set; }
+
+
+        //варианты трудоустройства
+        [Column("empl_options")]
+        public string? EmplOptions { get; set; }
+
     }
 
 

@@ -50,7 +50,8 @@ export function DashboardPage () {
 
 
     return (
-        <>
+        <Container expand="lg">
+            <br/>
         {/* Заголовок страницы */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
@@ -113,7 +114,7 @@ export function DashboardPage () {
                                             {employee.fio}
                                             </a>
                                             </td>
-                                        <td>Объект А</td>
+                                        <td>{employee.object}</td>
                                         <td>
                                         
                                         <Form.Check type='checkbox'   />
@@ -164,6 +165,6 @@ export function DashboardPage () {
     <ModalForWorkShift  showShiftsModal={showShiftsModal} setShowShiftsModal={setShowShiftsModal}  />
 
 
-        </>
+        </Container>
     );
 }

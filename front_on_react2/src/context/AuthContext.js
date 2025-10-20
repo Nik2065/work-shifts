@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (credentials) => {
 
-    console.log("credentials", credentials );
+    //console.log("credentials", credentials );
     
     try {
       // Имитация API запроса
@@ -55,6 +55,7 @@ export const AuthProvider = ({ children }) => {
       const decoded = jwtDecode(response.token);
       
       setToken(response.token);
+      console.log("decoded", decoded);
       setUser(decoded);
       
       return { success: true };

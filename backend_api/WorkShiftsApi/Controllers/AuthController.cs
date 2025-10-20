@@ -30,12 +30,12 @@ namespace WorkShiftsApi.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            /*var user = await _authService.AuthenticateAsync(request.Username, request.Password);
+            var user = await _authService.AuthenticateAsync(request.Username, request.Password);
 
             if (user == null)
-                return Unauthorized(new { message = "Invalid username or password" });*/
+                return Unauthorized(new { message = "Invalid username or password" });
 
-            if (request.Username != "admin@company.com" || request.Password != "password123")
+            /*if (request.Username != "admin@company.com" || request.Password != "password123")
                 return Unauthorized(new { message = "Invalid username or password" });
 
             var user = new SiteUserDb
@@ -44,19 +44,19 @@ namespace WorkShiftsApi.Controllers
                 Deleted = false,
                 EmailAsLogin = "admin@company.com",
                 Id = 1
-            };
+            };*/
 
             var token = _authService.GenerateJwtToken(user);
             return Ok(new { token, username = user.EmailAsLogin });
         }
 
         
-        /*[HttpPost("register")]
+        [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterRequest request)
         {
             try
             {
-                var user = await _authService.RegisterAsync(request.Username, request.Password, request.Email);
+                var user = await _authService.RegisterAsync(request.Username, request.Password);
                 var token = _authService.GenerateJwtToken(user);
 
                 return Ok(new
@@ -70,7 +70,7 @@ namespace WorkShiftsApi.Controllers
             {
                 return BadRequest(new { message = ex.Message });
             }
-        }*/
+        }
 
         /*[HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
@@ -112,7 +112,7 @@ namespace WorkShiftsApi.Controllers
 
 
     public record LoginRequest(string Username, string Password);
-    public record RegisterRequest(string Username, string Password, string? Email = null);
+    public record RegisterRequest(string Username, string Password);
 }
 
 

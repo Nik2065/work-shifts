@@ -36,11 +36,27 @@ namespace WorkShiftsApi.Controllers
                 {
                     result.Employee = new EmployeeDto
                     {
-                        Id = one.Id,
+                        Created = one.Created,
                         Fio = one.Fio,
-                        Created = one.Created
+                        Id = one.Id,
+                        Age = one.Age,
+                        BankName = one.BankName,
+                        ChopCertificate = one.ChopCertificate,
+                        Object = one.Object,
+                        EmplOptions = one.EmplOptions
                     };
-                    
+
+                    var ws = _context.WorkShifts
+                        .Where(x => x.EmployeeId == employeeId)
+                        .Select(x => new WorkShiftDto
+                        {
+                            Created = x.Created,
+                            Id = x.Id,
+                            Start = x.Start,
+                            End = x.End
+                        }).ToList();
+
+                    result.Employee.WorkShiftList = ws;
                 }
             }
             catch (Exception ex)
@@ -70,7 +86,9 @@ namespace WorkShiftsApi.Controllers
                         Id = x.Id,
                         Age = x.Age,
                         BankName = x.BankName,
-                        ChopCertificate = x.ChopCertificate
+                        ChopCertificate = x.ChopCertificate,
+                        Object = x.Object,
+                        EmplOptions = x.EmplOptions
                     })
                     .ToList();
             }
@@ -132,6 +150,10 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public int? Age { get; set; }
         public bool ChopCertificate { get; set; }
+        public string? Object {get;set;}
+        public string? EmplOptions { get; set; }
+
+        public List<WorkShiftDto> WorkShiftList { get; set; }
     }
 
     public class GetEmployeeWorkShiftsResponseDto : ResponseBase

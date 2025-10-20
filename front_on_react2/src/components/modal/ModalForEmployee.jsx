@@ -8,7 +8,8 @@ import {
   Button, 
   Badge,
   Modal,
-  Form
+  Form,
+  Table
 } from 'react-bootstrap';
 
 import {GetEmployee} from '../../services/apiService';
@@ -19,7 +20,11 @@ import {GetEmployee} from '../../services/apiService';
 export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
 
     //имя сотрудника
-    const [currentEmployee, SetCurrentEmployee] = useState({name:'', age:30, chop:false})
+    const [currentEmployee, SetCurrentEmployee] = useState(
+      {name:'', 
+        age:30, 
+        chopCertificate:false
+      })
     
     useEffect(() => {
       
@@ -62,8 +67,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Имя сотрудника</Form.Label>
               <Form.Control
                 type="text"
-                value={currentEmployee.name}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, name: e.target.value })}
+                value={currentEmployee.fio}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, fio: e.target.value })}
                 placeholder="Введите имя"
               />
             </Form.Group>
@@ -81,9 +86,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Удостоверение ЧОП</Form.Label>
               <Form.Check
                 
-                value={currentEmployee.chop}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, chop: e.target.value })}
-                placeholder="Введите возраст"
+                value={currentEmployee.chopCertificate}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.value })}
               />
             </Form.Group>
             
@@ -97,13 +101,50 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               >
                 <option value="Объект А">Объект А</option>
                 <option value="Объект Б">Объект Б</option>
+                <option value="Объект Д">Объект Д</option>
+              </Form.Select>
+            </Form.Group>
+            <Form.Group className="mb-3">
+              <Form.Label>Банк</Form.Label>
+              <Form.Select
+
+                value={currentEmployee.bankName}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
+                placeholder="Выберите Банк"
+              >
+                <option value="Альфа">Альфа</option>
+                <option value="Сбер">Сбер</option>
+                <option value="ВТБ">ВТБ</option>
+                <option value="ПСБ">ПСБ</option>
               </Form.Select>
             </Form.Group>
 
+            <Form.Group className="mb-3">
+              <Form.Label>Оформление</Form.Label>
+              <Form.Select
+
+                value={currentEmployee.emplOptions}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
+                placeholder="Выберите оформление"
+              >
+                <option value="Карта">Карта</option>
+                <option value="Ведомость">Ведомость</option>
+              </Form.Select>
+            </Form.Group>
+<Card>
+  <Card.Body>
+    <Card.Title>Вахты</Card.Title>
+    <Table>
+      <tbody>
+        
+      </tbody>
+    </Table>
+  </Card.Body>
+</Card>
         </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddModal(false)}>
+          <Button variant="secondary" onClick={() => setShowEmpModal(false)}>
             Отмена
           </Button>
           <Button 

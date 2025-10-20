@@ -29,25 +29,25 @@ namespace WorkShiftsApi.Services
         }
 
 
-        /*public async Task<SiteUserDb> RegisterAsync(string username, string password, string? email = null)
+        public async Task<SiteUserDb> RegisterAsync(string username, string password)
         {
             if (await UserExistsAsync(username))
                 throw new Exception("Username already exists");
 
             var user = new SiteUserDb
             {
-                Username = username,
-                PasswordHash = HashPassword(password),
-                Email = email,
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                EmailAsLogin = username,
+                Created = DateTime.Now,
+                Deleted = false,
+                Role = "Admin",
+                PasswordHash = HashPassword(password)
             };
 
             _context.SiteUsers.Add(user);
             await _context.SaveChangesAsync();
 
             return user;
-        }*/
+        }
 
         public async Task<bool> UserExistsAsync(string login)
         {
@@ -62,9 +62,16 @@ namespace WorkShiftsApi.Services
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.EmailAsLogin),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                //new Claim(JwtRegisteredClaimNames.Sub, user.EmailAsLogin),
+                //new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                //new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
+                new Claim(ClaimTypes.Name, user.EmailAsLogin),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("Login", user.EmailAsLogin),
+                new Claim("Id", user.Id.ToString()),
+                new Claim("Role", user.Role)
+
             };
 
             var token = new JwtSecurityToken(

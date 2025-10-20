@@ -45,7 +45,7 @@ function GetEmployeeMock() {
     return mockFetch({});
 }
 
-async function GetEmployeeFromApi(employeeId) {
+/*async function GetEmployeeFromApi(employeeId) {
     try {
         const response = await fetch(`${baseUrl}/api/employee/?employeeId=${employeeId}`);
         if (!response.ok) {
@@ -56,6 +56,15 @@ async function GetEmployeeFromApi(employeeId) {
         console.error('Ошибка при получении данных сотрудника:', error);
         throw error;
     }
+}*/
+
+async function GetEmployeeFromApi(employeeId) {
+    const url = baseUrl + '/api/employee/getemployee/?employeeId=' + employeeId;
+    //console.log(localStorage.getItem('token'));
+    return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders()
+        })
 }
 
 async function GetEmployeeListFromApi() {

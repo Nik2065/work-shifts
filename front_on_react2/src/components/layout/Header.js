@@ -16,7 +16,7 @@ const Header = () => {
     <Navbar bg="dark" variant="dark" expand="lg">
       <Container>
         <Navbar.Brand as={Link} to="/">
-          JWT Auth App
+          <i style={{color:"white", fontSize:"1.8rem"}} className="bi bi-calendar3"></i>
         </Navbar.Brand>
         
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -27,8 +27,10 @@ const Header = () => {
             
             {isAuthenticated && (
               <>
-                <Nav.Link as={Link} to="/dashboard">Дашборд</Nav.Link>
-                <Nav.Link as={Link} to="/profile">Профиль</Nav.Link>
+                <Nav.Link as={Link} to="/dashboard2">Учет времени</Nav.Link>
+                {
+                //<Nav.Link as={Link} to="/profile">Профиль</Nav.Link>
+                }
               </>
             )}
           </Nav>
@@ -37,7 +39,11 @@ const Header = () => {
             {isAuthenticated ? (
               <>
                 <Navbar.Text className="me-3">
-                  Привет, {user?.username}!
+                  <i style={{color:"white", fontSize:"1.6rem"}} className="bi bi-person-circle"></i>
+                   &nbsp;&nbsp;
+                   {user?.Login} |
+                   &nbsp;
+                   {user?.Role === "Admin" && "Администратор"}
                 </Navbar.Text>
                 <Button variant="outline-light" onClick={handleLogout}>
                   Выйти
