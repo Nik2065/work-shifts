@@ -17,21 +17,17 @@ export function ModalForWorkShift({showShiftsModal, setShowShiftsModal}) {
 
     //имя сотрудника
     //const [newEmployee, SetNewEmployee] = useState({name:'', age:30, chop:false})
-    const [dates1, setDates1] = useState([])
-    const [dates2, setDates2] = useState([])
-    const [dates3, setDates3] = useState([])
+    //const [dates1, setDates1] = useState([])
 
 
     useEffect(() => {
       //setDates(GetDates())
-      setDates1(GetDates(0, 10));
-      setDates2(GetDates(10, 20));
-      setDates3(GetDates(20, 30));
+      //setDates1(GetDates(0, 10));
     }, [])
 
 
 
-    function GetDates(start, end){
+    /*function GetDates(start, end){
       let arr = []
       for (let i = start; i < end; i++) {
         let d = new Date();
@@ -39,7 +35,7 @@ export function ModalForWorkShift({showShiftsModal, setShowShiftsModal}) {
         arr.push(d);
       }
       return arr;
-    }
+    }*/
 
     function GetDayOfWeek(day){
       switch(day){
@@ -68,52 +64,17 @@ export function ModalForWorkShift({showShiftsModal, setShowShiftsModal}) {
             <Table bordered hover>
             <thead>
               <tr>
-                <th width="20%">Дата</th>
-                <th width="13%">Смена</th>
-                <th width="20%">Дата</th>
-                <th width="13%">Смена</th>
-                <th width="20%">Дата</th>
-                <th width="13%">Смена</th>
+                <th width="40%">Дата начала вахты</th>
+                <th width="40%">Дата конца вахты</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {
                 
-                 dates1.map((date, i) => {
-                  return (
-                  <tr>
-                  <td>
-                    {dates1[i].getDate() + '.' + (dates1[i].getMonth() + 1) 
-                    + '.' + dates1[i].getFullYear() + " " 
-                    + GetDayOfWeek(dates1[i].getDay())}
-                  </td>
-                  <td>
-                    <Form.Check type='checkbox' style={{fontSize:"1.2rem"}}>
-                    </Form.Check>
-                  </td>
-                  <td>
-                    {dates2[i].getDate() + '.' + (dates2[i].getMonth() + 1) 
-                    + '.' + dates2[i].getFullYear() + " " 
-                    + GetDayOfWeek(dates2[i].getDay())}
-                  </td>
-                  <td>
-                    <Form.Check type='checkbox' style={{fontSize:"1.2rem"}}>
-                    </Form.Check>
-                  </td>
-                  <td>
-                    {dates3[i].getDate() + '.' + (dates3[i].getMonth() + 1) 
-                    + '.' + dates3[i].getFullYear() + " " 
-                    + GetDayOfWeek(dates3[i].getDay())}
-                  </td>
-                  <td>
-                    <Form.Check type='checkbox' style={{fontSize:"1.2rem"}}>
-                    </Form.Check>
-                  </td>
 
-                  </tr>
-                )
-              })
-            }
+              }
+            
             </tbody>
             </Table>
             </div>

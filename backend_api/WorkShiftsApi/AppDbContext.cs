@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Data.Common;
-using System.Xml.Serialization;
 
 namespace WorkShiftsApi
 {
@@ -12,6 +10,8 @@ namespace WorkShiftsApi
 
         public DbSet<SiteUserDb> SiteUsers { get; set; }
         public DbSet<EmployeesDb> Employees { get; set; }
+
+        public DbSet<WorkShiftsDb> WorkShifts { get; set; }
     }
 
 
@@ -56,6 +56,36 @@ namespace WorkShiftsApi
 
         [Column("created")]
         public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("bank_name")]
+        public string? BankName { get; set; }
+
+        [Column("age")]
+        public int? Age { get; set; }
+
+        [Column("chop_certificate")]
+        public bool ChopCertificate { get; set; }
     }
 
+
+    [Table("work_shifts")]
+    public class WorkShiftsDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("employee_id")]
+        public int EmployeeId { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("start")]
+        public DateTime Start { get; set; }
+
+        [Column("end")]
+        public DateTime End { get; set; }
+
+    }
 }

@@ -1,5 +1,18 @@
 import { baseUrl } from "./const"; 
 
+const GetHeaders =() => {
+    return {
+    'Content-Type': 'application/json' };
+};
+
+const GetSeqHeaders =() => {
+    return {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer ' + localStorage.getItem('token')
+    };
+};
+
+
 export function mockFetch(mockData) {
   return Promise.resolve({
     ok: true,
@@ -59,17 +72,26 @@ async function GetEmployeeListFromApi() {
 
     const url = baseUrl + '/api/employee/getEmployeeList';
 
-    console.log(localStorage.getItem('token'));
+    //console.log(localStorage.getItem('token'));
 
     return fetch(url, {
             method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                'Autorization': 'Bearer ' + localStorage.getItem('token'),
-            },
+            headers: GetSeqHeaders(),
         }
     );
 }
 
+
+export async function GetEmployeeWorkShifts(employeeId) {
+
+    const url = baseUrl + '/api/employee/getEmployeeWorkShifts?employeeId=' + employeeId;
+    //console.log(localStorage.getItem('token'));
+    return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders(),
+        }
+    );
+
+}
 
 

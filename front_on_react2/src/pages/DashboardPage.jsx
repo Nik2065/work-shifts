@@ -22,46 +22,24 @@ export function DashboardPage () {
     const [showEmpModal, setShowEmpModal] = useState(false);
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
-
+    const [employeeList, setEmployeeList] = useState([]);
 
     useEffect(() => {
         
-         const url = 'http://localhost:5221/api/Employee/getemployeeList';
-        
-            //console.log(localStorage.getItem('token'));
-        
-            fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Autorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbkBjb21wYW55LmNvbSIsImp0aSI6ImYxMjczMjJiLTVkZGEtNDE5NC04NzlhLThmMzhjYjdjNWZlNiIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWVpZGVudGlmaWVyIjoiMSIsImV4cCI6MTc2MDkwNTg4NCwiaXNzIjoibXlhcGkuY29tIiwiYXVkIjoibXlhcGkudXNlcnMifQ.BD4gsMiv3pcdGGAXNHzUsc9i2mdgl3fqLhbboXeCp-Q'
-                    },
-                }
-            ).then((response) => {
-                if(response.ok)
-                    response.json();
-                else if(response.status === 401) {
-                    //todo 
-                }
-            })
-            .then((data) => {
-                console.log(data);
-            })
-            .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
-
-
-
-        
-        /*GetEmployeeList()
+       
+        GetEmployeeList()
         .then((response) => response.json())
         .then((data) => {
             console.log(data);
 
+            if(data.isSuccess){
+                setEmployeeList(data.employeesList);
+            }
         })
-        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));*/
+        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
     
-    
-    }      
+        
+        }      
         , []);
 
 
@@ -106,6 +84,8 @@ export function DashboardPage () {
                   </Card.Header>
                   <Card.Body>
                     <div className="table-responsive">
+                        {
+                    employeeList ? 
                       <table className="table table-bordered table-hover">
                         <thead>
                           <tr>
@@ -122,99 +102,53 @@ export function DashboardPage () {
                           </tr>
                         </thead>
                         <tbody>
-                          <tr>
-                            <td>
-                                <a className='button button-link' href="#" 
-                                onClick={()=> handleEmployeeClick(1)}>
-                                Фёдоров Константин Николаевич
-                                </a>
-                                </td>
-                            <td>Объект А</td>
-                            <td>
-                              
-                              <Form.Check type='checkbox'   />
+                            {
+                                employeeList.map((employee) => {
+                                    return (
+                                        <>
+                                         <tr>
+                                        <td>
+                                            <a className='button button-link' href="#" 
+                                            onClick={()=> handleEmployeeClick(employee.id)}>
+                                            {employee.fio}
+                                            </a>
+                                            </td>
+                                        <td>Объект А</td>
+                                        <td>
+                                        
+                                        <Form.Check type='checkbox'   />
 
-                            </td>
-                            <td>
-                              <Form.Control type='text'  />
-                            </td>
-                            <td>
-                            <Form.Select>
-                                <option>1000</option>
-                                <option>1200</option>
-                                <option>1400</option>
-                                <option>1600</option>
-                                <option>1800</option>
-                                <option>2000</option>
-                              </Form.Select>
-                            </td>
-                            <td>
-                              <Button variant="outline-primary" size="sm">Редактировать анкету</Button>
-                              <br/><br/>
-                              <Button onClick={()=>setShowShiftsModal(true)} variant="outline-primary" size="sm">Заполнить смены</Button>
-                            </td>
-                          </tr>
-
-
-                          <tr>
-                            <td>Морозов Андрей Викторович</td>
-                            <td>Объект А</td>
-                            <td>
-                              
-                              <Form.Check type='checkbox' checked={true}  />
-
-                            </td>
-                            <td>
-                              <Form.Control type='text'  />
-                            </td>
-                            <td>
-                            <Form.Select>
-                                <option>1000</option>
-                                <option>1200</option>
-                                <option>1400</option>
-                                <option>1600</option>
-                                <option>1800</option>
-                                <option>2000</option>
-                              </Form.Select>
-                            </td>
-                            <td>
-                              <Button variant="outline-primary" size="sm">Редактировать анкету</Button>
-                              <br/><br/>
-                              <Button variant="outline-primary" size="sm">Заполнить смены</Button>
-                            </td>
-                          </tr>
-
-
-                          <tr>
-                          <td>Новиков Кирилл Алексеевич</td>
-                          <td>Объект А</td>
-                            <td>
-                              
-                              <Form.Check type='checkbox' checked={true}  />
-
-                            </td>
-                            <td>
-                              <Form.Control type='text'  />
-                            </td>
-                            <td>
-                            <Form.Select>
-                                <option>1000</option>
-                                <option>1200</option>
-                                <option>1400</option>
-                                <option>1600</option>
-                                <option>1800</option>
-                                <option>2000</option>
-                              </Form.Select>
-                            </td>
-                            <td>
-                              <Button variant="outline-primary" size="sm">Редактировать анкету</Button>
-                              <br/><br/>
-                              <Button variant="outline-primary" size="sm">Заполнить смены</Button>
-                            </td>
-                          </tr>
+                                        </td>
+                                        <td>
+                                        <Form.Control type='text'  />
+                                        </td>
+                                        <td>
+                                        <Form.Select>
+                                            <option>1000</option>
+                                            <option>1200</option>
+                                            <option>1400</option>
+                                            <option>1600</option>
+                                            <option>1800</option>
+                                            <option>2000</option>
+                                        </Form.Select>
+                                        </td>
+                                        <td>
+                                        <Button variant="outline-primary" size="sm">Редактировать анкету</Button>
+                                        <br/><br/>
+                                        <Button onClick={()=>setShowShiftsModal(true)} variant="outline-primary" size="sm">Заполнить смены</Button>
+                                        </td>
+                                    </tr>
+                                        </>
+                                    );
+                                })
+                            }
+                        
                         
                         </tbody>
                       </table>
+                      : 
+                      <div>Сотрудников не найдено</div>
+                        }
                       <div style={{textAlign:"right"}}>
                         
                           <Button variant="primary">Сохранить</Button>

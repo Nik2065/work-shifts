@@ -11,18 +11,34 @@ import {
   Form
 } from 'react-bootstrap';
 
+import {GetEmployee} from '../../services/apiService';
+
+
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
 export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
 
     //имя сотрудника
-    const [newEmployee, SetNewEmployee] = useState({name:'', age:30, chop:false})
+    const [currentEmployee, SetCurrentEmployee] = useState({name:'', age:30, chop:false})
     
     useEffect(() => {
+      
+      // Получаем данные сотрудника по его id
+
       if (employeeId) {
-        // Получаем данные сотрудника по его id
-        const employee = employees.find((emp) => emp.id === employeeId);
-        SetNewEmployee(employee);
+        GetEmployee(employeeId)  
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          if (data.isSuccess) {
+            SetCurrentEmployee(data.employee);
+          }
+          else {
+            // Обработка ошибки
+          }
+        })
+        .catch(error => console.log(error));
+
       }
     }, 
     [employeeId]);
@@ -46,8 +62,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Имя сотрудника</Form.Label>
               <Form.Control
                 type="text"
-                value={newEmployee.name}
-                onChange={(e) => SetNewEmployee({ ...newEmployee, name: e.target.value })}
+                value={currentEmployee.name}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, name: e.target.value })}
                 placeholder="Введите имя"
               />
             </Form.Group>
@@ -55,8 +71,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Возраст</Form.Label>
               <Form.Control
                 type="text"
-                value={newEmployee.age}
-                onChange={(e) => SetNewEmployee({ ...newEmployee, age: e.target.value })}
+                value={currentEmployee.age}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, age: e.target.value })}
                 placeholder="Введите возраст"
               />
             </Form.Group>
@@ -65,8 +81,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Удостоверение ЧОП</Form.Label>
               <Form.Check
                 
-                value={newEmployee.chop}
-                onChange={(e) => SetNewEmployee({ ...newEmployee, chop: e.target.value })}
+                value={currentEmployee.chop}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, chop: e.target.value })}
                 placeholder="Введите возраст"
               />
             </Form.Group>
@@ -75,8 +91,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Объект</Form.Label>
               <Form.Select
 
-                value={newEmployee.object}
-                onChange={(e) => SetNewEmployee({ ...newEmployee, object: e.target.value })}
+                value={currentEmployee.object}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, object: e.target.value })}
                 placeholder="Выберите объект"
               >
                 <option value="Объект А">Объект А</option>

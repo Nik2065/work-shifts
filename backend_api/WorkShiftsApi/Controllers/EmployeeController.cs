@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WorkShiftsApi.DTO;
-using WorkShiftsApi.Services;
 
 namespace WorkShiftsApi.Controllers
 {
@@ -27,7 +26,7 @@ namespace WorkShiftsApi.Controllers
         }
 
         [HttpGet("GetEmployee")]
-        public IActionResult GetEmployee([FromQuery] int employeeId) 
+        public IActionResult GetEmployee([FromQuery] int employeeId)
         {
             var result = new GetEmployeeResponse { IsSuccess = true, Message = ""};
             try
@@ -68,7 +67,10 @@ namespace WorkShiftsApi.Controllers
                     { 
                         Created = x.Created, 
                         Fio = x.Fio, 
-                        Id = x.Id
+                        Id = x.Id,
+                        Age = x.Age,
+                        BankName = x.BankName,
+                        ChopCertificate = x.ChopCertificate
                     })
                     .ToList();
             }
@@ -80,6 +82,35 @@ namespace WorkShiftsApi.Controllers
 
             return Ok(result);
         }
+
+
+        [HttpGet("getEmployeeWorkShifts")]
+        public IActionResult GetEmployeeWorkShifts([FromQuery] int employeeId)
+        {
+
+            var result = new GetEmployeeWorkShiftsResponseDto { IsSuccess = true, Message = "" };
+
+            try
+            {
+                result.WorkShiftList = _context.WorkShifts
+                    .Select(x => new WorkShiftDto
+                    {
+                        Created = x.Created,
+                        End = x.End,
+                        Start = x.Start,
+                        Id = x.Id,
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
+            }
+
+            return Ok(result);
+        }
+
 
     }
 
@@ -98,6 +129,25 @@ namespace WorkShiftsApi.Controllers
         public int Id { get; set; }
         public string Fio { get; set; }
         public DateTime Created { get; set; }
+        public string? BankName { get; set; }
+        public int? Age { get; set; }
+        public bool ChopCertificate { get; set; }
     }
+
+    public class GetEmployeeWorkShiftsResponseDto : ResponseBase
+    {
+        public List<WorkShiftDto> WorkShiftList { get; set; }
+
+    }
+
+    public class WorkShiftDto
+    {
+        public int Id { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public DateTime Created { get; set; }
+    }
+
+
 
 }
