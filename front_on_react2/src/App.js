@@ -18,6 +18,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import { DashboardPage } from './pages/DashboardPage';
 import DashboardLayout from './pages/DashboardLayout.jsx';
+import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 
 
 function App() {
@@ -65,6 +66,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Profile />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/users" 
+              element={
+                <ProtectedRoute>
+                  <SiteUsersPage />
                 </ProtectedRoute>
               } 
             />

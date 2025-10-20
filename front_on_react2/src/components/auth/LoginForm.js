@@ -13,7 +13,7 @@ const LoginForm = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const from = location.state?.from?.pathname || '/dashboard';
+  const from = location.state?.from?.pathname || '/dashboard2';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

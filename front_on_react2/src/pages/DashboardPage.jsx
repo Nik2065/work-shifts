@@ -134,8 +134,6 @@ export function DashboardPage () {
                                         </Form.Select>
                                         </td>
                                         <td>
-                                        <Button variant="outline-primary" size="sm">Редактировать анкету</Button>
-                                        <br/><br/>
                                         <Button onClick={()=>setShowShiftsModal(true)} variant="outline-primary" size="sm">Заполнить смены</Button>
                                         </td>
                                     </tr>
