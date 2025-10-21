@@ -31,7 +31,7 @@ const LoginForm = () => {
   };
 
   return (
-    <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: '80vh' }}>
+    <Container className="d-flex justify-content-center align-items-center" style={{paddingTop:"10vh"}} >
       <Card style={{ width: '400px' }}>
         <Card.Body>
           <h2 className="text-center mb-4">Вход в систему</h2>
