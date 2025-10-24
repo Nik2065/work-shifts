@@ -1,9 +1,11 @@
-﻿using Microsoft.AspNetCore.Identity.Data;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
 
 namespace WorkShiftsApi.Controllers
@@ -14,10 +16,13 @@ namespace WorkShiftsApi.Controllers
     {
        
         private readonly IAuthService _authService;
+        private NLog.Logger _logger;
 
         public AuthController(IAuthService authService)
         {
             _authService = authService;
+            _logger = NLog.LogManager.GetCurrentClassLogger();
+
         }
 
         [HttpGet("test")]
@@ -72,6 +77,28 @@ namespace WorkShiftsApi.Controllers
             }
         }
 
+        [HttpGet("GetUsersList")]
+        [Authorize]
+        public async Task<IActionResult> GetUsersList()
+        {
+            var result = new GetSiteUsersListResponse { IsSuccess = true, Message = ""};
+            try
+            {
+                result.Users = _authService.GetSiteUsersList();
+
+            }
+            catch (Exception ex)
+            {
+                //return BadRequest(new { message = ex.Message });
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+
+            }
+
+            return Ok(result);
+        }
+
         /*[HttpPost("login")]
         public IActionResult Login([FromBody] LoginRequest request)
         {
@@ -113,6 +140,14 @@ namespace WorkShiftsApi.Controllers
 
     public record LoginRequest(string Username, string Password);
     public record RegisterRequest(string Username, string Password);
+
+    public class GetSiteUsersListResponse : ResponseBase
+    {
+        public List<SiteUserDto> Users { get; set; }
+    }
+
+
+
 }
 
 

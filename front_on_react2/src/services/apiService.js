@@ -1,4 +1,4 @@
-import { baseUrl } from "./const"; 
+import { apiUrl } from "./const"; 
 
 const GetHeaders =() => {
     return {
@@ -47,7 +47,7 @@ function GetEmployeeMock() {
 
 /*async function GetEmployeeFromApi(employeeId) {
     try {
-        const response = await fetch(`${baseUrl}/api/employee/?employeeId=${employeeId}`);
+        const response = await fetch(`${apiUrl}/api/employee/?employeeId=${employeeId}`);
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
         }
@@ -59,7 +59,7 @@ function GetEmployeeMock() {
 }*/
 
 async function GetEmployeeFromApi(employeeId) {
-    const url = baseUrl + '/api/employee/getemployee/?employeeId=' + employeeId;
+    const url = apiUrl + '/api/employee/getemployee/?employeeId=' + employeeId;
     //console.log(localStorage.getItem('token'));
     return fetch(url, {
             method: 'GET',
@@ -69,7 +69,7 @@ async function GetEmployeeFromApi(employeeId) {
 
 async function GetEmployeeListFromApi() {
     /*try {
-        const response = await fetch(`${baseUrl}/api/employee/getEmployeeList}`);
+        const response = await fetch(`${apiUrl}/api/employee/getEmployeeList}`);
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
         }
@@ -79,7 +79,7 @@ async function GetEmployeeListFromApi() {
         throw error;
     }*/
 
-    const url = baseUrl + '/api/employee/getEmployeeList';
+    const url = apiUrl + '/api/employee/getEmployeeList';
 
     //console.log(localStorage.getItem('token'));
 
@@ -93,7 +93,7 @@ async function GetEmployeeListFromApi() {
 
 export async function GetEmployeeWorkShifts(employeeId) {
 
-    const url = baseUrl + '/api/employee/getEmployeeWorkShifts?employeeId=' + employeeId;
+    const url = apiUrl + '/api/employee/getEmployeeWorkShifts?employeeId=' + employeeId;
     //console.log(localStorage.getItem('token'));
     return fetch(url, {
             method: 'GET',
@@ -103,4 +103,25 @@ export async function GetEmployeeWorkShifts(employeeId) {
 
 }
 
+
+export async function CreateEmployee(params) {
+    console.log(params);
+    const url = apiUrl + '/api/employee/createEmployee';
+
+    return fetch(url, {
+            method: 'POST',
+            headers: GetSeqHeaders(),
+            body: JSON.stringify(params)
+        }
+    );
+}
+
+export async function GetSiteUsersList() {
+    const url = apiUrl + '/api/auth/GetUsersList';
+        return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders(),
+        }
+    );
+}
 

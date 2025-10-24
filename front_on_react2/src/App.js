@@ -11,8 +11,6 @@ import PublicPage from './pages/PublicPage';
 import Dashboard from './components/dashboard/Dashboard';
 import Profile from './pages/Profile';
 
-
-
 // Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -34,7 +32,7 @@ function App() {
             
             {/* Protected routes */}
             <Route 
-              path="/dashboard" 
+              path="/dashboard2" 
               element={
                 <ProtectedRoute>
                   <Dashboard />
@@ -43,7 +41,7 @@ function App() {
             />
 
             <Route 
-              path="/dashboard2" 
+              path="/dashboard" 
               element={
                 <ProtectedRoute>
                   <DashboardPage />

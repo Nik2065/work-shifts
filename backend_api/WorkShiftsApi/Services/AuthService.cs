@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using WorkShiftsApi.DTO;
 
 namespace WorkShiftsApi.Services
 {
@@ -95,6 +96,31 @@ namespace WorkShiftsApi.Services
             return BCrypt.Net.BCrypt.Verify(password, passwordHash);
         }
 
+        public List<SiteUserDto> GetSiteUsersList()
+        {
+            var result = _context.SiteUsers
+                .Where(x => x.Deleted == false)
+                .Select(x => new SiteUserDto
+            {
+                Created = x.Created,
+                Id = x.Id,
+                Login = x.EmailAsLogin,
+                RoleName = GetRoleByRoleCode(x.Role)
+            }).ToList();
+
+
+            return result;
+        }
+
+        public static string GetRoleByRoleCode(string roleCode)
+        {
+            if (roleCode?.ToLower() == "admin")
+                return "Администратор";
+            else if (roleCode?.ToLower() == "objManager")
+                return "Начальник объекта";
+            else
+                return "-";
+        }
 
     }
 }

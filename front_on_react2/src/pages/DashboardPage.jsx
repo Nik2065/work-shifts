@@ -25,9 +25,13 @@ export function DashboardPage () {
     const [employeeList, setEmployeeList] = useState([]);
 
     useEffect(() => {
-        
-       
-        GetEmployeeList()
+        updateEmployeeList();
+        }    
+      , []);
+
+
+    function updateEmployeeList() {
+      GetEmployeeList()
         .then((response) => response.json())
         .then((data) => {
             console.log(data);
@@ -37,11 +41,7 @@ export function DashboardPage () {
             }
         })
         .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
-    
-        
-        }      
-        , []);
-
+    }
 
     function handleEmployeeClick(id) {
         setEmployeeId(id);
@@ -58,7 +58,7 @@ export function DashboardPage () {
                 <h2 className="mb-1">Сотрудники</h2>
                 <p className="text-muted mb-0"></p>
               </div>
-              <Button onClick={()=> setShowEmpModal(true)} variant="primary" className="d-flex align-items-center">
+              <Button onClick={()=> {setEmployeeId(null); setShowEmpModal(true);}} variant="primary" className="d-flex align-items-center">
                 <i className="bi bi-plus-circle me-2"></i>
                 Добавить сотрудника
               </Button>
@@ -160,7 +160,7 @@ export function DashboardPage () {
     </Row>
 
     <ModalForEmployee employeeId={employeeId} showEmpModal={showEmpModal} setShowEmpModal={setShowEmpModal}  />
-    <ModalForWorkShift  showShiftsModal={showShiftsModal} setShowShiftsModal={setShowShiftsModal}  />
+    <ModalForWorkShift  showShiftsModal={showShiftsModal} setShowShiftsModal={setShowShiftsModal} updateEmployees={updateEmployeeList}  />
 
 
         </Container>

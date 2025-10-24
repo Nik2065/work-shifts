@@ -9,23 +9,42 @@ import {
   Badge,
   Modal,
   Form,
-  Table
+  Table,
+  Alert
 } from 'react-bootstrap';
 
-import {GetEmployee} from '../../services/apiService';
+import {GetEmployee, CreateEmployee} from '../../services/apiService';
 
 
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
-export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
+export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, updateEmployees}) {
 
-    //имя сотрудника
-    const [currentEmployee, SetCurrentEmployee] = useState(
-      {name:'', 
-        age:30, 
-        chopCertificate:false
-      })
+    // сотрудник
+    const defaultEmpData = {fio:'', 
+        age:30,
+        chopCertificate: false,
+        object: 'Объект А',
+        bankName: 'Альфа',
+        emplOptions: 'Карта',
+      };
+
+    const [currentEmployee, SetCurrentEmployee] = useState(defaultEmpData);
+
+    const [alertData, setAlertData] = useState({
+      show: false,
+      message: '',
+      variant: 'success'
+    });
     
+    const[createButtonDisabled, setCreateButtonDisabled] = useState(false);
+
+    function resetForm() {
+      SetCurrentEmployee(defaultEmpData);
+      setAlertData({show: false, message: '', variant: 'success'});
+      setCreateButtonDisabled(false);
+    }
+
     useEffect(() => {
       
       // Получаем данные сотрудника по его id
@@ -49,8 +68,33 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
     [employeeId]);
 
 
+    function createEmployee() {
+      console.log("createEmployee");
+      
+      //todo: проверка полей
+
+      CreateEmployee(currentEmployee)
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          // Обработка успешного создания сотрудника
+          setAlertData({message: data.message, show: true, variant: 'success'});
+          setCreateButtonDisabled(true);
+          //обновляем список сотрудников
+          updateEmployees();
+        }
+        else {
+          setAlertData({message: data.message, show: true, variant: 'danger'});
+        }
+      })
+      .catch(error => console.log(error));
+
+
+    }
+
     return (
-        <Modal show={showEmpModal} onHide={() => setShowEmpModal(false)}>
+        <Modal onExit={resetForm} show={showEmpModal} onHide={() => setShowEmpModal(false)}>
             <Modal.Header closeButton>
             <Modal.Title>
             {
@@ -77,7 +121,10 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Control
                 type="text"
                 value={currentEmployee.age}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, age: e.target.value })}
+                onChange={(e) => {
+                  e.target.value = e.target.value.replace(/[^\d]/g, '');
+                  SetCurrentEmployee({ ...currentEmployee, age: parseInt(e.target.value) })
+                }}
                 placeholder="Введите возраст"
               />
             </Form.Group>
@@ -86,8 +133,12 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
               <Form.Label>Удостоверение ЧОП</Form.Label>
               <Form.Check
                 
-                value={currentEmployee.chopCertificate}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.value })}
+                checked={currentEmployee.chopCertificate}
+                onChange={(e) => {
+                  //console.log(currentEmployee);
+                  //console.log(e.target.checked);
+                  SetCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.checked })}
+                }
               />
             </Form.Group>
             
@@ -99,7 +150,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
                 onChange={(e) => SetCurrentEmployee({ ...currentEmployee, object: e.target.value })}
                 placeholder="Выберите объект"
               >
-                <option value="Объект А">Объект А</option>
+                <option  value="Объект А">Объект А</option>
                 <option value="Объект Б">Объект Б</option>
                 <option value="Объект Д">Объект Д</option>
               </Form.Select>
@@ -112,7 +163,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
                 onChange={(e) => SetCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
                 placeholder="Выберите Банк"
               >
-                <option value="Альфа">Альфа</option>
+                <option  value="Альфа">Альфа</option>
                 <option value="Сбер">Сбер</option>
                 <option value="ВТБ">ВТБ</option>
                 <option value="ПСБ">ПСБ</option>
@@ -142,74 +193,24 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId}) {
   </Card.Body>
 </Card>
         </Form>
+        <br/>
+        <Alert show={alertData.show} variant={alertData.variant}>
+            {alertData.message}
+        </Alert>
+
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowEmpModal(false)}>
             Отмена
           </Button>
-          <Button 
-            variant="primary" 
-            
-          >
-            Добавить
-        </Button>
+            {
+            employeeId ? 
+            <Button  variant="primary">Сохранить</Button>
+            : 
+            <Button disabled={createButtonDisabled} onClick={createEmployee} variant="primary">Добавить</Button>
+            }
         </Modal.Footer>
         </Modal>
     )
-    
-  return2 (
-      
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {
-            //editingEmployee ? 'Редактировать сотрудника' : 'Добавить сотрудника'
-            }
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Group className="mb-3">
-              <Form.Label>Имя сотрудника</Form.Label>
-              <Form.Control
-                type="text"
-                value={newEmployee.name}
-                onChange={(e) => setNewEmployee({ ...newEmployee, name: e.target.value })}
-                placeholder="Введите имя"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Должность</Form.Label>
-              <Form.Control
-                type="text"
-                value={newEmployee.position}
-                onChange={(e) => setNewEmployee({ ...newEmployee, position: e.target.value })}
-                placeholder="Введите должность"
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Статус</Form.Label>
-              <Form.Select
-                value={newEmployee.status}
-                onChange={(e) => setNewEmployee({ ...newEmployee, status: e.target.value })}
-              >
-                <option value="active">Активен</option>
-                <option value="fired">Уволен</option>
-              </Form.Select>
-            </Form.Group>
-          </Form>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowAddModal(false)}>
-            Отмена
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={editingEmployee ? handleUpdateEmployee : handleAddEmployee}
-          >
-            {editingEmployee ? 'Сохранить' : 'Добавить'}
-          </Button>
-        </Modal.Footer>
-      </Modal>
-  );
+  
 }

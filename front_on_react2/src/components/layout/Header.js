@@ -24,12 +24,12 @@ const Header = () => {
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
             <Nav.Link as={Link} to="/">WorkShifts</Nav.Link>
-            
-            <Nav.Link as={Link} to="/public">Описание</Nav.Link>
-            
+            {
+            //<Nav.Link as={Link} to="/public">Описание</Nav.Link>
+            }
             {isAuthenticated && (
               <>
-                <Nav.Link as={Link} to="/dashboard2">Учет времени</Nav.Link>
+                <Nav.Link as={Link} to="/dashboard">Учет времени</Nav.Link>
                 <Nav.Link as={Link} to="/users">Пользователи сайта</Nav.Link>
                 {
                 //<Nav.Link as={Link} to="/profile">Профиль</Nav.Link>

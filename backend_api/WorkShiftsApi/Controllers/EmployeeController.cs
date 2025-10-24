@@ -11,11 +11,13 @@ namespace WorkShiftsApi.Controllers
     {
         //private IEmployeeService _employeeService;
         private readonly AppDbContext _context;
+        private NLog.Logger _logger;
 
         public EmployeeController( AppDbContext context) 
         {
             //_employeeService = employeeService;
             _context = context;
+            _logger = NLog.LogManager.GetCurrentClassLogger();
         }
 
         [HttpGet("test")]
@@ -61,6 +63,7 @@ namespace WorkShiftsApi.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(ex);
                 result.IsSuccess = false;
                 result.Message = ex.ToString();
             }
@@ -94,6 +97,7 @@ namespace WorkShiftsApi.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(ex);
                 result.IsSuccess = false;
                 result.Message = ex.ToString();
             }
@@ -122,8 +126,47 @@ namespace WorkShiftsApi.Controllers
             }
             catch (Exception ex)
             {
+                _logger.Error(ex);
                 result.IsSuccess = false;
-                result.Message = ex.ToString();
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Добавление сотрудника
+        /// </summary>
+        /// <returns></returns>
+        [HttpPost("CreateEmployee")]
+        public IActionResult CreateEmployee([FromBody] CreateEmployeeRequestDto request)
+        {
+            var result = new CreateEmployeeResponseDto { IsSuccess = true, Message = "Сотрудник добавлен в базу данных" };
+
+            try
+            {
+                _logger.Info("-CreateEmployee-");
+                var e = new EmployeesDb
+                {
+                    Age = request.Age,
+                    BankName = request.BankName,
+                    ChopCertificate = request.ChopCertificate,
+                    Created = DateTime.Now,
+                    EmplOptions = request.EmplOptions,
+                    Fio = request.Fio,
+                    Object = request.Object
+                };
+
+
+                _context.Employees.Add(e);
+                _context.SaveChanges();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
             }
 
             return Ok(result);
@@ -170,6 +213,19 @@ namespace WorkShiftsApi.Controllers
         public DateTime Created { get; set; }
     }
 
+    public class CreateEmployeeRequestDto
+    {
+        public string Fio { get; set; }
+        public string? BankName { get; set; }
+        public int? Age { get; set; }
+        public bool ChopCertificate { get; set; }
+        public string? Object { get; set; }
+        public string? EmplOptions { get; set; }
+    }
 
+    public class CreateEmployeeResponseDto : ResponseBase
+    {
+
+    }
 
 }
