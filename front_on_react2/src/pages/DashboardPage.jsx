@@ -14,7 +14,7 @@ import Calendar from 'react-calendar';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
-import {GetEmployeeList } from '../services/apiService';
+import {GetEmployeeList, GetWorkHoursList } from '../services/apiService';
 
 
 export function DashboardPage () {
@@ -23,11 +23,96 @@ export function DashboardPage () {
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
     const [employeeList, setEmployeeList] = useState([]);
+    //const [workShiftsList, setWorkShiftsList] = useState([]);
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [workHoursList, setWorkHoursList] = useState({});
+
+    //пример заполнения item
+    const wsh = {
+        id: 1,
+        employeeId: 1,
+        date: "2025-10-15",
+        hours: 8,
+        rate: 100
+    }
 
     useEffect(() => {
         updateEmployeeList();
-        }    
+        }
       , []);
+
+    
+    /*function onChangeRate(val, employeeId) {
+        console.log(val);
+        //console.log(/'^[0-9]*$'/.test(val));
+        const value = val.replace(/[^\d]/g, '')
+        //e.target.value = e.target.value.replace(/[^\d]/g, '');
+        
+        let newList = {...workShiftsList};
+
+        //const item = workShiftsList[employeeId];
+        //console.log({item});
+        if(newList[employeeId]){
+           newList[employeeId].rate = value;
+        }else{
+            newList[employeeId] = {
+              rate: value,
+              hours: 8,
+              date: currentDate,
+              employeeId: employeeId,
+            };
+        }
+
+        setWorkShiftsList(newList);
+
+        console.log(workShiftsList);
+    }*/
+
+      function GetRate(employeeId) {
+        let result = 0;
+        let workShiftsList = employeeList[employeeId];
+        if(workShiftsList){
+          const item = workShiftsList[currentDate];
+          if(item){
+              result = item.rate;
+          }else{
+              result = 0;
+          }
+        }
+        else result = 0;
+
+        return result;
+      }
+
+      function onChangeRate(val, employeeId) {
+        console.log(val);
+        //console.log(/'^[0-9]*$'/.test(val));
+        const value = val.replace(/[^\d]/g, '')
+        //e.target.value = e.target.value.replace(/[^\d]/g, '');
+        
+        let newList = {...workShiftsList};
+
+        //const item = workShiftsList[employeeId];
+        //console.log({item});
+        if(newList[employeeId]){
+           newList[employeeId].rate = value;
+        }else{
+            newList[employeeId] = {
+              rate: value,
+              hours: 8,
+              date: currentDate,
+              employeeId: employeeId,
+            };
+        }
+
+        setWorkShiftsList(newList);
+
+        console.log(workShiftsList);
+    }
+
+    function SaveWorkShiftItem(){
+
+    }
 
 
     function updateEmployeeList() {
@@ -38,9 +123,27 @@ export function DashboardPage () {
 
             if(data.isSuccess){
                 setEmployeeList(data.employeesList);
+                //теперь скачиваем отработанные часы
+                updateWorkHours(currentDate);
             }
         })
         .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
+    }
+
+    function updateWorkHours(date){
+
+        GetWorkHoursList(date)
+        .then((response) => response.json())
+        .then((data) => {
+            console.log(data);
+
+            if(data.isSuccess){
+                setWorkHoursList(data.WorkHoursList);
+            }
+          })
+          .catch((error) => {
+            console.error('Ошибка при получении данных отработанных часов:', error);
+          });
     }
 
     function handleEmployeeClick(id) {
@@ -90,6 +193,7 @@ export function DashboardPage () {
                       <table className="table table-bordered table-hover">
                         <thead>
                           <tr>
+                            <th rowSpan={2} width="5%">Id</th>
                             <th rowSpan={2} width="30%">Фамилия Имя Отчество</th>
                             <th rowSpan={2} width="10%">Объект</th>
                             <th colSpan={3} width="40%" className='text-center' style={{fontSize:"1.2rem"}}>15-окт-2025</th>
@@ -106,38 +210,34 @@ export function DashboardPage () {
                             {
                                 employeeList.map((employee) => {
                                     return (
-                                        <>
-                                         <tr>
+                                         <tr key={employee.id}>
+                                          <td>
+                                            {employee.id}
+                                          </td>
                                         <td>
                                             <a className='button button-link' href="#" 
                                             onClick={()=> handleEmployeeClick(employee.id)}>
                                             {employee.fio}
                                             </a>
-                                            </td>
+                                          </td>
                                         <td>{employee.object}</td>
                                         <td>
-                                        
-                                        <Form.Check type='checkbox'   />
-
+                                        Да
                                         </td>
                                         <td>
                                         <Form.Control type='text'  />
                                         </td>
                                         <td>
-                                        <Form.Select>
-                                            <option>1000</option>
-                                            <option>1200</option>
-                                            <option>1400</option>
-                                            <option>1600</option>
-                                            <option>1800</option>
-                                            <option>2000</option>
-                                        </Form.Select>
+                                        <Form.Control 
+                                        onChange={(e) => onChangeRate(e.target.value, employee.id)} 
+                                        //value={workShiftsList[employee.id]?.rate}
+                                        value={GetRate(employee.id)}
+                                        type='text'/>
                                         </td>
                                         <td>
-                                        <Button onClick={()=>setShowShiftsModal(true)} variant="outline-primary" size="sm">Заполнить смены</Button>
+                                        <Button onClick={()=>SaveWorkShiftItem()} variant="outline-primary" size="sm">Сохранить</Button>
                                         </td>
                                     </tr>
-                                        </>
                                     );
                                 })
                             }

@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Globalization;
+using System.Runtime.Serialization;
 using WorkShiftsApi.DTO;
 
 namespace WorkShiftsApi.Controllers
@@ -81,6 +83,8 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
+                
+
                 result.EmployeesList = _context.Employees
                     .Select(x => new EmployeeDto 
                     { 
@@ -91,9 +95,12 @@ namespace WorkShiftsApi.Controllers
                         BankName = x.BankName,
                         ChopCertificate = x.ChopCertificate,
                         Object = x.Object,
-                        EmplOptions = x.EmplOptions
+                        EmplOptions = x.EmplOptions,
+                        //WorkShiftList = 
                     })
                     .ToList();
+
+
             }
             catch (Exception ex)
             {
@@ -103,6 +110,52 @@ namespace WorkShiftsApi.Controllers
             }
 
             return Ok(result);
+        }
+
+        /// <summary>
+        /// Получить список отработанных часов для даты по списку работников
+        /// </summary>
+        /// <param name="date"></param>
+        /// <returns></returns>
+        [HttpGet("GetWorkHours")]
+        public IActionResult GetWorkHours([FromQuery] string? date )
+        {
+            var result = new GetWorkHoursResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                var list = _context.WorkHours.AsQueryable();
+
+                if (!string.IsNullOrEmpty(date))
+                {
+                    var canParse = DateTime.TryParseExact(date, "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime d);
+                    if(canParse)
+                    {
+                        list = list.Where(x=> x.Date.Date == d.Date);
+                    }
+                }
+
+                var listDto = list.Select(x => new WorkHourDto 
+                    { 
+                        Created = x.Created,
+                        EmployeeId = x.EmployeeId,
+                        Hours = x.Hours,
+                        Id = x.Id,
+                        Rate = x.Rate,
+                    }             
+                ).ToList();
+
+                result.WorkHoursList = listDto;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
+            }
+
+            return Ok(result);
+
         }
 
 
@@ -226,6 +279,20 @@ namespace WorkShiftsApi.Controllers
     public class CreateEmployeeResponseDto : ResponseBase
     {
 
+    }
+
+    public class GetWorkHoursResponse : ResponseBase
+    {
+        public List<WorkHourDto> WorkHoursList { get; set; }
+    }
+
+    public class WorkHourDto
+    {
+        public int Id {get;set;}
+        public DateTime Created { get; set;}
+        public int EmployeeId { get;set;}
+        public int Hours {  get; set; }
+        public int Rate { get; set; }
     }
 
 }

@@ -125,3 +125,12 @@ export async function GetSiteUsersList() {
     );
 }
 
+export async function GetWorkHoursList(date) {
+    const url = apiUrl + '/api/employee/GetWorkHours?date=' + new Date(date).toISOString();
+        return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders(),
+        }
+    );
+}
+

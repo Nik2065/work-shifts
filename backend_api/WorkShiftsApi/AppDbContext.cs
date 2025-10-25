@@ -9,9 +9,12 @@ namespace WorkShiftsApi
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         public DbSet<SiteUserDb> SiteUsers { get; set; }
+
         public DbSet<EmployeesDb> Employees { get; set; }
 
         public DbSet<WorkShiftsDb> WorkShifts { get; set; }
+
+        public DbSet<WorkHoursDb> WorkHours { get; set; }
     }
 
 
@@ -96,5 +99,29 @@ namespace WorkShiftsApi
         [Column("end")]
         public DateTime End { get; set; }
 
+    }
+
+
+    [Table("work_hours")]
+    public class WorkHoursDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("employee_id")]
+        public int EmployeeId { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("hours")]
+        public int Hours { get; set; }
+
+        [Column("rate")]
+        public int Rate { get; set; }
+
+        [Column("date")]
+        public DateTime Date { get; set; }
     }
 }
