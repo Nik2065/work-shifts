@@ -134,3 +134,15 @@ export async function GetWorkHoursList(date) {
     );
 }
 
+export async function SaveWorkHoursItemOnServer(params) {
+    console.log(params);
+    const url = apiUrl + '/api/employee/SaveWorkHoursItem';
+
+    return fetch(url, {
+            method: 'POST',
+            headers: GetSeqHeaders(),
+            body: JSON.stringify(params)
+        }
+    );
+}
+

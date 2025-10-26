@@ -159,6 +159,46 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        [HttpPost("SaveWorkHoursItem")]
+        public IActionResult SaveWorkHoursItem([FromBody] SaveWorkHoursItemRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "" };
+
+            try
+            {
+                //TODO:
+                // проверка полученных значений
+
+
+
+                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.Date == request.Date);
+
+                if(one == null)
+                {
+                    var wh = new WorkHoursDb { Created = DateTime.Now, Date = request.Date, EmployeeId = request.EmployeeId, Hours = request.Hours, Rate = request.Rate };
+                    _context.WorkHours.Add(wh);
+                }
+                else
+                {
+                    one.Hours = request.Hours;
+                    one.Rate = request.Rate;
+                }
+
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
+            }
+
+            return Ok(result);
+
+        }
+
+
+
         [HttpGet("getEmployeeWorkShifts")]
         public IActionResult GetEmployeeWorkShifts([FromQuery] int employeeId)
         {
@@ -293,6 +333,16 @@ namespace WorkShiftsApi.Controllers
         public int EmployeeId { get;set;}
         public int Hours {  get; set; }
         public int Rate { get; set; }
+    }
+
+    public class SaveWorkHoursItemRequest
+    {
+        public int Id { get; set; }
+        public int EmployeeId { get; set; }
+        public int Hours { get; set; }
+        public int Rate { get; set; }
+
+        public DateTime Date { get; set; }
     }
 
 }
