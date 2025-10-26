@@ -17,6 +17,7 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { DashboardPage } from './pages/DashboardPage';
 import DashboardLayout from './pages/DashboardLayout.jsx';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
+import { ReportPage } from './pages/ReportPage.jsx';
 
 
 function App() {
@@ -76,7 +77,16 @@ function App() {
                 </ProtectedRoute>
               } 
             />
-            
+
+            <Route 
+              path="/report" 
+              element={
+                <ProtectedRoute>
+                  <ReportPage />
+                </ProtectedRoute>
+              } 
+            />
+
             {/* 404 fallback */}
             <Route path="*" element={<Home />} />
           </Routes>

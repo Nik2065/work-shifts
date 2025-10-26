@@ -23,14 +23,16 @@ const Header = () => {
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link as={Link} to="/">WorkShifts</Nav.Link>
+            <Nav.Link style={{fontSize:"1.1rem", color:"#fff", fontWeight:"bold"}} as={Link} to="/">WorkShifts</Nav.Link>
             {
             //<Nav.Link as={Link} to="/public">Описание</Nav.Link>
             }
             {isAuthenticated && (
               <>
-                <Nav.Link as={Link} to="/dashboard">Учет времени</Nav.Link>
-                <Nav.Link as={Link} to="/users">Пользователи сайта</Nav.Link>
+              &nbsp;&nbsp;&nbsp;&nbsp;
+                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/dashboard">Учет времени</Nav.Link>
+                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
+                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/report">Отчет</Nav.Link>
                 {
                 //<Nav.Link as={Link} to="/profile">Профиль</Nav.Link>
                 }

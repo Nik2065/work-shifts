@@ -160,16 +160,14 @@ namespace WorkShiftsApi.Controllers
 
 
         [HttpPost("SaveWorkHoursItem")]
-        public IActionResult SaveWorkHoursItem([FromBody] SaveWorkHoursItemRequest request)
+        public IActionResult SaveWorkHoursItem([FromBody] SaveWorkHoursItemRequest request) 
         {
-            var result = new ResponseBase { IsSuccess = true, Message = "" };
+            var result = new ResponseBase { IsSuccess = true, Message = "Отработанные часы успешно сохранены" };
 
             try
             {
                 //TODO:
                 // проверка полученных значений
-
-
 
                 var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.Date == request.Date);
 
@@ -190,7 +188,7 @@ namespace WorkShiftsApi.Controllers
             {
                 _logger.Error(ex);
                 result.IsSuccess = false;
-                result.Message = ex.ToString();
+                result.Message = "Ошибка при сохранении отработанных часов";
             }
 
             return Ok(result);
@@ -265,6 +263,41 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
+        [HttpPost("SaveEmployee")]
+        public IActionResult SaveEmployee([FromBody] SaveEmployeeRequestDto request)
+        {
+            var result = new CreateEmployeeResponseDto { IsSuccess = true, Message = "Данные о сотруднике изменены" };
+
+            try
+            {
+                //todo: проверка данных
+
+                _logger.Info("-SaveEmployee-");
+
+                var one = _context.Employees.FirstOrDefault(x => x.Id == request.Id);
+
+                if (one == null)
+                    throw new Exception("Изменяемый сотрудник не найден");
+
+                one.Age = request.Age;
+                one.BankName = request.BankName;
+                one.ChopCertificate = request.ChopCertificate;
+                one.EmplOptions = request.EmplOptions;
+                one.Fio = request.Fio;
+                one.Object = request.Object;
+                
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
+
 
     }
 
@@ -316,6 +349,17 @@ namespace WorkShiftsApi.Controllers
         public string? EmplOptions { get; set; }
     }
 
+    public class SaveEmployeeRequestDto
+    {
+        public int Id { get; set; }
+        public string Fio { get; set; }
+        public string? BankName { get; set; }
+        public int? Age { get; set; }
+        public bool ChopCertificate { get; set; }
+        public string? Object { get; set; }
+        public string? EmplOptions { get; set; }
+    }
+
     public class CreateEmployeeResponseDto : ResponseBase
     {
 
@@ -333,6 +377,9 @@ namespace WorkShiftsApi.Controllers
         public int EmployeeId { get;set;}
         public int Hours {  get; set; }
         public int Rate { get; set; }
+        public DateTime Date { get; set; }
+
+        public decimal ItemSalary { get; set; }
     }
 
     public class SaveWorkHoursItemRequest

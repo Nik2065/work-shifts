@@ -146,3 +146,14 @@ export async function SaveWorkHoursItemOnServer(params) {
     );
 }
 
+export async function GetWorkHoursForPeriodApi(params) {
+    console.log(params);
+    const url = apiUrl + '/api/report/GetWorkHoursForPeriod';
+
+    return fetch(url, {
+            method: 'POST',
+            headers: GetSeqHeaders(),
+            body: JSON.stringify(params)
+        }
+    );
+}

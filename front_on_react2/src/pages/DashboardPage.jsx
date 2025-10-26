@@ -214,11 +214,15 @@ export function DashboardPage () {
         setSavingWorkHours(false);
         console.log(data);
         if(data.isSuccess){
-          //?
+          ToastShowAndHide({show: true, msg: data.message, variant: "success"});  
+        }
+        else {
+           ToastShowAndHide({show: true, msg: data.message, variant: "danger"});
         }
       })
       .catch((error) => {
         setSavingWorkHours(false);
+          ToastShowAndHide({show: true, msg: "Ошибка при сохранении отработанных часов", variant: "danger"});
           console.error('Ошибка при сохранении отработанных часов:', error);
       });
 
@@ -233,7 +237,7 @@ export function DashboardPage () {
           msg: "",
           variant: "",
         });
-      }, 1200);
+      }, 2000);
       
     }
   
@@ -391,13 +395,9 @@ export function DashboardPage () {
     <ModalForEmployee employeeId={employeeId} showEmpModal={showEmpModal} setShowEmpModal={setShowEmpModal}  />
     <ModalForWorkShift  showShiftsModal={showShiftsModal} setShowShiftsModal={setShowShiftsModal} updateEmployees={updateEmployeeList}  />
     <ToastMsg data={showToastMsg} setShowToastMsg={setShowToastMsg} />
-    <Button 
-    onClick={()=> {
-      
-      ToastShowAndHide({ show: true, variant: "success", msg: "Успешно" })
-    }
-    }>show toast</Button>
-        </Container>
+
+
+    </Container>
     );
 }
 
@@ -415,8 +415,7 @@ function ToastMsg({data, setShowToastMsg}) {
           }</strong>
       </Toast.Header>
       <Toast.Body>
-
-        <p>
+        <p style={{color:"white", fontSize:"1.1rem"}}>
           {data.msg}
         </p>
       </Toast.Body>
