@@ -3,7 +3,7 @@ import React, {useState, useEffect} from "react";
 import { 
   Container, Row, Col, 
    Card, Button, 
-  Dropdown, Form, Table
+  Spinner, Form, Table
 } from 'react-bootstrap';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -71,7 +71,7 @@ export function ReportPage() {
                 setWorkHoursList(data.workHoursList);
                 setTotalData({
                     totalHours: data.totalHours,
-                    itemsCount: data.ItemsCount,
+                    itemsCount: data.itemsCount,
                     totalSalary: data.totalSalary
                 });
             }
@@ -93,7 +93,7 @@ export function ReportPage() {
         {/* Заголовок страницы */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h2 className="mb-1">Отчеты</h2>
+                <h2 className="mb-1">Отчет</h2>
                 <p className="text-muted mb-0"></p>
               </div>
 
@@ -141,6 +141,12 @@ export function ReportPage() {
                     <h4>Не выбраны даты отчета</h4>
                 </div>
                 : 
+                updateReportAnimation ? 
+                <div style={{textAlign:"center"}}>
+                    <Spinner />
+                    <h4>Загрузка данных...</h4>
+                </div>
+                  :
                 <div className="table-responsive" style={{height:"400px"}}>
                 <Table bordered hover>
                     <thead>
@@ -159,6 +165,7 @@ export function ReportPage() {
                                     <td>{item.date}</td>
                                     <td>{item.hours}</td>
                                     <td>{item.itemSalary}</td>
+                                    <td></td>
                                     </tr>)
                             )
                             :
@@ -170,6 +177,9 @@ export function ReportPage() {
                 }
 
                 {
+                    updateReportAnimation ? 
+                    <></>
+                    :
                     <Table bordered>
                         <thead>
                             <tr>
