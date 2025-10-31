@@ -48,12 +48,23 @@ export async function GetSiteUser(siteUserId) {
 
 };
 
-export async function CreateSiteUser() {
-    const url = apiUrl + '/api/user/getuser/?employeeId=' + employeeId;
+export async function GetAllObjects() {
+    const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
     //console.log(localStorage.getItem('token'));
     return fetch(url, {
             method: 'GET',
             headers: GetSeqHeaders()
+    })
+
+};
+
+export async function CreateSiteUser(params) {
+    const url = apiUrl + '/api/user/CreateUser/';
+    //console.log(localStorage.getItem('token'));
+    return fetch(url, {
+            method: 'POST',
+            headers: GetSeqHeaders(),
+            body: JSON.stringify(params)
     })
 
 };

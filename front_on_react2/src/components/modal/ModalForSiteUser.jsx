@@ -2,25 +2,23 @@ import React, {useState, useEffect} from 'react';
 
 import {
   Container, 
-  Row, 
-  Col, 
   Card, 
   Button, 
   Badge,
   Modal,
   Form,
   Table,
-  Alert
+  Alert, Spinner
 } from 'react-bootstrap';
 
-import {GetSiteUser, CreateEmployee} from '../../services/apiService';
+import {GetSiteUser, CreateSiteUser} from '../../services/apiService';
 
 
-//{/* Модальное окно добавления/редактирования сотрудника */}
+//{/* Модальное окно добавления/редактирования пользователя сайта */}
 
 export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
 
-    // сотрудник
+    // пользователь
     const defaultSiteUserData = {
         email:'',
         fio:'', 
@@ -28,14 +26,15 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
       };
 
     const [currentSiteUser, SetCurrentSiteUser] = useState(defaultSiteUserData);
-
+    const [createButtonDisabled, setCreateButtonDisabled] = useState(false);
+    const [objectsList, setObjectsList] = useState([]);
     const [alertData, setAlertData] = useState({
       show: false,
       message: '',
       variant: 'success'
     });
     
-    const[createButtonDisabled, setCreateButtonDisabled] = useState(false);
+    
 
     function resetForm() {
       SetCurrentSiteUser(defaultSiteUserData);
@@ -60,18 +59,27 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
           }
         })
         .catch(error => console.log(error));
-
       }
     }, 
     [siteUserId]);
 
+    useEffect(() => {
+      if (siteUserId) {
+        //updateSiteUsers();
+      }
+    }, []);
 
-    function createEmployee() {
-      console.log("createEmployee");
+    //Обновляем список объектов
+    function updateObjects() {
+      
+    }
+
+    function createSiteUser() {
+      console.log("createSiteUser");
       
       //todo: проверка полей
 
-      CreateEmployee(currentEmployee)
+      createSiteUser(currentSiteUser)
       .then(response => response.json())
       .then(data => {
         console.log(data);
@@ -80,7 +88,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
           setAlertData({message: data.message, show: true, variant: 'success'});
           setCreateButtonDisabled(true);
           //обновляем список сотрудников
-          updateEmployees();
+          //updateEmployees();
         }
         else {
           setAlertData({message: data.message, show: true, variant: 'danger'});
@@ -119,14 +127,36 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
                 onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, roleCode: e.target.value })}
                 placeholder="Выберите роль"
               >
-                <option  value="admin">Администратор</option>
+                <option value="admin">Администратор</option>
                 <option value="object_manager">Начальник объекта</option>
                 <option value="buh">Бухгалтерия</option>
               </Form.Select>
             </Form.Group>
-        </Form>
-       </Modal.Body>
+            <div className="table-responsive">
+              <Table>
+                <tbody>
+                  <td>
+                    <Form.Check type="checkbox" checked={true} 
+                    />
+                  </td>
+                </tbody>
+              </Table>
+            </div>
 
+        </Form>
+
+        <Alert show={alertData.show} variant={alertData.variant}>
+            {alertData.message}
+        </Alert>
+       </Modal.Body>
+       <Modal.Footer>
+            {
+            siteUserId ? 
+            <Button  variant="primary">Сохранить</Button>
+            : 
+            <Button disabled={createButtonDisabled} onClick={createSiteUser} variant="primary">Добавить</Button>
+            }
+       </Modal.Footer>
       </Modal>
     )
 

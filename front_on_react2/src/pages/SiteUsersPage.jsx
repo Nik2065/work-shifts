@@ -2,7 +2,8 @@ import React, {useState, useEffect} from "react";
 import { 
   Container, Row, Col, Nav, 
   Navbar, Card, Button, Badge,
-  Dropdown, Form
+  Dropdown, Form,
+  Spinner
 } from 'react-bootstrap';
 
 import {GetSiteUsersList } from '../services/apiService';
@@ -14,17 +15,23 @@ export function SiteUsersPage() {
     const [siteUsersList, setSiteUsersList] = useState([]);
     const [currentUserId, setCurrentUserId] = useState(null);
     const [showUsrModal, setShowUsrModal] = useState(false);
+    const [usersListIsLoading, setUsersListIsLoading] = useState(false);
 
     useEffect(() => {
+
+        setUsersListIsLoading(true);
+
         GetSiteUsersList()
         .then((response) => response.json())
         .then((data) => {
+            setUsersListIsLoading(false);
             console.log(data);
             if(data.isSuccess){
                 setSiteUsersList(data.users);
                 }
             })
         .catch((error) => {
+                setUsersListIsLoading(false);
                 console.error('Ошибка:', error);
             });
         }    
@@ -59,7 +66,14 @@ export function SiteUsersPage() {
                 </Card.Header>
                 <Card.Body>
                     <div className="table-responsive">
+
                         {
+                          usersListIsLoading ? 
+                          <div style={{textAlign: 'center'}}>
+                          <Spinner />
+                          </div>
+                          :
+
                     siteUsersList && siteUsersList.length > 0 ? 
                       <table className="table table-bordered table-hover">
                         <thead>

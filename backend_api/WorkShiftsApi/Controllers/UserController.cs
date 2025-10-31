@@ -99,6 +99,30 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        [HttpGet("GetAllObjects")]
+        [Authorize]
+        public async Task<IActionResult> GetAllObjects()
+        {
+            var result = new GetAllObjectsResponse { IsSuccess = true, Message = "" }; 
+            try
+            {
+                //result.Objects = _context.Objects.Select(x=> new KeyValuePair<int, string>(x.Id, x.Name));
+
+                var list = _context.Objects.ToList();
+                foreach (var obj in list)
+                    result.Objects.Add(obj.Id, obj.Name);
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+
+            return Ok(result);
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -158,6 +182,8 @@ namespace WorkShiftsApi.Controllers
                 .ToList();
         }
 
+
+
     }
 
     public class GetSiteUsersListResponse : ResponseBase
@@ -172,15 +198,18 @@ namespace WorkShiftsApi.Controllers
 
     public class CreateUserRequest
     {
-        public int Id { get; set; }
         public string Login { get; set; }//email
         public string RoleCode { get; set; }
 
         public string Password { get; set; }
 
-        public List<ObjectDb> ObjectsList { get; set; }
+        //public List<ObjectDb> ObjectsList { get; set; }
+        public string ObjectsList { get; set; }//объекты через ";"
     }
 
-
+    public class GetAllObjectsResponse : ResponseBase
+    {
+        public Dictionary<int, string> Objects { get; set; } = new Dictionary<int, string>();
+    }
 
 }
