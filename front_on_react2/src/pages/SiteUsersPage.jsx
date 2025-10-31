@@ -6,13 +6,14 @@ import {
 } from 'react-bootstrap';
 
 import {GetSiteUsersList } from '../services/apiService';
+import { ModalForSiteUser } from "../components/modal/ModalForSiteUser";
 
 
 export function SiteUsersPage() {
 
-
-
     const [siteUsersList, setSiteUsersList] = useState([]);
+    const [currentUserId, setCurrentUserId] = useState(null);
+    const [showUsrModal, setShowUsrModal] = useState(false);
 
     useEffect(() => {
         GetSiteUsersList()
@@ -40,7 +41,7 @@ export function SiteUsersPage() {
                 <h2 className="mb-1">Пользователи сайта</h2>
                 <p className="text-muted mb-0"></p>
               </div>
-              <Button onClick={()=> {setEmployeeId(null); setShowEmpModal(true);}} variant="primary" className="d-flex align-items-center">
+              <Button onClick={()=> {setCurrentUserId(null); setShowUsrModal(true);}} variant="primary" className="d-flex align-items-center">
                 <i className="bi bi-plus-circle me-2"></i>
                 Добавить пользователя
               </Button>
@@ -93,6 +94,8 @@ export function SiteUsersPage() {
                 </Card.Body>
                         
             </Card>
+
+            <ModalForSiteUser show={showUsrModal} onHide={() => setShowUsrModal(false)} />
         </Container>
     );
 }

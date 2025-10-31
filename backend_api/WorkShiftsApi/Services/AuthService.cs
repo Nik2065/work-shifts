@@ -3,7 +3,6 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using WorkShiftsApi.DTO;
 
 namespace WorkShiftsApi.Services
 {
@@ -30,17 +29,23 @@ namespace WorkShiftsApi.Services
         }
 
 
-        public async Task<SiteUserDb> RegisterAsync(string username, string password)
+        public async Task<SiteUserDb> RegisterAsync(string username, string password, string roleCode)
         {
             if (await UserExistsAsync(username))
                 throw new Exception("Username already exists");
+
+            //проверяем роль 
+            if (roleCode != UserRoleCodeEnum.Admin
+                && roleCode != UserRoleCodeEnum.ObjectManager
+                && roleCode != UserRoleCodeEnum.Buh)
+                throw new Exception("Роль не найдена. Выберите другую роль для создания пользователя");
 
             var user = new SiteUserDb
             {
                 EmailAsLogin = username,
                 Created = DateTime.Now,
                 Deleted = false,
-                Role = "Admin",
+                RoleCode = roleCode,
                 PasswordHash = HashPassword(password)
             };
 
@@ -68,10 +73,10 @@ namespace WorkShiftsApi.Services
                 //new Claim(ClaimTypes.NameIdentifier, user.Id.ToString())
                 new Claim(ClaimTypes.Name, user.EmailAsLogin),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Role, user.Role),
+                new Claim(ClaimTypes.Role, user.RoleCode),
                 new Claim("Login", user.EmailAsLogin),
                 new Claim("Id", user.Id.ToString()),
-                new Claim("Role", user.Role)
+                new Claim("Role", user.RoleCode)
 
             };
 
@@ -96,31 +101,28 @@ namespace WorkShiftsApi.Services
             return BCrypt.Net.BCrypt.Verify(password, passwordHash);
         }
 
-        public List<SiteUserDto> GetSiteUsersList()
-        {
-            var result = _context.SiteUsers
-                .Where(x => x.Deleted == false)
-                .Select(x => new SiteUserDto
-            {
-                Created = x.Created,
-                Id = x.Id,
-                Login = x.EmailAsLogin,
-                RoleName = GetRoleByRoleCode(x.Role)
-            }).ToList();
-
-
-            return result;
-        }
 
         public static string GetRoleByRoleCode(string roleCode)
         {
             if (roleCode?.ToLower() == "admin")
                 return "Администратор";
-            else if (roleCode?.ToLower() == "objManager")
+            else if (roleCode?.ToLower() == "object_manager")
                 return "Начальник объекта";
+            else if (roleCode?.ToLower() == "buh")
+                return "Бухгалтерия";
             else
                 return "-";
         }
 
+
+
     }
+
+    public class UserRoleCodeEnum
+    {
+        public const string Admin = "admin"; //Администратор
+        public const string ObjectManager = "object_manager";//Начальник объекта
+        public const string Buh = "buh";//Бухгалтерия
+    }
+
 }

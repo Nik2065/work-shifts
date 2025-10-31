@@ -38,25 +38,30 @@ export async function GetEmployeeList() {
 
 };
 
+export async function GetSiteUser(siteUserId) {
+    const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
+    //console.log(localStorage.getItem('token'));
+    return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders()
+    })
 
+};
+
+export async function CreateSiteUser() {
+    const url = apiUrl + '/api/user/getuser/?employeeId=' + employeeId;
+    //console.log(localStorage.getItem('token'));
+    return fetch(url, {
+            method: 'GET',
+            headers: GetSeqHeaders()
+    })
+
+};
 
 function GetEmployeeMock() {
 
     return mockFetch({});
 }
-
-/*async function GetEmployeeFromApi(employeeId) {
-    try {
-        const response = await fetch(`${apiUrl}/api/employee/?employeeId=${employeeId}`);
-        if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`);
-        }
-        return response.json();
-    } catch (error) {
-        console.error('Ошибка при получении данных сотрудника:', error);
-        throw error;
-    }
-}*/
 
 async function GetEmployeeFromApi(employeeId) {
     const url = apiUrl + '/api/employee/getemployee/?employeeId=' + employeeId;
@@ -68,20 +73,7 @@ async function GetEmployeeFromApi(employeeId) {
 }
 
 async function GetEmployeeListFromApi() {
-    /*try {
-        const response = await fetch(`${apiUrl}/api/employee/getEmployeeList}`);
-        if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`);
-        }
-        return response.json();
-    } catch (error) {
-        console.error('Ошибка при получении данных сотрудников:', error);
-        throw error;
-    }*/
-
     const url = apiUrl + '/api/employee/getEmployeeList';
-
-    //console.log(localStorage.getItem('token'));
 
     return fetch(url, {
             method: 'GET',
@@ -117,7 +109,7 @@ export async function CreateEmployee(params) {
 }
 
 export async function GetSiteUsersList() {
-    const url = apiUrl + '/api/auth/GetUsersList';
+    const url = apiUrl + '/api/user/GetUsersList';
         return fetch(url, {
             method: 'GET',
             headers: GetSeqHeaders(),

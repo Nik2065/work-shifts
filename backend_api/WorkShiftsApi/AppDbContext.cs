@@ -15,6 +15,11 @@ namespace WorkShiftsApi
         public DbSet<WorkShiftsDb> WorkShifts { get; set; }
 
         public DbSet<WorkHoursDb> WorkHours { get; set; }
+
+        public DbSet<ObjectDb> Objects { get; set; }
+
+        public DbSet<UserToObjectDb> UserToObject { get; set; }
+
     }
 
 
@@ -42,8 +47,8 @@ namespace WorkShiftsApi
         [Column("deleted")]
         public bool Deleted { get; set; }
 
-        [Column("role")]
-        public string Role { get; set; }
+        [Column("role_code")]
+        public string RoleCode { get; set; }
 
     }
 
@@ -123,5 +128,30 @@ namespace WorkShiftsApi
 
         [Column("date")]
         public DateTime Date { get; set; }
+    }
+
+    //рабочие объекты
+    [Table("objects")]
+    public class ObjectDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("object_name")]
+        public string Name { get; set; }
+    }
+
+    //связь пользователя с объектами
+    [Table("users_to_objects")]
+    public class UserToObjectDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("user_id")]
+        public int SiteUserId { get; set; }
+
+        [Column("object_id")]
+        public int ObjectId { get; set; }
     }
 }
