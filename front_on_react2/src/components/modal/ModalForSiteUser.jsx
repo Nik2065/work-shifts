@@ -11,7 +11,7 @@ import {
   Alert, Spinner
 } from 'react-bootstrap';
 
-import {GetSiteUser, CreateSiteUser} from '../../services/apiService';
+import {GetSiteUser, CreateSiteUserFromApi, GetAllObjects} from '../../services/apiService';
 
 
 //{/* Модальное окно добавления/редактирования пользователя сайта */}
@@ -20,8 +20,9 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
 
     // пользователь
     const defaultSiteUserData = {
-        email:'',
-        fio:'', 
+        login:'',
+        roleCode:'admin',
+        password:'',
         objects: [],
       };
 
@@ -47,12 +48,14 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
       // Получаем данные пользователя сайта по его id
 
       if (siteUserId) {
-        GetSiteUser(employeeId)
+        GetSiteUser(siteUserId)
         .then(response => response.json())
         .then(data => {
           console.log(data);
           if (data.isSuccess) {
             SetCurrentSiteUser(data.user);
+            //updateObjects();
+
           }
           else {
             // Обработка ошибки
@@ -63,23 +66,57 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
     }, 
     [siteUserId]);
 
-    useEffect(() => {
-      if (siteUserId) {
-        //updateSiteUsers();
-      }
-    }, []);
+    //useEffect(() => {
+    //    updateObjects();
+    //}, []);
 
     //Обновляем список объектов
     function updateObjects() {
-      
+      console.log("updateObjects");
+      GetAllObjects()
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          setObjectsList(data.objects);
+        }
+        else {
+          // Обработка ошибки
+        }
+      })
+      .catch(error => console.log(error));
     }
 
+
+
     function createSiteUser() {
-      console.log("createSiteUser");
+
+      if(currentSiteUser.login.length < 3){
+        setAlertData({message: 'Логин должен содержать действущую почту пользователя', show: true, variant: 'danger'});
+        return;
+      } else  if(currentSiteUser.password.length < 8){
+        setAlertData({message: 'Пароль должен содержать не менее 8 символов', show: true, variant: 'danger'});
+        return;
+      }
+      else {
+        setAlertData({show: false, message: '', variant: 'success'});
+
+      }
+
+
+
       
       //todo: проверка полей
+      let params = {
+        login: currentSiteUser.login,
+        password: currentSiteUser.password,
+        roleCode: currentSiteUser.roleCode,
+        objectsList: currentSiteUser.objects.join(';')
+      };
+      
+      console.log("currentSiteUser", currentSiteUser);
 
-      createSiteUser(currentSiteUser)
+      CreateSiteUserFromApi(params)
       .then(response => response.json())
       .then(data => {
         console.log(data);
@@ -100,7 +137,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
     }
 
     return (
-      <Modal show={show} onHide={onHide}>
+      <Modal show={show} onHide={onHide} onShow={updateObjects}>
         <Modal.Header closeButton>
           <Modal.Title>
             {
@@ -119,12 +156,24 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
                 placeholder="Введите логин"
               />
             </Form.Group>
-            
+            <Form.Group className="mb-3">
+              <Form.Label>Пароль</Form.Label>
+              <Form.Control
+                type="password"
+                value={currentSiteUser.password}
+                onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, password: e.target.value })}
+                placeholder="Введите пароль"
+              />
+            </Form.Group>
+
             <Form.Group className="mb-3">
               <Form.Label>Роль</Form.Label>
               <Form.Select
                 value={currentSiteUser.roleCode}
-                onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, roleCode: e.target.value })}
+                onChange={(e) => {
+                  SetCurrentSiteUser({ ...currentSiteUser, roleCode: e.target.value });
+                  //if(roleCode === 'object_manager'){ }
+                }}
                 placeholder="Выберите роль"
               >
                 <option value="admin">Администратор</option>
@@ -132,15 +181,40 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
                 <option value="buh">Бухгалтерия</option>
               </Form.Select>
             </Form.Group>
-            <div className="table-responsive">
-              <Table>
+            <div className="table-responsive" style={{maxHeight:"200px"}}>
+              
+              {
+                objectsList ? 
+                
+              <Table bordered >
                 <tbody>
+                  {
+                    objectsList.map((object) => (
+                  <tr key={object.id}>
                   <td>
-                    <Form.Check type="checkbox" checked={true} 
-                    />
+                    <Form.Check type="checkbox" 
+                    label={object.name}
+                    checked={currentSiteUser.objects.includes(object.id)} 
+                    onChange={(e) => {
+                      let newobj = [];
+
+                      if (e.target.checked) 
+                        newobj = [...currentSiteUser.objects, object.id];
+                      else 
+                        newobj = currentSiteUser.objects.filter(item => item !== object.id);
+
+                        SetCurrentSiteUser({ ...currentSiteUser, objects:  newobj});
+                        
+                        }}  />
                   </td>
+                  </tr>
+                    ))
+                  }
+                  
                 </tbody>
               </Table>
+                : <></>
+              }
             </div>
 
         </Form>
@@ -154,7 +228,10 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
             siteUserId ? 
             <Button  variant="primary">Сохранить</Button>
             : 
-            <Button disabled={createButtonDisabled} onClick={createSiteUser} variant="primary">Добавить</Button>
+            <Button 
+            disabled={createButtonDisabled} 
+            onClick={() => createSiteUser()} 
+            variant="primary">Добавить</Button>
             }
        </Modal.Footer>
       </Modal>

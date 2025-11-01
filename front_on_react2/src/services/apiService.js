@@ -40,7 +40,6 @@ export async function GetEmployeeList() {
 
 export async function GetSiteUser(siteUserId) {
     const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
-    //console.log(localStorage.getItem('token'));
     return fetch(url, {
             method: 'GET',
             headers: GetSeqHeaders()
@@ -49,8 +48,7 @@ export async function GetSiteUser(siteUserId) {
 };
 
 export async function GetAllObjects() {
-    const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
-    //console.log(localStorage.getItem('token'));
+    const url = apiUrl + '/api/user/GetAllObjects';
     return fetch(url, {
             method: 'GET',
             headers: GetSeqHeaders()
@@ -58,9 +56,8 @@ export async function GetAllObjects() {
 
 };
 
-export async function CreateSiteUser(params) {
+export async function CreateSiteUserFromApi(params) {
     const url = apiUrl + '/api/user/CreateUser/';
-    //console.log(localStorage.getItem('token'));
     return fetch(url, {
             method: 'POST',
             headers: GetSeqHeaders(),

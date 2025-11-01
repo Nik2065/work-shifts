@@ -110,8 +110,12 @@ namespace WorkShiftsApi.Controllers
 
                 var list = _context.Objects.ToList();
                 foreach (var obj in list)
-                    result.Objects.Add(obj.Id, obj.Name);
-
+                {
+                    var p = new P();
+                    p.Id = obj.Id;
+                    p.Name = obj.Name;
+                    result.Objects.Add(p);
+                }
             }
             catch (Exception ex)
             {
@@ -209,7 +213,13 @@ namespace WorkShiftsApi.Controllers
 
     public class GetAllObjectsResponse : ResponseBase
     {
-        public Dictionary<int, string> Objects { get; set; } = new Dictionary<int, string>();
+        public List<P> Objects { get; set; } = new List<P>();
+    }
+
+    public record P
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } 
     }
 
 }
