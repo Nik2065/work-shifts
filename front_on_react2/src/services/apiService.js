@@ -1,4 +1,5 @@
 import { apiUrl } from "./const"; 
+import { Navigate } from "react-router-dom";
 
 const GetHeaders =() => {
     return {
@@ -23,6 +24,61 @@ export function mockFetch(mockData) {
 }
 
 
+/*function ResponseParser(response) {
+        if (response.ok) {
+        try {
+            return response.json();
+        } catch (error) {
+            console.error('Error parsing JSON:', error);
+            return null;
+        }
+    }
+    else if(response.status === 401){
+        //токен умер - переходим на страницу логина 
+        Navigate('/login');
+    }
+    else 
+        return null;
+}*/
+
+//переадресация на страницу логина
+const redirectToLogin = () => {
+  localStorage.removeItem('token'); // Очистка токена
+  window.location.href = '/login';  // Принудительный редирект
+};
+
+// Универсальная обёртка для fetch с обработкой 401
+export async function authenticatedFetch(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: GetSeqHeaders(),
+  });
+
+  if (response.status === 401) {
+    redirectToLogin();
+    throw new Error('Unauthorized access - redirected to login');
+  }
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response;
+}
+
+
+// Парсер JSON, который можно вызывать вне fetch
+export async function parseJSON(response) {
+  try {
+    return await response.json();
+  } catch (error) {
+    console.error('Error parsing JSON:', error);
+    throw error;
+  }
+}
+
+
+
 
 export async function GetEmployee(employeeId) {
 
@@ -38,14 +94,24 @@ export async function GetEmployeeList() {
 
 };
 
-export async function GetSiteUser(siteUserId) {
+/*export async function GetSiteUser(siteUserId) {
     const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
     return fetch(url, {
             method: 'GET',
             headers: GetSeqHeaders()
     })
 
+};*/
+
+
+export async function GetSiteUser(siteUserId) {
+    const url = apiUrl + '/api/user/getuser/?userId=' + siteUserId
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
 };
+
+
+
 
 export async function GetAllObjects() {
     const url = apiUrl + '/api/user/GetAllObjects';
@@ -63,6 +129,24 @@ export async function CreateSiteUserFromApi(params) {
             headers: GetSeqHeaders(),
             body: JSON.stringify(params)
     })
+
+};
+
+export async function SaveSiteUserFromApi(params) {
+
+    if(params.password == null || params.password == undefined)
+        params.password = "";
+
+    console.log("params", params);
+    
+    const url = apiUrl + '/api/user/SaveUser/';
+    const response = await fetch(url, {
+            method: 'POST',
+            headers: GetSeqHeaders(),
+            body: JSON.stringify(params)
+    });
+
+    return ResponseParser(response);
 
 };
 

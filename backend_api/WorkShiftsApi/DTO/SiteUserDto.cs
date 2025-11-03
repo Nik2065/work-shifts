@@ -8,7 +8,9 @@
 
         //public bool Deleted {}
         public string RoleName { get; set; }
+        public string RoleCode { get; set; }
 
         public List<ObjectDb> ObjectsList { get; set; }
+        public List<int> ObjectsListIds { get; set; }
     }
 }

@@ -11,8 +11,10 @@ import {
   Alert, Spinner
 } from 'react-bootstrap';
 
-import {GetSiteUser, CreateSiteUserFromApi, GetAllObjects} from '../../services/apiService';
+import {GetSiteUser, CreateSiteUserFromApi, 
+  GetAllObjects, SaveSiteUserFromApi} from '../../services/apiService';
 
+import { Navigate } from "react-router-dom";
 
 //{/* Модальное окно добавления/редактирования пользователя сайта */}
 
@@ -24,9 +26,10 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
         roleCode:'admin',
         password:'',
         objects: [],
+        objectsListIds: []
       };
 
-    const [currentSiteUser, SetCurrentSiteUser] = useState(defaultSiteUserData);
+    const [currentSiteUser, setCurrentSiteUser] = useState(defaultSiteUserData);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(false);
     const [objectsList, setObjectsList] = useState([]);
     const [alertData, setAlertData] = useState({
@@ -38,7 +41,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
     
 
     function resetForm() {
-      SetCurrentSiteUser(defaultSiteUserData);
+      setCurrentSiteUser(defaultSiteUserData);
       setAlertData({show: false, message: '', variant: 'success'});
       setCreateButtonDisabled(false);
     }
@@ -49,11 +52,11 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
 
       if (siteUserId) {
         GetSiteUser(siteUserId)
-        .then(response => response.json())
         .then(data => {
           console.log(data);
           if (data.isSuccess) {
-            SetCurrentSiteUser(data.user);
+            data.user.password='';
+            setCurrentSiteUser(data.user);
             //updateObjects();
 
           }
@@ -98,20 +101,16 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
         setAlertData({message: 'Пароль должен содержать не менее 8 символов', show: true, variant: 'danger'});
         return;
       }
-      else {
+      else 
         setAlertData({show: false, message: '', variant: 'success'});
-
-      }
-
-
-
+      
       
       //todo: проверка полей
       let params = {
         login: currentSiteUser.login,
         password: currentSiteUser.password,
         roleCode: currentSiteUser.roleCode,
-        objectsList: currentSiteUser.objects.join(';')
+        objectsList: currentSiteUser.objectsListIds.join(';')
       };
       
       console.log("currentSiteUser", currentSiteUser);
@@ -132,12 +131,59 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
         }
       })
       .catch(error => console.log(error));
+    }
 
 
+    function saveSiteUser(){
+        //if(currentSiteUser.password.length < 8){
+        //setAlertData({message: 'Пароль должен содержать не менее 8 символов', show: true, variant: 'danger'});
+        //return;
+        //}
+        //else 
+        setAlertData({show: false, message: '', variant: 'success'});
+ 
+        let params = {
+          id: siteUserId,
+          login: currentSiteUser.login,
+          password: currentSiteUser.password,
+          roleCode: currentSiteUser.roleCode,
+          objectsList: currentSiteUser.objectsListIds.join(';')
+        }
+
+        SaveSiteUserFromApi(params)
+        .then(data => {
+          console.log(data);
+
+          if (data.isSuccess) {
+            // Обработка успешного создания сотрудника
+            setAlertData({message: data.message, show: true, variant: 'success'});
+            setCreateButtonDisabled(true);
+            //обновляем список сотрудников
+            updateSiteUsers();
+          }
+          else {
+            setAlertData({message: data.message, show: true, variant: 'danger'});
+          }
+        })
+        .catch(error => console.log(error));
+    }
+
+    /*function isCheckboxChecked(id) {
+
+      console.log("currentSiteUser.objectsListIds", currentSiteUser.objectsListIds);
+        if (currentSiteUser && currentSiteUser.objectsListIds) {
+           return currentSiteUser.objectsListIds.includes(id);
+        } else 
+          return false;
+      }*/
+
+    // Функция для проверки, включён ли чекбокс для объекта с указанным id
+    function isCheckboxChecked(id) {
+      return currentSiteUser.objectsListIds ? currentSiteUser.objectsListIds.includes(id) : false;
     }
 
     return (
-      <Modal show={show} onHide={onHide} onShow={updateObjects}>
+      <Modal onExit={resetForm} show={show} onHide={onHide} onShow={updateObjects}>
         <Modal.Header closeButton>
           <Modal.Title>
             {
@@ -151,6 +197,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
               <Form.Label>Логин(email) пользователя</Form.Label>
               <Form.Control
                 type="text"
+                readOnly
                 value={currentSiteUser.login}
                 onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, login: e.target.value })}
                 placeholder="Введите логин"
@@ -194,17 +241,19 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
                   <td>
                     <Form.Check type="checkbox" 
                     label={object.name}
-                    checked={currentSiteUser.objects.includes(object.id)} 
+                    checked={isCheckboxChecked(object.id)} 
                     onChange={(e) => {
-                      let newobj = [];
+                    const { checked } = e.target;
+                    const { id } = object;
 
-                      if (e.target.checked) 
-                        newobj = [...currentSiteUser.objects, object.id];
-                      else 
-                        newobj = currentSiteUser.objects.filter(item => item !== object.id);
+                    const newObjectsList = checked
+                      ? [...currentSiteUser.objectsListIds, id]
+                      : currentSiteUser.objectsListIds.filter(objId => objId !== id);
 
-                        SetCurrentSiteUser({ ...currentSiteUser, objects:  newobj});
-                        
+                    setCurrentSiteUser({
+                      ...currentSiteUser,
+                      objectsListIds: newObjectsList
+                    });
                         }}  />
                   </td>
                   </tr>
@@ -224,13 +273,19 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
         </Alert>
        </Modal.Body>
        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Отмена
+          </Button>
             {
-            siteUserId ? 
-            <Button  variant="primary">Сохранить</Button>
+            siteUserId ?
+            <Button
+            onClick={() => saveSiteUser()}
+            variant="primary">
+              Сохранить</Button>
             : 
             <Button 
-            disabled={createButtonDisabled} 
-            onClick={() => createSiteUser()} 
+            disabled={createButtonDisabled}
+            onClick={() => createSiteUser()}
             variant="primary">Добавить</Button>
             }
        </Modal.Footer>

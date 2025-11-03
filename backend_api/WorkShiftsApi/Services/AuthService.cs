@@ -29,7 +29,7 @@ namespace WorkShiftsApi.Services
         }
 
 
-        public async Task<SiteUserDb> RegisterAsync(string username, string password, string roleCode)
+        public async Task<SiteUserDb> RegisterAsync(string username, string password, string roleCode, int[] objects)
         {
             if (await UserExistsAsync(username))
                 throw new Exception("Username already exists");
@@ -40,6 +40,7 @@ namespace WorkShiftsApi.Services
                 && roleCode != UserRoleCodeEnum.Buh)
                 throw new Exception("Роль не найдена. Выберите другую роль для создания пользователя");
 
+
             var user = new SiteUserDb
             {
                 EmailAsLogin = username,
@@ -49,11 +50,60 @@ namespace WorkShiftsApi.Services
                 PasswordHash = HashPassword(password)
             };
 
-            _context.SiteUsers.Add(user);
-            await _context.SaveChangesAsync();
+            using (var t = _context.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+            {
+                _context.SiteUsers.Add(user);
+                await _context.SaveChangesAsync();
+
+                //если добавлены объекты
+                if (objects != null)
+                {
+                    foreach (var item in objects)
+                        _context.UserToObject.Add(new UserToObjectDb { ObjectId = item, SiteUserId = user.Id });
+                }
+
+                await _context.SaveChangesAsync();
+                await t.CommitAsync();
+            }
 
             return user;
         }
+
+        public async Task UpdateUserAsync(string username, string password, string roleCode, int[] objects)
+        {
+            var one = _context.SiteUsers.FirstOrDefault(x => x.EmailAsLogin == username);
+            
+            
+            if (one == null)
+                throw new Exception("Пользователь не найден. Невозможно обновить данные пользователя");
+
+
+            using (var t = _context.Database.BeginTransaction(System.Data.IsolationLevel.ReadCommitted))
+            {
+                //если пароль не пустой то устанавливаем его. если пустой то оставляем старый
+                if (!string.IsNullOrEmpty(password))
+                    one.PasswordHash = HashPassword(password);
+
+                one.RoleCode = roleCode;
+
+                //удаляем все. добавляем все
+                var list = _context.UserToObject.Where(x => x.SiteUserId == one.Id);
+                _context.UserToObject.RemoveRange(list);
+
+
+                if (objects != null)
+                {
+                    foreach (var item in objects)
+                        _context.UserToObject.Add(new UserToObjectDb { ObjectId = item, SiteUserId = one.Id });
+                }
+                //todo: добавить автора изменений
+
+                await _context.SaveChangesAsync();
+                await t.CommitAsync();
+            }
+
+        }
+             
 
         public async Task<bool> UserExistsAsync(string login)
         {

@@ -32,9 +32,7 @@ namespace WorkShiftsApi.Controllers
             var result = new GetSiteUsersListResponse { IsSuccess = true, Message = "" };
             try
             {
-
-                result.Users = GetSiteUsersList();
-
+                result.Users = GetSiteUsersAsQuarable().ToList();
             }
             catch (Exception ex)
             {
@@ -48,21 +46,33 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
-        private List<SiteUserDto> GetSiteUsersList()
+        private IQueryable<SiteUserDto> GetSiteUsersAsQuarable(int? userId = null)
         {
-            var result = _context.SiteUsers
-                .Where(x => x.Deleted == false)
-                .Select(x => new SiteUserDto
-                {
-                    Created = x.Created,
-                    Id = x.Id,
-                    Login = x.EmailAsLogin,
-                    RoleName = AuthService.GetRoleByRoleCode(x.RoleCode)
-                }).ToList();
 
+            var result = (from u in _context.SiteUsers
+                          join o in _context.UserToObject on u.Id equals o.SiteUserId into userObjects
+                          where u.Deleted == false
+                          select  new SiteUserDto
+                          {
+                              Created = u.Created,
+                              Id = u.Id,
+                              Login = u.EmailAsLogin,
+                              RoleName = AuthService.GetRoleByRoleCode(u.RoleCode),
+                              RoleCode = u.RoleCode,
+                              ObjectsListIds = userObjects.Select(x=>x.ObjectId).ToList(),
+                              ObjectsList = _context.Objects.Where(x=>  userObjects.Select(x => x.ObjectId).Contains(x.Id)).ToList(),
+                          });
+
+            if(userId!=null)
+            {
+                result = result.Where(x => x.Id == (int)userId);
+            }
 
             return result;
         }
+
+
+
 
         [HttpGet("GetUser")]
         [Authorize]
@@ -76,16 +86,9 @@ namespace WorkShiftsApi.Controllers
                 if (one == null)
                     throw new Exception($"Пользователь с id={userId} не найден");
 
-                result.User = new SiteUserDto
-                {
-                    Created = one.Created,
-                    Id= one.Id,
-                    Login = one.EmailAsLogin,
-                    RoleName = AuthService.GetRoleByRoleCode(one.RoleCode),
-                    ObjectsList = GetUserObjects(one.Id)
-                };
+                result.User = GetSiteUsersAsQuarable(userId)?.FirstOrDefault();
 
-                
+
             }
             catch (Exception ex)
             {
@@ -159,7 +162,14 @@ namespace WorkShiftsApi.Controllers
                 //как только создаем пользователя отправляем ему на почту пароль?
                 //или пусть задают пароль вручную?
 
-                var u = await _authService.RegisterAsync(request.Login, request.Password, request.RoleCode);
+                var objects = request
+                    .ObjectsList
+                    .Split(";", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => int.Parse(x))
+                    .ToArray();
+
+
+                var u = await _authService.RegisterAsync(request.Login, request.Password, request.RoleCode, objects);
 
 
             }
@@ -174,9 +184,67 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost("SaveUser")]
+        [Authorize]
+        public async Task<IActionResult> SaveUser([FromBody] SaveUserRequest request)
+        {
+
+            var result = new ResponseBase { IsSuccess = true, Message = "Данные пользователя обновлены" };
+
+            try
+            {
+                if (string.IsNullOrEmpty(request.Login))
+                    throw new Exception("Не задан логин пользователя");
 
 
-        private List<ObjectDb> GetUserObjects(int userId)
+                //1. проверяем что логин это адрес почты
+                var r = new Regex(@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$");
+                if (!r.IsMatch(request.Login))
+                    throw new Exception("Ошибка в формате адреса логина. Он должен быть в виде email адреса");
+                
+                
+                //2. проверяем что логин есть в базе
+                var one = _context.SiteUsers.FirstOrDefault(x => x.EmailAsLogin == request.Login);
+                if (one == null)
+                    throw new Exception("Пользователя с логином:" + request.Login + " нет в базе данных");
+
+
+                if(string.IsNullOrEmpty(request.Password))
+                {
+                    //то не меняем предыдущий пароль
+                }
+                else if (request.Password.Length < 8)
+                    throw new Exception("Необходимо задать пароль длиной не менее 8 символов");
+
+                //как только создаем пользователя отправляем ему на почту пароль?
+                //или пусть задают пароль вручную?
+
+                var objects = request
+                    .ObjectsList
+                    .Split(";", StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => int.Parse(x))
+                    .ToArray();
+                
+                await _authService.UpdateUserAsync(request.Login, request.Password, request.RoleCode, objects);
+
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+
+            return Ok(result);
+        }
+
+
+        /*private List<ObjectDb> GetUserObjects(int userId)
         {
             var objs = _context.UserToObject
                 .Where(x=>x.SiteUserId == userId).Select(x=>x.ObjectId)
@@ -184,7 +252,9 @@ namespace WorkShiftsApi.Controllers
             return _context.Objects
                 .Where(x => objs.Contains(x.Id))
                 .ToList();
-        }
+        }*/
+
+
 
 
 
@@ -204,10 +274,7 @@ namespace WorkShiftsApi.Controllers
     {
         public string Login { get; set; }//email
         public string RoleCode { get; set; }
-
         public string Password { get; set; }
-
-        //public List<ObjectDb> ObjectsList { get; set; }
         public string ObjectsList { get; set; }//объекты через ";"
     }
 
@@ -220,6 +287,15 @@ namespace WorkShiftsApi.Controllers
     {
         public int Id { get; set; }
         public string Name { get; set; } 
+    }
+
+    public class SaveUserRequest 
+    {
+        public int Id { get; set; }
+        public string Login { get; set; }//email
+        public string RoleCode { get; set; }
+        public string Password { get; set; }
+        public string ObjectsList { get; set; }//объекты через ";"
     }
 
 }

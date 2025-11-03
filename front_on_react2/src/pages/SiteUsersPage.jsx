@@ -78,8 +78,8 @@ export function SiteUsersPage() {
                       <table className="table table-bordered table-hover">
                         <thead>
                             <tr>
-                            <th width="10%">ID</th>
-                            <th width="20%">Логин</th>
+                            <th width="5%">ID</th>
+                            <th width="25%">Логин</th>
                             <th width="20%">Объект</th>
                             <th width="20%" >Роль</th>
                             <th width="20%" >Дата добавления</th>
@@ -90,8 +90,26 @@ export function SiteUsersPage() {
                            siteUsersList.map((user, index) =>  (
                            <tr key={user.id}>
                             <td>{user.id}</td>
-                            <td>{user.login}</td>
-                            <td>-</td>
+                            <td>
+                              <Button variant="link" onClick={() => {setCurrentUserId(user.id); setShowUsrModal(true);}}>
+                                {user.login}
+                              </Button>
+                              
+
+
+                            </td>
+                            <td>
+                              {
+                                user.objectsList ?
+                                user.objectsList.map((obj) => (
+                                  <div key={obj.id}>
+                                  <Badge style={{fontSize:"1rem", marginTop:"5px"}} bg="secondary" key={obj.id}>{obj.name}</Badge><br/>
+                                  </div>
+                                ))
+                                :
+                                null
+                                }
+                            </td>
                             <td>{user.roleName}</td>
                             <td>{user.created}</td>
                            </tr>))
@@ -109,7 +127,7 @@ export function SiteUsersPage() {
                         
             </Card>
 
-            <ModalForSiteUser show={showUsrModal} onHide={() => setShowUsrModal(false)} />
+            <ModalForSiteUser show={showUsrModal} onHide={() => setShowUsrModal(false)} siteUserId={currentUserId} />
         </Container>
     );
 }
