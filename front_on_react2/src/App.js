@@ -9,7 +9,7 @@ import LoginForm from './components/auth/LoginForm';
 import Home from './pages/Home';
 import PublicPage from './pages/PublicPage';
 import Dashboard from './components/dashboard/Dashboard';
-import Profile from './pages/Profile';
+//import Profile from './pages/Profile';
 
 // Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -18,6 +18,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import DashboardLayout from './pages/DashboardLayout.jsx';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 import { ReportPage } from './pages/ReportPage.jsx';
+import { ProfilePage } from './pages/ProfilePage.jsx';
 
 
 function App() {
@@ -64,7 +65,7 @@ function App() {
               path="/profile" 
               element={
                 <ProtectedRoute>
-                  <Profile />
+                  <ProfilePage />
                 </ProtectedRoute>
               } 
             />

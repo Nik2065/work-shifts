@@ -66,3 +66,15 @@ function GetMonthName(month) {
     }
     return monthName;
 }
+
+export function getRoleName(roleCode) {
+    if(roleCode == "admin") {
+        return "Администратор";
+    } else if(roleCode == "object_manager") {
+        return "Начальник объекта";
+    } else if(roleCode == "buh") {
+    return "Бухгалтерия";
+    } else {
+        return "Неизвестно";
+    }
+}

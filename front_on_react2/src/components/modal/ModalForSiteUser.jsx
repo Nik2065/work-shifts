@@ -187,7 +187,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
         <Modal.Header closeButton>
           <Modal.Title>
             {
-            siteUserId ? 'Редактировать сотрудника' : 'Добавить сотрудника'
+            siteUserId ? 'Редактировать пользователя' : 'Добавить пользователя'
             }
             </Modal.Title>
         </Modal.Header>

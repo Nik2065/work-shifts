@@ -3,6 +3,7 @@ import { Navbar, Nav, Button, Container } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, User, LogOut, Users } from 'lucide-react';
+import  {getRoleName} from '../../services/commonService';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -34,7 +35,7 @@ const Header = () => {
                 <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
                 <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/report">Отчет</Nav.Link>
                 {
-                //<Nav.Link as={Link} to="/profile">Профиль</Nav.Link>
+                <Nav.Link style={{fontSize:"1.1rem"}}  as={Link} to="/profile">Профиль</Nav.Link>
                 }
               </>
             )}
@@ -64,13 +65,19 @@ const Header = () => {
               </Button>
             )    */ }
             {isAuthenticated ? (
+              <>
+              
+
                           <div className="d-flex align-items-center bg-light rounded px-3 py-2">
-                            <User size={20} className="text-muted me-2" />
+                            
+                            <User size={25} className="text-muted me-2"  />
                             <div className="text-end">
                               <div className="small fw-medium">{user?.Login}</div>
-                              <div className="small text-muted">{user?.Role === "Admin" && "Администратор"}</div>
+                              <div className="small text-muted">{getRoleName(user?.Role)}</div>
                             </div>
+                            &nbsp;
                             <Button 
+                            title='Выход'
                               onClick={handleLogout}
                               variant="link" 
                               className="text-muted ms-2 p-1" 
@@ -79,6 +86,7 @@ const Header = () => {
                               <LogOut size={18} />
                             </Button>
                           </div>
+                          </>
                           ) : (
                 <Button 
                 variant="outline-light" 

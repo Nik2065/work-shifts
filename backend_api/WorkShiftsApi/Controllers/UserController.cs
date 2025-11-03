@@ -98,6 +98,7 @@ namespace WorkShiftsApi.Controllers
                 result.Message = ex.Message;
             }
 
+            Thread.Sleep(1000);
             return Ok(result);
         }
 
