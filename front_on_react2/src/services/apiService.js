@@ -115,11 +115,8 @@ export async function GetSiteUser(siteUserId) {
 
 export async function GetAllObjects() {
     const url = apiUrl + '/api/user/GetAllObjects';
-    return fetch(url, {
-            method: 'GET',
-            headers: GetSeqHeaders()
-    })
-
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
 };
 
 export async function CreateSiteUserFromApi(params) {
@@ -149,6 +146,18 @@ export async function SaveSiteUserFromApi(params) {
     return ResponseParser(response);
 
 };
+
+
+export async function SaveEmployeeFromApi(params) {
+    const url = apiUrl + '/api/Employee/saveemployee'
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
+}
+
+
 
 function GetEmployeeMock() {
 

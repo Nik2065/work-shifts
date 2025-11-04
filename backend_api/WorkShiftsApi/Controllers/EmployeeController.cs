@@ -75,6 +75,30 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
+
+        ///// <summary>
+        ///// Сохранить данные сотрудника по id
+        ///// </summary>
+        ///// <param name="employeeId"></param>
+        ///// <returns></returns>
+        //[HttpPost("SaveEmployee")]
+        //public IActionResult SaveEmployee([FromBody] SaveEmployeeRequestDto request)
+        //{
+        //    var result = new ResponseBase { IsSuccess = true, Message = "Изменения сохранены" };
+
+        //    try
+        //    {
+
+        //    }
+        //    catch(Exception ex)
+        //    {
+
+        //    }
+
+        //    return Ok(result);
+        //}
+
+
         [HttpGet("GetEmployeeList")]
         public IActionResult GetEmployeeList()
         {
@@ -391,5 +415,6 @@ namespace WorkShiftsApi.Controllers
 
         public DateTime Date { get; set; }
     }
+
 
 }

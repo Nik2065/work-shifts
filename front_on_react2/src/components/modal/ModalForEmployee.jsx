@@ -6,15 +6,20 @@ import {
   Col, 
   Card, 
   Button, 
-  Badge,
   Modal,
   Form,
   Table,
   Alert
 } from 'react-bootstrap';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-import {GetEmployee, CreateEmployee} from '../../services/apiService';
+import {GetEmployee, CreateEmployee, 
+  GetAllObjects, SaveEmployeeFromApi} from '../../services/apiService';
 
+import { registerLocale, setDefaultLocale } from  "react-datepicker";
+import { ru } from 'date-fns/locale/ru';
+registerLocale('ru', ru)
 
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
@@ -29,13 +34,16 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         emplOptions: 'Карта',
       };
 
-    const [currentEmployee, SetCurrentEmployee] = useState(defaultEmpData);
+      const [currentEmployee, SetCurrentEmployee] = useState(defaultEmpData);
+      const [objectsList, setObjectsList] = useState([]);
+      const [startDate, setStartDate] = useState(new Date());
+      const [endDate, setEndDate] = useState(new Date());
 
-    const [alertData, setAlertData] = useState({
-      show: false,
-      message: '',
-      variant: 'success'
-    });
+      const [alertData, setAlertData] = useState({
+        show: false,
+        message: '',
+        variant: 'success'
+      });
     
     const[createButtonDisabled, setCreateButtonDisabled] = useState(false);
 
@@ -67,6 +75,23 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     }, 
     [employeeId]);
 
+    //Обновляем список объектов
+    function updateObjects() {
+      console.log("updateObjects");
+      GetAllObjects()
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          setObjectsList(data.objects);
+        }
+        else {
+          // Обработка ошибки
+        }
+      })
+      .catch(error => console.log(error));
+    }
+
+
 
     function createEmployee() {
       console.log("createEmployee");
@@ -93,21 +118,52 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
 
     }
 
+    //Обновляем данные сотрудника
+    function updateEmployee() {
+        setAlertData({message: "", show: false, variant: ''});
+        if(currentEmployee.fio.length<5){
+          setAlertData({message: "Имя сотрудника должно быть не менее 5 символов", show: true, variant: 'danger'});
+          return;
+        }
+        if(currentEmployee.age<18 || currentEmployee.age >60){
+          setAlertData({message: "Возраст должен быть в диапазоне от 18 до 60 лет", show: true, variant: 'danger'});
+          return;
+        }
+
+      console.log("updateEmployee");
+
+      SaveEmployeeFromApi(currentEmployee)
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          // Обработка успешного редактирования сотрудника
+          setAlertData({message: data.message, show: true, variant: 'success'});
+          setCreateButtonDisabled(true);
+          //обновляем список сотрудников
+          updateEmployees();
+        }
+        else {
+          setAlertData({message: data.message, show: true, variant: 'danger'});
+        }
+      })
+      .catch(error => console.log(error));
+    }
+
+
     return (
-        <Modal onExit={resetForm} show={showEmpModal} onHide={() => setShowEmpModal(false)}>
+        <Modal onExit={resetForm} show={showEmpModal} onHide={() => setShowEmpModal(false)} onShow={updateObjects}>
             <Modal.Header closeButton>
             <Modal.Title>
             {
             employeeId ? 'Редактировать сотрудника' : 'Добавить сотрудника'
             }
             <br/>
-            
-            employeeId={employeeId}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
         <Form>
-            <Form.Group className="mb-3">
+          <Row >
+            <Form.Group as={Col} md={12} className="mb-3">
               <Form.Label>Имя сотрудника</Form.Label>
               <Form.Control
                 type="text"
@@ -116,7 +172,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 placeholder="Введите имя"
               />
             </Form.Group>
-            <Form.Group className="mb-3">
+            <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>Возраст</Form.Label>
               <Form.Control
                 type="text"
@@ -129,10 +185,11 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               />
             </Form.Group>
 
-            <Form.Group className="mb-3">
-              <Form.Label>Удостоверение ЧОП</Form.Label>
+            <Form.Group as={Col} md={6} className="mb-3">
+              <Form.Label>&nbsp;</Form.Label>
               <Form.Check
-                
+                label="Удостоверение ЧОП"
+                type="checkbox"
                 checked={currentEmployee.chopCertificate}
                 onChange={(e) => {
                   //console.log(currentEmployee);
@@ -142,7 +199,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               />
             </Form.Group>
             
-            <Form.Group className="mb-3">
+            <Form.Group as={Col} md={12} className="mb-3">
               <Form.Label>Объект</Form.Label>
               <Form.Select
 
@@ -153,9 +210,17 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 <option  value="Объект А">Объект А</option>
                 <option value="Объект Б">Объект Б</option>
                 <option value="Объект Д">Объект Д</option>
+                
+                {
+                  objectsList ?
+                  objectsList.map(obj => (
+                    <option key={obj.id} value={obj.id}>{obj.name}</option>
+                  ))
+                  : null
+                }
               </Form.Select>
             </Form.Group>
-            <Form.Group className="mb-3">
+            <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>Банк</Form.Label>
               <Form.Select
 
@@ -170,7 +235,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               </Form.Select>
             </Form.Group>
 
-            <Form.Group className="mb-3">
+            <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>Оформление</Form.Label>
               <Form.Select
 
@@ -182,16 +247,38 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 <option value="Ведомость">Ведомость</option>
               </Form.Select>
             </Form.Group>
-<Card>
-  <Card.Body>
-    <Card.Title>Вахты</Card.Title>
-    <Table>
-      <tbody>
-        
-      </tbody>
-    </Table>
-  </Card.Body>
-</Card>
+          <Card>
+            <Card.Body>
+              <Card.Title>Вахты</Card.Title>
+              <Row>
+                <Col md={4}>
+                  <DatePicker  locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                </Col>
+                <Col md={4}>
+                  <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                </Col>
+                <Col md={4} style={{textAlign:"right"}}>
+                  <Button variant='outline-primary' size='sm'>Добавить</Button>
+                </Col>
+              </Row>
+
+                  <br/>
+                <div className="table-responsive">
+              <Table bordered>
+                <thead>
+                  <tr>
+                    <th>Дата начала</th>
+                    <th>Дата окончания</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  
+                </tbody>
+              </Table>
+              </div>
+            </Card.Body>
+          </Card>
+          </Row>
         </Form>
         <br/>
         <Alert show={alertData.show} variant={alertData.variant}>
@@ -205,9 +292,12 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           </Button>
             {
             employeeId ? 
-            <Button  variant="primary">Сохранить</Button>
+            <Button 
+            disabled={createButtonDisabled} onClick={updateEmployee}
+            variant="primary">Сохранить</Button>
             : 
-            <Button disabled={createButtonDisabled} onClick={createEmployee} variant="primary">Добавить</Button>
+            <Button 
+            disabled={createButtonDisabled} onClick={createEmployee} variant="primary">Добавить</Button>
             }
         </Modal.Footer>
         </Modal>
