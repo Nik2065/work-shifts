@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 using System.Runtime.Serialization;
 using WorkShiftsApi.DTO;
@@ -36,8 +37,11 @@ namespace WorkShiftsApi.Controllers
             try
             {
                 var one = _context.Employees.FirstOrDefault(x => x.Id == employeeId);
+
                 if (one != null)
                 {
+                    var o = _context.Objects.FirstOrDefault(y => y.Id == one.ObjectId);
+
                     result.Employee = new EmployeeDto
                     {
                         Created = one.Created,
@@ -46,7 +50,8 @@ namespace WorkShiftsApi.Controllers
                         Age = one.Age,
                         BankName = one.BankName,
                         ChopCertificate = one.ChopCertificate,
-                        Object = one.Object,
+                        ObjectName = o?.Name ?? "",
+                        ObjectId = one.ObjectId,
                         EmplOptions = one.EmplOptions
                     };
 
@@ -109,22 +114,27 @@ namespace WorkShiftsApi.Controllers
             {
                 
 
-                result.EmployeesList = _context.Employees
-                    .Select(x => new EmployeeDto 
-                    { 
-                        Created = x.Created, 
-                        Fio = x.Fio, 
-                        Id = x.Id,
-                        Age = x.Age,
-                        BankName = x.BankName,
-                        ChopCertificate = x.ChopCertificate,
-                        Object = x.Object,
-                        EmplOptions = x.EmplOptions,
-                        //WorkShiftList = 
-                    })
-                    .ToList();
-
-
+                result.EmployeesList = (from emp in _context.Employees 
+                                       join o in _context.Objects on emp.ObjectId equals o.Id
+                                       //join ws in _context.WorkShifts on emp.Id equals ws.EmployeeId into empWorkshifts
+                                       //from workShift in empWorkshifts.DefaultIfEmpty()
+                                        select 
+                                     new EmployeeDto
+                                        {
+                                            Created = emp.Created,
+                                            Fio = emp.Fio,
+                                            Id = emp.Id,
+                                            Age = emp.Age,
+                                            BankName = emp.BankName,
+                                            ChopCertificate = emp.ChopCertificate,
+                                            ObjectName = o.Name,
+                                            ObjectId = emp.ObjectId,
+                                            EmplOptions = emp.EmplOptions,
+                                            WorkShiftList = _context.WorkShifts.Where(x=>x.EmployeeId == emp.Id).Select(x=> 
+                                            new WorkShiftDto 
+                                            { Created=x.Created, Id=x.Id, End=x.End, Start=x.Start}).ToList()
+                                     })
+                                    .ToList();
             }
             catch (Exception ex)
             {
@@ -184,7 +194,7 @@ namespace WorkShiftsApi.Controllers
 
 
         [HttpPost("SaveWorkHoursItem")]
-        public IActionResult SaveWorkHoursItem([FromBody] SaveWorkHoursItemRequest request) 
+        public IActionResult SaveWorkHoursItem([FromBody] SaveWorkHoursItemRequest request)
         {
             var result = new ResponseBase { IsSuccess = true, Message = "Отработанные часы успешно сохранены" };
 
@@ -260,6 +270,9 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
+                if (request.ObjectId == null)
+                    throw new Exception("Не выбран объект");
+
                 _logger.Info("-CreateEmployee-");
                 var e = new EmployeesDb
                 {
@@ -269,7 +282,7 @@ namespace WorkShiftsApi.Controllers
                     Created = DateTime.Now,
                     EmplOptions = request.EmplOptions,
                     Fio = request.Fio,
-                    Object = request.Object
+                    ObjectId = (int)request.ObjectId
                 };
 
 
@@ -295,6 +308,8 @@ namespace WorkShiftsApi.Controllers
             try
             {
                 //todo: проверка данных
+                if (request.ObjectId == null)
+                    throw new Exception("Не выбран объект");
 
                 _logger.Info("-SaveEmployee-");
 
@@ -308,7 +323,7 @@ namespace WorkShiftsApi.Controllers
                 one.ChopCertificate = request.ChopCertificate;
                 one.EmplOptions = request.EmplOptions;
                 one.Fio = request.Fio;
-                one.Object = request.Object;
+                one.ObjectId = (int)request.ObjectId;
                 
                 _context.SaveChanges();
             }
@@ -321,6 +336,66 @@ namespace WorkShiftsApi.Controllers
 
             return Ok(result);
         }
+
+
+        [HttpPost("CreateWorkShift")]
+        public IActionResult CreateWorkShift([FromBody] CreateWorkShiftRequestDto request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Запись добавлена" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(request.Start, out DateTime s);
+                var canParseEnd = DateTime.TryParse(request.End, out DateTime e);
+
+
+                var ws = new WorkShiftsDb
+                {
+                    Created = DateTime.Now,
+                    EmployeeId = request.EmployeeId,
+                    Start = s,
+                    End = e,
+                };
+                
+                _context.WorkShifts.Add(ws);
+                _context.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteWorkShift")]
+        public IActionResult DeleteWorkShift([FromBody] DeleteWorkShiftRequestDto request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Запись удалена" };
+
+            try
+            {
+                var one = _context.WorkShifts.FirstOrDefault(x => x.Id == request.WorkShiftId);
+
+                if (one == null)
+                    throw new Exception("Запись не найдена");
+
+                _context.WorkShifts.Remove(one);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+
+            return Ok(result);
+        }
+
 
 
     }
@@ -343,7 +418,8 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public int? Age { get; set; }
         public bool ChopCertificate { get; set; }
-        public string? Object {get;set;}
+        public string ObjectName {get;set;}
+        public int ObjectId { get; set; }
         public string? EmplOptions { get; set; }
 
         public List<WorkShiftDto> WorkShiftList { get; set; }
@@ -369,7 +445,7 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public int? Age { get; set; }
         public bool ChopCertificate { get; set; }
-        public string? Object { get; set; }
+        public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
     }
 
@@ -380,7 +456,7 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public int? Age { get; set; }
         public bool ChopCertificate { get; set; }
-        public string? Object { get; set; }
+        public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
     }
 
@@ -416,5 +492,16 @@ namespace WorkShiftsApi.Controllers
         public DateTime Date { get; set; }
     }
 
+    public class CreateWorkShiftRequestDto
+    {
+        public int EmployeeId { get; set; }
+        public string Start {  get; set; }
+        public string End { get; set; }
+    }
 
+
+    public class DeleteWorkShiftRequestDto
+    {
+        public int WorkShiftId { get; set; }
+    }
 }

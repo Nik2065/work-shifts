@@ -201,12 +201,11 @@ export async function CreateEmployee(params) {
     console.log(params);
     const url = apiUrl + '/api/employee/createEmployee';
 
-    return fetch(url, {
+    const response = await authenticatedFetch(url, {
             method: 'POST',
-            headers: GetSeqHeaders(),
             body: JSON.stringify(params)
-        }
-    );
+        });
+    return parseJSON(response);
 }
 
 export async function GetSiteUsersList() {

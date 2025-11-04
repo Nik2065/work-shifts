@@ -29,7 +29,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     const defaultEmpData = {fio:'', 
         age:30,
         chopCertificate: false,
-        object: 'Объект А',
+        objectId: 0,
         bankName: 'Альфа',
         emplOptions: 'Карта',
       };
@@ -83,6 +83,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         console.log(data);
         if (data.isSuccess) {
           setObjectsList(data.objects);
+          //устанавливаем айдишник для пользователя 
+          if(data.objects.length>0)
+            SetCurrentEmployee({ ...currentEmployee, objectId: data.objects[0].id })
         }
         else {
           // Обработка ошибки
@@ -96,10 +99,18 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     function createEmployee() {
       console.log("createEmployee");
       
-      //todo: проверка полей
+      setAlertData({message: "", show: false, variant: ''});
+        if(currentEmployee.fio.length<5){
+          setAlertData({message: "Имя сотрудника должно быть не менее 5 символов", show: true, variant: 'danger'});
+          return;
+        }
+        if(currentEmployee.age<18 || currentEmployee.age >60){
+          setAlertData({message: "Возраст должен быть в диапазоне от 18 до 60 лет", show: true, variant: 'danger'});
+          return;
+        }
+
 
       CreateEmployee(currentEmployee)
-      .then(response => response.json())
       .then(data => {
         console.log(data);
         if (data.isSuccess) {
@@ -147,6 +158,10 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         }
       })
       .catch(error => console.log(error));
+    }
+
+    function addWorkShift(){
+      
     }
 
 
@@ -204,12 +219,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Select
 
                 value={currentEmployee.object}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, object: e.target.value })}
+                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, objectId: e.target.value })}
                 placeholder="Выберите объект"
               >
-                <option  value="Объект А">Объект А</option>
-                <option value="Объект Б">Объект Б</option>
-                <option value="Объект Д">Объект Д</option>
                 
                 {
                   objectsList ?
@@ -258,7 +270,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                   <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                 </Col>
                 <Col md={4} style={{textAlign:"right"}}>
-                  <Button variant='outline-primary' size='sm'>Добавить</Button>
+                  <Button onClick={addWorkShift}
+                  variant='outline-primary' 
+                  size='sm'>Добавить</Button>
                 </Col>
               </Row>
 
@@ -288,7 +302,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={() => setShowEmpModal(false)}>
-            Отмена
+            Закрыть
           </Button>
             {
             employeeId ? 

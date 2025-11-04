@@ -74,8 +74,8 @@ namespace WorkShiftsApi
         [Column("chop_certificate")]
         public bool ChopCertificate { get; set; }
 
-        [Column("object")]
-        public string? Object { get; set; }
+        [Column("object_id")]
+        public int ObjectId { get; set; }
 
 
         //варианты трудоустройства

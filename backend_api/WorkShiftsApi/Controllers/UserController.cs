@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Globalization;
-using System.Runtime.Serialization;
 using System.Text.RegularExpressions;
 using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
