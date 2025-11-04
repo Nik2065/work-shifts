@@ -21,6 +21,8 @@ import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
 registerLocale('ru', ru)
 
+import {CreateWorkShiftFromApi, DeteleWorkShiftFromApi} from '../../services/apiService';
+
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
 export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, updateEmployees}) {
@@ -34,7 +36,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         emplOptions: 'Карта',
       };
 
-      const [currentEmployee, SetCurrentEmployee] = useState(defaultEmpData);
+      const [currentEmployee, setCurrentEmployee] = useState(defaultEmpData);
       const [objectsList, setObjectsList] = useState([]);
       const [startDate, setStartDate] = useState(new Date());
       const [endDate, setEndDate] = useState(new Date());
@@ -48,12 +50,13 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     const[createButtonDisabled, setCreateButtonDisabled] = useState(false);
 
     function resetForm() {
-      SetCurrentEmployee(defaultEmpData);
+      setCurrentEmployee(defaultEmpData);
       setAlertData({show: false, message: '', variant: 'success'});
       setCreateButtonDisabled(false);
     }
 
-    useEffect(() => {
+
+    /*useEffect(() => {
       
       // Получаем данные сотрудника по его id
 
@@ -63,7 +66,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         .then(data => {
           console.log(data);
           if (data.isSuccess) {
-            SetCurrentEmployee(data.employee);
+            setCurrentEmployee(data.employee);
           }
           else {
             // Обработка ошибки
@@ -73,7 +76,28 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
 
       }
     }, 
-    [employeeId]);
+    [employeeId]);*/
+
+    function GetEmployeeOnShow(){
+
+      if (employeeId) {
+        GetEmployee(employeeId)  
+        .then(response => response.json())
+        .then(data => {
+          console.log(data);
+          if (data.isSuccess) {
+            setCurrentEmployee(data.employee);
+          }
+          else {
+            // Обработка ошибки
+          }
+        })
+        .catch(error => console.log(error));
+
+      }
+    }
+
+
 
     //Обновляем список объектов
     function updateObjects() {
@@ -85,7 +109,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           setObjectsList(data.objects);
           //устанавливаем айдишник для пользователя 
           if(data.objects.length>0)
-            SetCurrentEmployee({ ...currentEmployee, objectId: data.objects[0].id })
+            setCurrentEmployee({ ...currentEmployee, objectId: data.objects[0].id })
         }
         else {
           // Обработка ошибки
@@ -161,12 +185,40 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     }
 
     function addWorkShift(){
-      
+      const params = {
+        employeeId: employeeId,
+        start: startDate.toISOString(),
+        end: endDate.toISOString()
+      };
+
+
+      CreateWorkShiftFromApi(params)
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          // Обработка успешного создания сотрудника
+          setAlertData({message: data.message, show: true, variant: 'success'});
+          //setCreateButtonDisabled(true);
+          //обновляем список сотрудников
+          //updateEmployees();
+        }
+        else {
+          setAlertData({message: data.message, show: true, variant: 'danger'});
+        }
+      })
+      .catch(error => console.log(error));
+
+
     }
 
 
     return (
-        <Modal onExit={resetForm} show={showEmpModal} onHide={() => setShowEmpModal(false)} onShow={updateObjects}>
+        <Modal onExit={resetForm} show={showEmpModal} 
+        onHide={() => setShowEmpModal(false)} 
+        onShow={() => {
+                        updateObjects();
+                        GetEmployeeOnShow();
+                        }}>
             <Modal.Header closeButton>
             <Modal.Title>
             {
@@ -183,7 +235,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Control
                 type="text"
                 value={currentEmployee.fio}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, fio: e.target.value })}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, fio: e.target.value })}
                 placeholder="Введите имя"
               />
             </Form.Group>
@@ -194,7 +246,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 value={currentEmployee.age}
                 onChange={(e) => {
                   e.target.value = e.target.value.replace(/[^\d]/g, '');
-                  SetCurrentEmployee({ ...currentEmployee, age: parseInt(e.target.value) })
+                  setCurrentEmployee({ ...currentEmployee, age: parseInt(e.target.value) })
                 }}
                 placeholder="Введите возраст"
               />
@@ -209,7 +261,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 onChange={(e) => {
                   //console.log(currentEmployee);
                   //console.log(e.target.checked);
-                  SetCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.checked })}
+                  setCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.checked })}
                 }
               />
             </Form.Group>
@@ -219,7 +271,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Select
 
                 value={currentEmployee.object}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, objectId: e.target.value })}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, objectId: e.target.value })}
                 placeholder="Выберите объект"
               >
                 
@@ -237,7 +289,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Select
 
                 value={currentEmployee.bankName}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
                 placeholder="Выберите Банк"
               >
                 <option  value="Альфа">Альфа</option>
@@ -252,7 +304,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Select
 
                 value={currentEmployee.emplOptions}
-                onChange={(e) => SetCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
                 placeholder="Выберите оформление"
               >
                 <option value="Карта">Карта</option>
@@ -270,7 +322,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                   <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                 </Col>
                 <Col md={4} style={{textAlign:"right"}}>
-                  <Button onClick={addWorkShift}
+                  <Button onClick={() => {addWorkShift(); GetEmployeeOnShow();}}
                   variant='outline-primary' 
                   size='sm'>Добавить</Button>
                 </Col>
@@ -286,7 +338,17 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                   </tr>
                 </thead>
                 <tbody>
-                  
+                  {
+                    currentEmployee && currentEmployee.workShiftList  ?
+                    
+                    currentEmployee.workShiftList.map(w => (
+                      <tr key={w.id}>
+                        <td>{w.start}</td>
+                        <td>{w.end}</td>
+                      </tr>
+                    ))
+                    : null
+                  }
                 </tbody>
               </Table>
               </div>

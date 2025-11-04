@@ -121,12 +121,11 @@ export async function GetAllObjects() {
 
 export async function CreateSiteUserFromApi(params) {
     const url = apiUrl + '/api/user/CreateUser/';
-    return fetch(url, {
+    const response = await authenticatedFetch(url, {
             method: 'POST',
-            headers: GetSeqHeaders(),
             body: JSON.stringify(params)
-    })
-
+    });
+    return parseJSON(response);
 };
 
 export async function SaveSiteUserFromApi(params) {
@@ -248,4 +247,23 @@ export async function GetWorkHoursForPeriodApi(params) {
             body: JSON.stringify(params)
         }
     );
+}
+
+
+export async function CreateWorkShiftFromApi(params) {
+    const url = apiUrl + '/api/Employee/CreateWorkShift'
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
+}
+
+export async function DeteleWorkShiftFromApi(params) {
+    const url = apiUrl + '/api/Employee/DeleteWorkShift'
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
 }
