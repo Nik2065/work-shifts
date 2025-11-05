@@ -115,7 +115,6 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
       console.log("currentSiteUser", currentSiteUser);
 
       CreateSiteUserFromApi(params)
-      .then(response => response.json())
       .then(data => {
         console.log(data);
         if (data.isSuccess) {
@@ -196,9 +195,10 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
               <Form.Label>Логин(email) пользователя</Form.Label>
               <Form.Control
                 type="text"
-                readOnly
+
+                readOnly={!!siteUserId}
                 value={currentSiteUser.login}
-                onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, login: e.target.value })}
+                onChange={(e) => setCurrentSiteUser({ ...currentSiteUser, login: e.target.value })}
                 placeholder="Введите логин"
               />
             </Form.Group>
@@ -207,7 +207,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
               <Form.Control
                 type="password"
                 value={currentSiteUser.password}
-                onChange={(e) => SetCurrentSiteUser({ ...currentSiteUser, password: e.target.value })}
+                onChange={(e) => setCurrentSiteUser({ ...currentSiteUser, password: e.target.value })}
                 placeholder="Введите пароль"
               />
             </Form.Group>
@@ -217,7 +217,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
               <Form.Select
                 value={currentSiteUser.roleCode}
                 onChange={(e) => {
-                  SetCurrentSiteUser({ ...currentSiteUser, roleCode: e.target.value });
+                  setCurrentSiteUser({ ...currentSiteUser, roleCode: e.target.value });
                   //if(roleCode === 'object_manager'){ }
                 }}
                 placeholder="Выберите роль"

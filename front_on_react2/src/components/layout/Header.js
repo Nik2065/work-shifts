@@ -7,6 +7,8 @@ import  {getRoleName} from '../../services/commonService';
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
+  console.log("user from auth", user);
+
   const navigate = useNavigate();
 
   const handleLogout = () => {

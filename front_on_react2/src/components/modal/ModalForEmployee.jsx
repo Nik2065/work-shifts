@@ -185,6 +185,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     }
 
     function addWorkShift(){
+
       const params = {
         employeeId: employeeId,
         start: startDate.toISOString(),
@@ -207,8 +208,27 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         }
       })
       .catch(error => console.log(error));
+    }
 
+    function deleteWorkShift(wsId){
+      const params = {
+        workShiftId: wsId,
+      };
 
+      DeteleWorkShiftFromApi(params)
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          // Обработка удаления записи о вахте
+          alert("Запись о вахте успешно удалена");
+        }
+        else {
+          //setAlertData({message: data.message, show: true, variant: 'danger'});
+          alert("Ошибка при удалении записи о вахте");
+        }
+      })
+      .catch(error => 
+        console.log(error));
     }
 
 
@@ -333,8 +353,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Table bordered>
                 <thead>
                   <tr>
-                    <th>Дата начала</th>
-                    <th>Дата окончания</th>
+                    <th width="40%">Дата начала</th>
+                    <th width="40%">Дата окончания</th>
+                    <th width="20%"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,6 +366,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                       <tr key={w.id}>
                         <td>{w.start}</td>
                         <td>{w.end}</td>
+                        <td><Button title='Удалить'
+                            onClick={() => {deleteWorkShift(w.id); GetEmployeeOnShow();}} 
+                            variant='outline-danger' size='sm'>Х</Button></td>
                       </tr>
                     ))
                     : null

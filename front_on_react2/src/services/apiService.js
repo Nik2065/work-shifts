@@ -133,17 +133,13 @@ export async function SaveSiteUserFromApi(params) {
     if(params.password == null || params.password == undefined)
         params.password = "";
 
-    console.log("params", params);
-    
+    //console.log("params", params);
     const url = apiUrl + '/api/user/SaveUser/';
-    const response = await fetch(url, {
+    const response = await authenticatedFetch(url, {
             method: 'POST',
-            headers: GetSeqHeaders(),
             body: JSON.stringify(params)
     });
-
-    return ResponseParser(response);
-
+    return parseJSON(response);
 };
 
 
