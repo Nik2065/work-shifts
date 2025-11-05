@@ -13,12 +13,13 @@ import {
 
 import {GetSiteUser, CreateSiteUserFromApi, 
   GetAllObjects, SaveSiteUserFromApi} from '../../services/apiService';
-
-import { Navigate } from "react-router-dom";
+import { useAuth } from '../../context/AuthContext';
 
 //{/* Модальное окно добавления/редактирования пользователя сайта */}
 
 export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
+
+  const { user} = useAuth();
 
     // пользователь
     const defaultSiteUserData = {
@@ -30,6 +31,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
       };
 
     const [currentSiteUser, setCurrentSiteUser] = useState(defaultSiteUserData);
+    const [currentSiteUserLoading, setCurrentSiteUserLoading] = useState(false);
     const [createButtonDisabled, setCreateButtonDisabled] = useState(false);
     const [objectsList, setObjectsList] = useState([]);
     const [alertData, setAlertData] = useState({
@@ -49,11 +51,15 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
     useEffect(() => {
       
       // Получаем данные пользователя сайта по его id
-
+      
       if (siteUserId) {
+
+        setCurrentSiteUserLoading(true);
         GetSiteUser(siteUserId)
         .then(data => {
           console.log(data);
+          setCurrentSiteUserLoading(false);
+
           if (data.isSuccess) {
             data.user.password='';
             setCurrentSiteUser(data.user);
@@ -64,7 +70,10 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
             // Обработка ошибки
           }
         })
-        .catch(error => console.log(error));
+        .catch(error => {
+          setCurrentSiteUserLoading(false);
+          console.log(error);
+        });
       }
     }, 
     [siteUserId]);
@@ -190,6 +199,12 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
             </Modal.Title>
         </Modal.Header>
        <Modal.Body>
+        {
+          currentSiteUserLoading ?
+          <div style={{height:"100px", textAlign:"center"}}>
+            <Spinner />
+          </div>
+          :
         <Form>
             <Form.Group className="mb-3">
               <Form.Label>Логин(email) пользователя</Form.Label>
@@ -266,6 +281,7 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
             </div>
 
         </Form>
+        }
 
         <Alert show={alertData.show} variant={alertData.variant}>
             {alertData.message}
@@ -278,15 +294,17 @@ export function ModalForSiteUser({show, onHide, siteUserId, updateSiteUsers}) {
             {
             siteUserId ?
             <Button
+            disabled={createButtonDisabled || user.Role!='admin'  }
             onClick={() => saveSiteUser()}
             variant="primary">
               Сохранить</Button>
             : 
             <Button 
-            disabled={createButtonDisabled}
+            disabled={createButtonDisabled || user.Role!='admin'  }
             onClick={() => createSiteUser()}
             variant="primary">Добавить</Button>
             }
+
        </Modal.Footer>
       </Modal>
     )

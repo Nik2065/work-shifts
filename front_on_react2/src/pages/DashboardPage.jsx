@@ -5,17 +5,21 @@ import {
   Form, Spinner
 } from 'react-bootstrap';
 import { SaveIcon } from 'lucide-react';
-
 import '../dashboard.css';
-//import { MpLayout } from './MpLayout';
-
-import Calendar from 'react-calendar';
-//import 'react-calendar/dist/Calendar.css';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
-import {GetEmployeeList, GetWorkHoursList, SaveWorkHoursItemOnServer } from '../services/apiService';
+import {GetEmployeeList, GetWorkHoursList, 
+  SaveWorkHoursItemOnServer, GetAllObjects
+} from '../services/apiService';
 import {getDateFormat1} from '../services/commonService';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import { registerLocale, setDefaultLocale } from  "react-datepicker";
+import { ru } from 'date-fns/locale/ru';
+registerLocale('ru', ru)
+
+
 
 export function DashboardPage () {
     
@@ -32,39 +36,38 @@ export function DashboardPage () {
       msg: "sdkfhj skdhk jdfhksdfh",
       variant: "success",
     });
-
+    const [objectsList, setObjectsList] = useState([]);
+    const [selectedObject, setSelectedObject] = useState(0);
 
     useEffect(() => {
         updateEmployeeList();
         }
     , []);
 
-    
-    /*function onChangeRate(val, employeeId) {
-        console.log(val);
-        //console.log(/'^[0-9]*$'/.test(val));
-        const value = val.replace(/[^\d]/g, '')
-        //e.target.value = e.target.value.replace(/[^\d]/g, '');
-        
-        let newList = {...workShiftsList};
-
-        //const item = workShiftsList[employeeId];
-        //console.log({item});
-        if(newList[employeeId]){
-           newList[employeeId].rate = value;
-        }else{
-            newList[employeeId] = {
-              rate: value,
-              hours: 8,
-              date: currentDate,
-              employeeId: employeeId,
-            };
+    useEffect(() => {
+        updateObjects();
         }
-
-        setWorkShiftsList(newList);
-
-        console.log(workShiftsList);
-    }*/
+    , []);
+    
+    
+    //Обновляем список объектов
+    function updateObjects() {
+      console.log("updateObjects");
+      GetAllObjects()
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          setObjectsList(data.objects);
+          //устанавливаем айдишник для пользователя 
+          if(data.objects.length>0)
+            setSelectedObject(data.objects[0].id)
+        }
+        else {
+          // Обработка ошибки
+        }
+      })
+      .catch(error => console.log(error));
+    }
 
 
 
@@ -254,7 +257,7 @@ export function DashboardPage () {
         {/* Заголовок страницы */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h2 className="mb-1">Сотрудники</h2>
+                <h2 className="mb-1">Учет времени</h2>
                 <p className="text-muted mb-0"></p>
               </div>
               <Button onClick={()=> {setEmployeeId(null); setShowEmpModal(true);}} variant="primary" className="d-flex align-items-center">
@@ -266,20 +269,50 @@ export function DashboardPage () {
             
 
     <Row>
-      <Col lg={3} className="mb-4">
-        <Calendar  />
-      </Col>
-      <Col lg={9} className="mb-4">
+      <Col lg={12} className="mb-4">
 
       <Card className=" h-100">
                   <Card.Header className="bg-white border-0">
-                    <Row>
-                      <Col sm={4}> 
-                      <Form.Control type='text' placeholder='Поиск по ФИО' />
-                      </Col>
-                      <Col sm={1}>
-                        <Button sm={1} variant="outline-secondary" className="d-flex align-items-center">Поиск</Button>
-                      </Col>
+                    <Row className="align-items-end">
+                      <Form.Group as={Col} sm={3}>
+                        <Form.Label>Дата &nbsp;</Form.Label><br/>
+                        <DatePicker className='form-control' locale="ru" selected={currentDate} onChange={(date) => setCurrentDate(date)} />
+                      </Form.Group>
+
+                      <Form.Group as={Col} sm={3}>
+                      <Form.Label>Объект &nbsp;</Form.Label>
+                      <Form.Select
+
+                        value={selectedObject}
+                        onChange={(e) => setSelectedObject(e.target.value)}
+                        placeholder="Выберите объект"
+                      >
+                        
+                        {
+                          objectsList ?
+                          objectsList.map(obj => (
+                            <option key={obj.id} value={obj.id}>{obj.name}</option>
+                          ))
+                          : null
+                        }
+                      </Form.Select>
+                      </Form.Group>
+                      
+
+
+                      <Form.Group as={Col} sm={3}>
+                      <Form.Label>Поиск по имени &nbsp;</Form.Label>
+                      <Form.Control type='text' placeholder='ФИО' />
+                      </Form.Group>
+
+
+                      <Form.Group as={Col} sm={3} className="text-end">
+                        
+                      <Button  
+                      variant="outline-secondary" 
+                      className="d-flex align-items-center">Поиск</Button>
+                      </Form.Group>
+
                     </Row>
                   </Card.Header>
                   <Card.Body>
