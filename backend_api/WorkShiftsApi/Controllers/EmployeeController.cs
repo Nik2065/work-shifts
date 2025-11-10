@@ -146,6 +146,71 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
+
+
+        [HttpGet("GetEmployeeWithFinOpList")]
+        public IActionResult GetEmployeeWithFinOpList([FromQuery] string Date, [FromQuery] int objectId)
+        {
+
+            var result = new GetEmployeeListResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+
+                var canParseDate = DateTime.TryParse(Date, out DateTime selectedDate);
+                if (!canParseDate)
+                    throw new Exception("Передана ошибочная дата");
+
+                var employees = _context.Employees.AsQueryable();
+
+                if (objectId!=-1)
+                {
+                    employees = employees.Where(x => x.ObjectId == objectId);
+                }
+
+                result.EmployeesList = (from emp in employees
+                                        join o in _context.Objects on emp.ObjectId equals o.Id
+                                        //join ws in _context.WorkShifts on emp.Id equals ws.EmployeeId into empWorkshifts
+                                        //from workShift in empWorkshifts.DefaultIfEmpty()
+                                        //join fin in _context.FinOperations on emp.Id equals fin.EmployeeId into empFin
+                                        //from operations in empFin.DefaultIfEmpty()
+
+                                        select
+                                     new EmployeeDto
+                                     {
+                                         Created = emp.Created,
+                                         Fio = emp.Fio,
+                                         Id = emp.Id,
+                                         Age = emp.Age,
+                                         BankName = emp.BankName,
+                                         ChopCertificate = emp.ChopCertificate,
+                                         ObjectName = o.Name,
+                                         ObjectId = emp.ObjectId,
+                                         EmplOptions = emp.EmplOptions,
+                                         WorkShiftList = _context.WorkShifts.Where(x => x.EmployeeId == emp.Id).Select(x =>
+                                           new WorkShiftDto
+                                           { Created = x.Created, Id = x.Id, End = x.End, Start = x.Start }).ToList(),
+                                         FinOperations = _context.FinOperations
+                                         .Where(x => x.EmployeeId == emp.Id && x.Date.Date == selectedDate.Date)
+                                         .Select(x=> 
+                                         new FinOpDto { Comment = x.Comment, Date = x.Date, Id = x.Id, IsPenalty = x.IsPenalty, Sum = x.Sum }).ToList(),
+                                         
+                                     })
+                                    .ToList();
+
+                //var tmp = _context.FinOperations.Where(x => x.EmployeeId == 1 && x.Date.Date == selectedDate.Date).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
+            }
+
+            return Ok(result);
+        }
+
         /// <summary>
         /// Получить список отработанных часов для даты по списку работников
         /// </summary>
@@ -397,10 +462,85 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        [HttpPost("CreateFinOperation")]
+        public IActionResult CreateFinOperation([FromBody] CreateFinOperationRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Запись добавлена" };
+
+            try
+            {
+                //проверка полей 
+                var canParseDate = DateTime.TryParse(request.Date, out DateTime s);
+
+
+                var emp = _context.Employees.FirstOrDefault(x => x.Id == request.EmployeeId);
+
+                if (emp == null)
+                    throw new Exception("Сотрудник не найден");
+
+                var f = new FinOperationDb
+                {
+                    Created = DateTime.Now,
+                    EmployeeId = request.EmployeeId,
+                    Date = s,
+                    IsPenalty = request.IsPenalty,
+                    Sum = request.Sum,
+                    Comment = request.Comment
+                };
+
+                _context.FinOperations.Add(f);
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Удаляем дополнительную фин операцию типа штраф/премия
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
+        [HttpPost("DeleteFinOperation")]
+        public IActionResult DeleteFinOperation([FromBody] DeleteFinOperationRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Запись удалена" };
+
+            try
+            {
+                var one = _context.FinOperations.FirstOrDefault(x=>x.Id == request.OperationId);
+
+                if (one == null)
+                    throw new Exception("Запись не найдена");
+
+                _context.FinOperations.Remove(one);
+                _context.SaveChanges();
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
+
+        //[HttpGet]
+        //public async Task<ActionResult> GetFinOperations()
+        //{
+
+        //}
+
 
     }
 
-    public class GetEmployeeResponse : ResponseBase
+    public class GetEmployeeResponse : ResponseBase 
     {
         public EmployeeDto? Employee { get; set; }
     }
@@ -423,6 +563,8 @@ namespace WorkShiftsApi.Controllers
         public string? EmplOptions { get; set; }
 
         public List<WorkShiftDto> WorkShiftList { get; set; }
+
+        public List<FinOpDto>? FinOperations { get; set; }
     }
 
     public class GetEmployeeWorkShiftsResponseDto : ResponseBase
@@ -437,6 +579,15 @@ namespace WorkShiftsApi.Controllers
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         public DateTime Created { get; set; }
+    }
+
+    public class FinOpDto
+    {
+        public int Id { get; set; }
+        public int Sum { get; set; }
+        public bool IsPenalty { get; set; }
+        public DateTime Date { get; set; } //дата финансовой операции
+        public string? Comment { get; set; }
     }
 
     public class CreateEmployeeRequestDto
@@ -503,5 +654,20 @@ namespace WorkShiftsApi.Controllers
     public class DeleteWorkShiftRequestDto
     {
         public int WorkShiftId { get; set; }
+    }
+
+    public class CreateFinOperationRequest
+    {
+        public int EmployeeId { get; set; }
+        public int Sum { get; set; }
+        public bool IsPenalty { get; set; }
+
+        public string Date { get; set; } //дата финансовой операции
+        public string? Comment { get; set; } 
+    }
+
+    public class DeleteFinOperationRequest
+    {
+        public int OperationId { get; set; }
     }
 }

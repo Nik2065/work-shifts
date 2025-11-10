@@ -1,6 +1,6 @@
 import React ,{ useState, useEffect} from 'react';
 import { 
-  Container, Row, Col, Toast, ToastContainer ,
+  Container, Row, Col, Toast, Table, ToastContainer ,
    Card, Button, 
   Form, Spinner
 } from 'react-bootstrap';
@@ -9,8 +9,10 @@ import '../dashboard.css';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
+import { ModalForAddOperation } from '../components/modal/ModalForAddOperation';
 import {GetEmployeeList, GetWorkHoursList, 
-  SaveWorkHoursItemOnServer, GetAllObjects
+  SaveWorkHoursItemOnServer, GetAllObjects,
+  GetEmployeeWithFinOpListFromApi
 } from '../services/apiService';
 import {getDateFormat1} from '../services/commonService';
 import DatePicker from "react-datepicker";
@@ -37,10 +39,16 @@ export function DashboardPage () {
       variant: "success",
     });
     const [objectsList, setObjectsList] = useState([]);
-    const [selectedObject, setSelectedObject] = useState(0);
+    const [selectedObject, setSelectedObject] = useState(-1);
+    const [fioToSearch, setFioToSearch] = useState("");
+
+    const [showOperationsModal, setShowOperationsModal] = useState(false);
+    const [savingWorkHoursEmplId, setSavingWorkHoursEmplId] = useState(null);
+
 
     useEffect(() => {
-        updateEmployeeList();
+        //updateEmployeeList();
+        updateEmployeeListAndFinOperations();
         }
     , []);
 
@@ -59,8 +67,8 @@ export function DashboardPage () {
         if (data.isSuccess) {
           setObjectsList(data.objects);
           //устанавливаем айдишник для пользователя 
-          if(data.objects.length>0)
-            setSelectedObject(data.objects[0].id)
+          //if(data.objects.length>0)
+          //  setSelectedObject(data.objects[0].id)
         }
         else {
           // Обработка ошибки
@@ -156,28 +164,58 @@ export function DashboardPage () {
             employeeId: employeeId,
           }]);
         }
-
-
       }
 
 
-
-
-
-    function SaveWorkShiftItem(){
-        console.log("SaveWorkShiftItem");
-    }
-
-
+    //оновляет таблицу с сотрудниками
     function updateEmployeeList() {
-
+      
       GetEmployeeList()
-        .then((response) => response.json())
         .then((data) => {
             console.log(data);
 
             if(data.isSuccess){
-                setEmployeeList(data.employeesList);
+              let empList = data.employeesList;
+
+                if(selectedObject && selectedObject != -1){
+                  empList = empList.filter(item => item.objectId == selectedObject);
+                }
+                if(fioToSearch && fioToSearch.length > 0){
+                  empList = empList.filter(item => item.fio.toLowerCase().includes(fioToSearch.toLowerCase()));
+                }
+
+                setEmployeeList(empList);
+                //теперь скачиваем отработанные часы
+                updateWorkHours(currentDate);
+            }
+        })
+        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
+    }
+
+    //обновляем таблицу с сотрудниками и фин операциями
+    //финансовые операции загружаются только на выбранную дату
+    function updateEmployeeListAndFinOperations() {
+      
+      const params = {
+        date: currentDate,
+        objectId: selectedObject,
+      }
+
+      GetEmployeeWithFinOpListFromApi(params)
+        .then((data) => {
+            console.log(data);
+
+            if(data.isSuccess){
+              let empList = data.employeesList;
+
+                //if(selectedObject && selectedObject != -1){
+                //  empList = empList.filter(item => item.objectId == selectedObject);
+                //}
+                if(fioToSearch && fioToSearch.length > 0){
+                  empList = empList.filter(item => item.fio.toLowerCase().includes(fioToSearch.toLowerCase()));
+                }
+
+                setEmployeeList(empList);
                 //теперь скачиваем отработанные часы
                 updateWorkHours(currentDate);
             }
@@ -199,6 +237,11 @@ export function DashboardPage () {
           .catch((error) => {
             console.error('Ошибка при получении данных отработанных часов:', error);
           });
+    }
+
+    //отображаем финансовые операции в таблице
+    function updateFinOperations(){
+      
     }
 
     function SaveWorkHoursItem(employeeId){
@@ -244,7 +287,19 @@ export function DashboardPage () {
       
     }
   
+    function onDateChange(date){
+      if(date){
+        setCurrentDate(date);
+        updateWorkHours(date);
+      }
+    }
 
+    function onObjectChange(objId){
+      setSelectedObject(objId);
+      //фильтруем список сотрудников
+      //updateEmployeeList();
+    }
+    
     function handleEmployeeClick(id) {
         setEmployeeId(id);
         setShowEmpModal(true);
@@ -276,7 +331,11 @@ export function DashboardPage () {
                     <Row className="align-items-end">
                       <Form.Group as={Col} sm={3}>
                         <Form.Label>Дата &nbsp;</Form.Label><br/>
-                        <DatePicker className='form-control' locale="ru" selected={currentDate} onChange={(date) => setCurrentDate(date)} />
+                        <DatePicker style={{width: "100%"}} 
+                        className='form-control' locale="ru" 
+                        selected={currentDate} 
+                        onChange={(date) => onDateChange(date)} />
+
                       </Form.Group>
 
                       <Form.Group as={Col} sm={3}>
@@ -284,10 +343,11 @@ export function DashboardPage () {
                       <Form.Select
 
                         value={selectedObject}
-                        onChange={(e) => setSelectedObject(e.target.value)}
+                        onChange={(e) => onObjectChange(e.target.value)}
                         placeholder="Выберите объект"
                       >
-                        
+                        <option key={-1} value={-1}>Все</option>
+
                         {
                           objectsList ?
                           objectsList.map(obj => (
@@ -302,13 +362,18 @@ export function DashboardPage () {
 
                       <Form.Group as={Col} sm={3}>
                       <Form.Label>Поиск по имени &nbsp;</Form.Label>
-                      <Form.Control type='text' placeholder='ФИО' />
+                      <Form.Control 
+                      value={fioToSearch}
+                      onChange={(e) => setFioToSearch(e.target.value)}
+                      type='text' 
+                      placeholder='ФИО' />
                       </Form.Group>
 
 
                       <Form.Group as={Col} sm={3} className="text-end">
                         
-                      <Button  
+                      <Button 
+                      onClick={updateEmployeeList}
                       variant="outline-secondary" 
                       className="d-flex align-items-center">Поиск</Button>
                       </Form.Group>
@@ -339,7 +404,8 @@ export function DashboardPage () {
                             {
                                 employeeList.map((employee) => {
                                     return (
-                                         <tr key={employee.id}>
+                                      <>
+                                         <tr key={employee.id.toString() + 'a'}>
                                           <td>
                                             {employee.id}
                                           </td>
@@ -349,7 +415,7 @@ export function DashboardPage () {
                                             {employee.fio}
                                             </a>
                                           </td>
-                                        <td>{employee.object}</td>
+                                        <td>{employee.objectName}</td>
                                         <td>
                                         Да
                                         </td>
@@ -390,20 +456,38 @@ export function DashboardPage () {
                                         <td>
                                         <Row style={{width:"100%"}}>
                                         <Col>
-                                        <Button disabled={savingWorkHours} title='Сохранить' onClick={()=>SaveWorkHoursItem(employee.id)} variant="outline-primary" size="sm">
+                                        <Button 
+                                        disabled={savingWorkHours && savingWorkHoursEmplId == employee.id } 
+                                        title='Сохранить' 
+                                        onClick={()=>{setSavingWorkHoursEmplId(employee.id);  SaveWorkHoursItem(employee.id);}} variant="outline-primary" size="sm">
                                         {
-                                        savingWorkHours ?
+                                        savingWorkHours && savingWorkHoursEmplId == employee.id ? 
                                         <Spinner animation="border" size="sm"/>
                                         : <SaveIcon />
                                         }
                                         </Button>
                                         </Col>
                                         <Col>
-                                        <Button onClick={()=>alert("доп форма")} variant="outline-primary" size="sm">Доп.рабочие часы</Button>
+                                        <Button onClick={()=> {
+                                          setShowOperationsModal(true);
+                                          setSavingWorkHoursEmplId(employee.id); }}
+                                           variant="outline-primary" size="sm">Начисл./Списания</Button>
                                         </Col>
                                         </Row>
                                         </td>
                                     </tr>
+                                    {
+                                      employee.finOperations ?
+                                      <tr key={employee.id.toString() + "b"}>
+                                              <td  colSpan="7">
+                                                <FinTable operations={employee.finOperations} />
+                                                </td>
+                                      </tr>
+                                      : null 
+
+                                      //конец цикла map
+                                    }
+                                    </>
                                     );
                                 })
                             }
@@ -425,15 +509,56 @@ export function DashboardPage () {
       </Col>
     </Row>
 
-    <ModalForEmployee employeeId={employeeId} showEmpModal={showEmpModal} setShowEmpModal={setShowEmpModal}  />
-    <ModalForWorkShift  showShiftsModal={showShiftsModal} setShowShiftsModal={setShowShiftsModal} updateEmployees={updateEmployeeList}  />
-    <ToastMsg data={showToastMsg} setShowToastMsg={setShowToastMsg} />
+    <ModalForEmployee 
+      employeeId={employeeId} 
+      showEmpModal={showEmpModal} 
+      setShowEmpModal={setShowEmpModal} />
+    
+    <ModalForWorkShift 
+       employeeId={savingWorkHoursEmplId} 
+       showShiftsModal={showShiftsModal} 
+       setShowShiftsModal={setShowShiftsModal} 
+       updateEmployees={updateEmployeeList}  />
+    
+    <ModalForAddOperation 
+        employeeId={savingWorkHoursEmplId}
+        showOperationsModal={showOperationsModal} 
+        setShowOperationsModal={setShowOperationsModal}
+        selectedDate={currentDate}
+    />
+
+    <ToastMsg 
+      data={showToastMsg} 
+      setShowToastMsg={setShowToastMsg} />
 
 
     </Container>
     );
 }
 
+
+function FinTable({operations}){
+  return (
+    <Table bordered>
+      <tbody>
+        
+        {
+          operations.map((op) => 
+            
+            (
+            <tr key={op.id.toString() + "fin"}>
+              
+              <td style={{backgroundColor:op.isPenalty ? "#f9d5e5" : "#96ceb4"}}
+              >{op.isPenalty ? "Штраф" : "Премия"}</td>
+              <td>Сумма:{op.sum}</td>
+              <td>Комментарий:{op.comment}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </Table>
+  )
+}
 
 
 function ToastMsg({data, setShowToastMsg}) {

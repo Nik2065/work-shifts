@@ -20,6 +20,8 @@ namespace WorkShiftsApi
 
         public DbSet<UserToObjectDb> UserToObject { get; set; }
 
+        public DbSet<FinOperationDb> FinOperations { get; set; }
+
     }
 
 
@@ -153,5 +155,32 @@ namespace WorkShiftsApi
 
         [Column("object_id")]
         public int ObjectId { get; set; }
+    }
+
+
+    [Table("fin_operations")]
+    public class FinOperationDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("employee_id")]
+        public int EmployeeId { get; set; }
+
+        [Column("sum")]
+        public int Sum { get; set; }
+
+        [Column("is_penalty")]
+        public bool IsPenalty { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; }
+
+        [Column("date")]
+        public DateTime Date { get; set; }
+
+        [Column("comment")]
+        public string? Comment { get; set; }
+
     }
 }

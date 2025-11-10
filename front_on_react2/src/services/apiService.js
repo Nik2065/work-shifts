@@ -170,14 +170,16 @@ async function GetEmployeeFromApi(employeeId) {
 
 async function GetEmployeeListFromApi() {
     const url = apiUrl + '/api/employee/getEmployeeList';
-
-    return fetch(url, {
-            method: 'GET',
-            headers: GetSeqHeaders(),
-        }
-    );
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
 }
 
+export async function GetEmployeeWithFinOpListFromApi(params) {
+    const url = apiUrl + '/api/employee/GetEmployeeWithFinOpList?date=' + params.date.toISOString()
+    + "&objectId=" + params.objectId;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
 
 export async function GetEmployeeWorkShifts(employeeId) {
 
@@ -261,5 +263,33 @@ export async function DeteleWorkShiftFromApi(params) {
             method: 'POST',
             body: JSON.stringify(params)
     });
+    return parseJSON(response);
+}
+
+
+
+export async function CreateFinOperationFromApi(params) {
+    const url = apiUrl + '/api/Employee/CreateFinOperation'
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
+}
+
+
+export async function DeleteFinOperationFromApi(params) {
+    const url = apiUrl + '/api/Employee/DeleteFinOperation'
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
+}
+
+
+export async function GetFinOperationsFromApi(date) {
+    const url = apiUrl + '/api/employee/GetWorkHours?date=' + new Date(date).toISOString();
+    const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
