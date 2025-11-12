@@ -4,7 +4,7 @@ import {
    Card, Button, 
   Form, Spinner
 } from 'react-bootstrap';
-import { SaveIcon } from 'lucide-react';
+import { SaveIcon, Trash2 } from 'lucide-react';
 import '../dashboard.css';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
@@ -12,7 +12,8 @@ import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
 import { ModalForAddOperation } from '../components/modal/ModalForAddOperation';
 import {GetEmployeeList, GetWorkHoursList, 
   SaveWorkHoursItemOnServer, GetAllObjects,
-  GetEmployeeWithFinOpListFromApi
+  GetEmployeeWithFinOpListFromApi,
+  DeleteFinOperationFromApi
 } from '../services/apiService';
 import {getDateFormat1} from '../services/commonService';
 import DatePicker from "react-datepicker";
@@ -240,6 +241,7 @@ export function DashboardPage () {
     }
 
     //отображаем финансовые операции в таблице
+    //при смене даты
     function updateFinOperations(){
       
     }
@@ -304,6 +306,29 @@ export function DashboardPage () {
         setEmployeeId(id);
         setShowEmpModal(true);
     }
+
+    function deleteFinOperation(id){
+        console.log("deleteFinOperation");
+        console.log(id);
+        const params = {
+          OperationId: id
+        };
+        DeleteFinOperationFromApi(params)
+        .then(data => {
+          console.log(data);
+          if (data.isSuccess) {
+            // Обработка успешного удаления
+            ToastShowAndHide({show: true, msg: data.message, variant: "success"});  
+            updateEmployeeListAndFinOperations();
+          }
+          else {
+            // Обработка ошибки
+            ToastShowAndHide({show: true, msg: data.message, variant: "danger"});  
+          }
+        })
+        .catch(error => console.log(error));
+    }
+
 
 
     return (
@@ -373,7 +398,7 @@ export function DashboardPage () {
                       <Form.Group as={Col} sm={3} className="text-end">
                         
                       <Button 
-                      onClick={updateEmployeeList}
+                      onClick={updateEmployeeListAndFinOperations}
                       variant="outline-secondary" 
                       className="d-flex align-items-center">Поиск</Button>
                       </Form.Group>
@@ -387,11 +412,11 @@ export function DashboardPage () {
                       <table className="table table-bordered table-hover">
                         <thead>
                           <tr>
-                            <th rowSpan={2} width="5%">Id</th>
-                            <th rowSpan={2} width="30%">Фамилия Имя Отчество</th>
-                            <th rowSpan={2} width="10%">Объект</th>
+                            <th rowSpan={2} width="5%"><strong>Id</strong></th>
+                            <th rowSpan={2} width="30%"><strong>Фамилия Имя Отчество</strong></th>
+                            <th rowSpan={2} width="10%"><strong>Объект</strong></th>
                             <th colSpan={3} width="30%" className='text-center' style={{fontSize:"1.2rem"}}>{getDateFormat1(currentDate)}</th>
-                            <th rowSpan={2} width="25%" style={{verticalAlign:"middle"}} >Действия<br/></th>
+                            <th rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
                           </tr>
                           <tr>
                             <th width="10%">Смена</th>
@@ -426,8 +451,12 @@ export function DashboardPage () {
                                             //const value = e.target.value.replace(/[^\d ]/g, '');
                                             const value = e.target.value;
                                             //if(value == '' || value >= 0){
-                                            SetHours(employee.id, value);
-                                            //}
+                                            if(value >= 0 && value <= 24){
+                                                SetHours(employee.id, value);
+                                            }
+                                            else{
+                                                ToastShowAndHide({show: true, msg: "Часов должно быть в диапазоне от 0 до 24", variant: "danger"});
+                                            }
                                         }}
                                         min={0}
                                         max={24}
@@ -442,15 +471,20 @@ export function DashboardPage () {
                                         onChange={(e) => {
                                             //const value = e.target.value.replace(/[^\d ]/g, '');
                                             const value = e.target.value;
-                                            console.log("value", value);
-                                            SetRate(employee.id, value);
+                                            //console.log("value", value);
+                                            if(value >= 0 && value <= 10000){
+                                              SetRate(employee.id, value);
+                                            }
+                                            else{
+                                                ToastShowAndHide({show: true, msg: "Ставка должна быть в диапазоне от 0 до 10000", variant: "danger"});
+                                            }
                                         }}
 
 
                                         value={GetRate(employee.id)}
                                         type='number'
                                         min={0}
-                                        max={20000}
+                                        max={10000}
                                         />
                                         </td>
                                         <td>
@@ -480,7 +514,7 @@ export function DashboardPage () {
                                       employee.finOperations ?
                                       <tr key={employee.id.toString() + "b"}>
                                               <td  colSpan="7">
-                                                <FinTable operations={employee.finOperations} />
+                                                <FinTable operations={employee.finOperations} deleteFinOperation={deleteFinOperation} />
                                                 </td>
                                       </tr>
                                       : null 
@@ -518,13 +552,14 @@ export function DashboardPage () {
        employeeId={savingWorkHoursEmplId} 
        showShiftsModal={showShiftsModal} 
        setShowShiftsModal={setShowShiftsModal} 
-       updateEmployees={updateEmployeeList}  />
+       updateEmployees={updateEmployeeListAndFinOperations}  />
     
     <ModalForAddOperation 
         employeeId={savingWorkHoursEmplId}
         showOperationsModal={showOperationsModal} 
         setShowOperationsModal={setShowOperationsModal}
         selectedDate={currentDate}
+        updateTable={updateEmployeeListAndFinOperations}
     />
 
     <ToastMsg 
@@ -537,21 +572,26 @@ export function DashboardPage () {
 }
 
 
-function FinTable({operations}){
+function FinTable({operations, deleteFinOperation}){
   return (
-    <Table bordered>
+    <Table className="p-1" bordered style={{fontSize:"0.8rem", }}>
       <tbody>
         
         {
           operations.map((op) => 
             
             (
-            <tr key={op.id.toString() + "fin"}>
+            <tr  className="p-0" key={op.id.toString() + "fin"}>
               
-              <td style={{backgroundColor:op.isPenalty ? "#f9d5e5" : "#96ceb4"}}
+              <td className="py-0" style={{backgroundColor:op.isPenalty ? "#f9d5e5" : "#96ceb4"}}
               >{op.isPenalty ? "Штраф" : "Премия"}</td>
-              <td>Сумма:{op.sum}</td>
-              <td>Комментарий:{op.comment}</td>
+              <td className="py-0">Сумма:{op.sum}</td>
+              <td className="py-0">Комментарий:{op.comment}</td>
+              <td className="py-0" style={{textAlign:"center"}}>
+                <Button style={{fontSize:"0.4rem", color:"lightgrey"}} size="sm" variant="link" onClick={()=>deleteFinOperation(op.id)}>
+                  <Trash2  />
+                </Button>
+              </td>
             </tr>
           ))
         }

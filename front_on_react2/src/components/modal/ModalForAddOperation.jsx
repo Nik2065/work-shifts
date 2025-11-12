@@ -4,7 +4,8 @@ import {
   Col, 
   Button, 
   Modal,
-  Form
+  Form,
+  Alert
 } from 'react-bootstrap';
 
 import {GetEmployee, CreateFinOperationFromApi
@@ -14,21 +15,23 @@ import {GetEmployee, CreateFinOperationFromApi
 
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
-export function ModalForAddOperation({employeeId, showOperationsModal, setShowOperationsModal, selectedDate}) {
+export function ModalForAddOperation({employeeId, 
+                        showOperationsModal, 
+                        setShowOperationsModal, 
+                        selectedDate, updateTable}) {
 
-    const [currentEmployee, setCurrentEmployee] = useState(defaultEmpData);
+    const [currentEmployee, setCurrentEmployee] = useState({fio:''});
     const [penaltySelected, setPenaltySelected] = useState(false);//если true, то штраф
     const [sum, setSum] = useState(0);
     const [comment, setComment] = useState('');
+    const [disableSaveButton, setDisableSaveButton] = useState(false);
+    const [alertData, setAlertData] = useState({
+        show: false,
+        message: '',
+        variant: 'danger'
+    });
 
-    // сотрудник
-    const defaultEmpData = {fio:'', 
-        age:30,
-        chopCertificate: false,
-        objectId: 0,
-        bankName: 'Альфа',
-        emplOptions: 'Карта',
-    };
+
 
     function GetEmployeeOnShow(){
 
@@ -55,6 +58,7 @@ export function ModalForAddOperation({employeeId, showOperationsModal, setShowOp
 
     //сохранить результатфинансовой операции
     function saveFinOperation(){
+        setAlertData({show: false});
         if(currentEmployee){
             console.log("saveFinOperation");
             console.log(currentEmployee);
@@ -67,32 +71,42 @@ export function ModalForAddOperation({employeeId, showOperationsModal, setShowOp
                 Date: selectedDate
             };
 
-            console.log("params", params);
+            //console.log("params", params);
 
             CreateFinOperationFromApi(params)
             .then(data => {
                 console.log(data);
                 if (data.isSuccess) {
                     // Обработка успешного сохранения
+                    setAlertData({show: true, message: data.message, variant: "success"});   
+                    updateTable();
+                    setDisableSaveButton(true);
                 }
                 else {
                     // Обработка ошибки
+                    setAlertData({show: true, message: data.message, variant: "danger"});   
                 }
             })
-            .catch(error => console.log(error));
-
+            .catch(error => {
+                console.log(error);
+                setAlertData({show: true, message: error.message, variant: "danger"});
+            }); 
 
         }
     }
 
-
+    function resetFormData(){
+        setDisableSaveButton(false);
+        setSum(0);
+        setComment('');
+    }
 
 
     return (
         <Modal 
         show={showOperationsModal} 
         onHide={() => setShowOperationsModal(false)}
-        onShow={GetEmployeeOnShow}>
+        onShow={() => {GetEmployeeOnShow(); resetFormData();}}>
             <Modal.Header closeButton>
                 <Modal.Title>Начисления и списания для:<br/>
                     {
@@ -137,12 +151,15 @@ export function ModalForAddOperation({employeeId, showOperationsModal, setShowOp
                         onChange={e=>setComment(e.target.value)}
                         type="text" />
                     </Form.Group>
-
+                    
                 </Form>
+                <Alert show={alertData.show} dismissible onClose={() => setAlertData({show: false})}  variant={alertData.variant}>
+                    {alertData.message}
+                </Alert>
             </Modal.Body>
             <Modal.Footer>
                 <Button variant="secondary" onClick={() => setShowOperationsModal(false)}>Закрыть</Button>
-                <Button variant="primary" onClick={saveFinOperation}
+                <Button disabled={disableSaveButton} variant="primary" onClick={saveFinOperation}
                 type="button">Сохранить</Button>
             </Modal.Footer>
         </Modal>
