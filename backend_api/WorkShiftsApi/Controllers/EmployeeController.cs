@@ -629,8 +629,17 @@ namespace WorkShiftsApi.Controllers
         public int Hours {  get; set; }
         public int Rate { get; set; }
         public DateTime Date { get; set; }
-
         public decimal ItemSalary { get; set; }
+    }
+
+    public class FinOperationDto
+    {
+        public int Id { get; set; }
+        public DateTime Created { get; set; }
+        public int EmployeeId { get; set; }
+        public DateTime Date { get; set; }
+        public bool IsPenalty { get; set; }
+        public int Sum { get; set; }
     }
 
     public class SaveWorkHoursItemRequest

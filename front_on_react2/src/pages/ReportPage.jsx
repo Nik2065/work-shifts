@@ -21,6 +21,7 @@ export function ReportPage() {
     const [endDate, setEndDate] = useState(new Date());
     const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
     const [workHoursList, setWorkHoursList] = useState(null);
+    const [finOperationsList, setFinOperationsList] = useState(null);
     const [totalData, setTotalData] = useState({
                     totalHours: 0,
                     itemsCount: 0,
@@ -37,7 +38,6 @@ export function ReportPage() {
     //console.log("updateEmployeeList");
 
       GetEmployeeList()
-        .then((response) => response.json())
         .then((data) => {
             console.log(data);
 
@@ -63,12 +63,12 @@ export function ReportPage() {
 
         setUpdateReportAnimation(true);
         GetWorkHoursForPeriodApi(params)
-        .then((response) => response.json())
         .then((data) => {
             setUpdateReportAnimation(false);
             console.log(data);
             if(data.isSuccess){
                 setWorkHoursList(data.workHoursList);
+                setFinOperationsList(data.finOperations);
                 setTotalData({
                     totalHours: data.totalHours,
                     itemsCount: data.itemsCount,
@@ -105,7 +105,7 @@ export function ReportPage() {
                     <Table>
                         <tbody>
                         <tr>
-                            <td>
+                            <td width="35%">
                             <Form.Select >
                             {
                             employeeList.map((employee) => (
@@ -148,14 +148,14 @@ export function ReportPage() {
                 </div>
                   :
                 <div className="table-responsive" style={{height:"400px"}}>
+                <div>Данные о рабочих часах</div>
                 <Table bordered hover>
                     <thead>
                         <tr>
-                            <th>Id</th>
-                            <th>Дата</th>
-                            <th>Часы</th>
+                            <th width="5%">Id</th>
+                            <th width="30%">Дата</th>
+                            <th width="30%">Часы</th>
                             <th>Сумма</th>
-                            <th>Тип</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -165,7 +165,31 @@ export function ReportPage() {
                                     <td>{item.date}</td>
                                     <td>{item.hours}</td>
                                     <td>{item.itemSalary}</td>
-                                    <td></td>
+                                    </tr>)
+                            )
+                            :
+                            <></>
+                        }
+                    </tbody>
+                </Table>
+                <br/>
+                <div>Данные о списаниях/начислениях</div>
+                <Table bordered hover>
+                    <thead>
+                        <tr>
+                            <th  width="5%">Id</th>
+                            <th  width="30%">Дата</th>
+                            <th width="30%">Тип</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {   finOperationsList ?
+                            finOperationsList.map((item) => (<tr key={item.id}>
+                                    <td>{item.id}</td>
+                                    <td>{item.date}</td>
+                                    <td>{item.isPenalty ? "Списание" : "Начисление"}</td>
+                                    <td>{item.sum}</td>
                                     </tr>)
                             )
                             :

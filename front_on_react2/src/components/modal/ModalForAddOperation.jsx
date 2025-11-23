@@ -131,7 +131,7 @@ export function ModalForAddOperation({employeeId,
                         onChange={(e) => setPenaltySelected(true)}
                         checked={penaltySelected}
                         type="radio"
-                        label="Штраф"
+                        label="Списание"
                         />
                     </Form.Group>
 

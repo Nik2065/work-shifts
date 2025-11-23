@@ -41,7 +41,7 @@ namespace WorkShiftsApi.Controllers
                 {
                     EmployeeId = x.EmployeeId,
                     Created = x.Created,
-                    Date = x.Date,
+                    Date = x.Date.Date,
                     Hours = x.Hours,
                     Id = x.Id,
                     Rate = x.Rate,
@@ -49,16 +49,32 @@ namespace WorkShiftsApi.Controllers
                 }).OrderBy(x=>x.Date)
                 .ToList();
 
+                //начисления / списания
+                result.FinOperations = _context.FinOperations.Where(x => x.EmployeeId == request.EmployeeId
+                && x.Date.Date >= start.Date
+                && x.Date.Date < end.Date).Select(x => new FinOperationDto
+                {
+                    Id = x.Id,
+                    Created = x.Created,
+                    Date = x.Date.Date,
+                    EmployeeId = x.EmployeeId,
+                    IsPenalty = x.IsPenalty,
+                    Sum = x.Sum
+                }).ToList();
+
                 result.TotalHours = items.Select(x => x.Hours).Sum();
                 result.ItemsCount = items.Count;
                 result.WorkHoursList = items;
-
+                //
+                var totalPenalty = result.FinOperations.Where(x => x.IsPenalty).Sum(x => x.Sum);
+                var totalBonus = result.FinOperations.Where(x => !x.IsPenalty).Sum(x => x.Sum);
                 var sum = 0;
                 foreach (var item in items) {
                     sum += item.Hours * item.Rate;
                 }
 
-                result.TotalSalary = sum;
+                result.TotalSalary = sum + totalBonus - totalPenalty;
+                
             }
             catch (Exception ex)
             {
@@ -87,9 +103,12 @@ namespace WorkShiftsApi.Controllers
     {
         public List<WorkHourDto> WorkHoursList { get; set; }
 
+        public List<FinOperationDto> FinOperations {  get; set; }
+
         public decimal TotalSalary {  get; set; }
         public int ItemsCount { get; set; }//всего записей о начислении и списании
         public int TotalHours { get; set; }
+
     }
 
 

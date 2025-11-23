@@ -36,16 +36,14 @@ export function DashboardPage () {
     const [savingWorkHours, setSavingWorkHours] = useState(false);
     const [showToastMsg, setShowToastMsg] = useState({
       show: false,
-      msg: "sdkfhj skdhk jdfhksdfh",
+      msg: "",
       variant: "success",
     });
     const [objectsList, setObjectsList] = useState([]);
     const [selectedObject, setSelectedObject] = useState(-1);
     const [fioToSearch, setFioToSearch] = useState("");
-
     const [showOperationsModal, setShowOperationsModal] = useState(false);
     const [savingWorkHoursEmplId, setSavingWorkHoursEmplId] = useState(null);
-
 
     useEffect(() => {
         //updateEmployeeList();
@@ -169,6 +167,7 @@ export function DashboardPage () {
 
 
     //оновляет таблицу с сотрудниками
+    //старый вариант
     function updateEmployeeList() {
       
       GetEmployeeList()
@@ -359,7 +358,9 @@ export function DashboardPage () {
                         <DatePicker style={{width: "100%"}} 
                         className='form-control' locale="ru" 
                         selected={currentDate} 
-                        onChange={(date) => onDateChange(date)} />
+                        onChange={(date) => {
+                          //onDateChange(date);
+                          }} />
 
                       </Form.Group>
 
@@ -400,7 +401,7 @@ export function DashboardPage () {
                       <Button 
                       onClick={updateEmployeeListAndFinOperations}
                       variant="outline-secondary" 
-                      className="d-flex align-items-center">Поиск</Button>
+                      className="d-flex align-items-center">Показать</Button>
                       </Form.Group>
 
                     </Row>
@@ -584,9 +585,9 @@ function FinTable({operations, deleteFinOperation}){
             <tr  className="p-0" key={op.id.toString() + "fin"}>
               
               <td className="py-0" style={{backgroundColor:op.isPenalty ? "#f9d5e5" : "#96ceb4"}}
-              >{op.isPenalty ? "Штраф" : "Премия"}</td>
-              <td className="py-0">Сумма:{op.sum}</td>
-              <td className="py-0">Комментарий:{op.comment}</td>
+              >{op.isPenalty ? "Списание" : "Начисление"}</td>
+              <td className="py-0">Сумма: {op.sum}</td>
+              <td className="py-0">Комментарий: {op.comment}</td>
               <td className="py-0" style={{textAlign:"center"}}>
                 <Button style={{fontSize:"0.4rem", color:"lightgrey"}} size="sm" variant="link" onClick={()=>deleteFinOperation(op.id)}>
                   <Trash2  />
