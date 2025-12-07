@@ -17,7 +17,8 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 import { DashboardPage } from './pages/DashboardPage';
 import DashboardLayout from './pages/DashboardLayout.jsx';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
-import { ReportPage } from './pages/ReportPage.jsx';
+import { ReportForEmployeePage } from './pages/ReportForEmployeePage.jsx';
+import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx';
 import { ProfilePage } from './pages/ProfilePage.jsx';
 
 
@@ -80,10 +81,19 @@ function App() {
             />
 
             <Route 
-              path="/report" 
+              path="/reportForEmployee" 
               element={
                 <ProtectedRoute>
-                  <ReportPage />
+                  <ReportForEmployeePage />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/reportForEmployesList"
+              element={
+                <ProtectedRoute>
+                  <ReportForEmployesListPage />
                 </ProtectedRoute>
               } 
             />

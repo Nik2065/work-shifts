@@ -23,6 +23,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Добавляем сервисы
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<EmployeeService, EmployeeService>();
 
 // Настройка CORS
 builder.Services.AddCors(options =>

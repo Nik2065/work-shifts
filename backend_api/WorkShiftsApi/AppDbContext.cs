@@ -128,8 +128,8 @@ namespace WorkShiftsApi
         [Column("rate")]
         public int Rate { get; set; }
 
-        [Column("date")]
-        public DateTime Date { get; set; }
+        [Column("work_date")]
+        public DateTime WorkDate { get; set; }
     }
 
     //рабочие объекты

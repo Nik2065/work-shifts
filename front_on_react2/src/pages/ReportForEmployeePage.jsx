@@ -14,7 +14,7 @@ import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
 registerLocale('ru', ru)
 
-export function ReportPage() {
+export function ReportForEmployeePage() {
 
     const [employeeList, setEmployeeList] = useState([]);
     const [startDate, setStartDate] = useState(new Date());

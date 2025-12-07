@@ -1,0 +1,289 @@
+import React, {useState, useEffect} from "react";
+
+import { 
+  Container, Row, Col, 
+   Card, Button, 
+  Spinner, Form, Table
+} from 'react-bootstrap';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import {GetEmployeeList, GetWorkHoursForPeriodApi, GetAllObjects} from '../services/apiService';
+import { FileText } from 'lucide-react';
+
+import { registerLocale, setDefaultLocale } from  "react-datepicker";
+import { ru } from 'date-fns/locale/ru';
+registerLocale('ru', ru)
+
+export function ReportForEmployesListPage() {
+
+    const [employeeList, setEmployeeList] = useState([]);
+    const [startDate, setStartDate] = useState(new Date());
+    const [endDate, setEndDate] = useState(new Date());
+    const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
+    const [workHoursList, setWorkHoursList] = useState(null);
+    const [finOperationsList, setFinOperationsList] = useState(null);
+    const [totalData, setTotalData] = useState({
+                    totalHours: 0,
+                    itemsCount: 0,
+                    totalSalary: 0});
+    //убрать
+    const [employeeId, setEmployeeId] = useState(null);
+    const [selectedEmployesList, setSelectedEmployesList] = useState([]);
+    const [objectsList, setObjectsList] = useState([]);
+
+    useEffect(() => {
+        updateObjects();
+        updateEmployeeList();
+        }
+    , []);
+
+    function updateEmployeeList() {
+    //console.log("updateEmployeeList");
+
+      GetEmployeeList()
+        .then((data) => {
+            console.log(data);
+
+            if(data.isSuccess){
+                setEmployeeList(data.employeesList);
+                //теперь скачиваем отработанные часы
+                //updateWorkHours(currentDate);
+                if(data.employeesList.length > 0){
+                    setEmployeeId(data.employeesList[0].id);
+                }
+            }
+        })
+        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
+    }
+
+    //Обновляем список объектов
+    function updateObjects() {
+          console.log("updateObjects");
+          GetAllObjects()
+          .then(data => {
+            console.log(data);
+            if (data.isSuccess) {
+              setObjectsList(data.objects);
+              //устанавливаем айдишник для пользователя 
+              //if(data.objects.length>0)
+              //  setSelectedObject(data.objects[0].id)
+            }
+            else {
+              // Обработка ошибки
+            }
+          })
+          .catch(error => console.log(error));
+    }
+
+
+    function updateReport() {
+        const params = {
+            employeeId: employeeId,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        };
+
+        setUpdateReportAnimation(true);
+        GetWorkHoursForPeriodApi(params)
+        .then((data) => {
+            setUpdateReportAnimation(false);
+            console.log(data);
+            if(data.isSuccess){
+                setWorkHoursList(data.workHoursList);
+                setFinOperationsList(data.finOperations);
+                setTotalData({
+                    totalHours: data.totalHours,
+                    itemsCount: data.itemsCount,
+                    totalSalary: data.totalSalary
+                });
+            }
+            else {
+                //alert
+            }
+        })
+        .catch((error) => {
+            setUpdateReportAnimation(false);
+            console.error('Ошибка при получении данных отчета:', error)
+        });
+    }
+
+
+    return (
+    
+        <Container expand="lg">
+        <br/>
+        {/* Заголовок страницы */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h2 className="mb-1">Отчет</h2>
+                <p className="text-muted mb-0"></p>
+              </div>
+
+            </div>
+            <Card className=" h-100">
+                <Card.Body>
+                <Card.Header className="bg-white border-0">
+                
+                    <Table>
+                        <tbody>
+                        <tr>
+                            <td width="35%">
+                            <Form.Select >
+                            {
+                            objectsList.map((obj) => (
+                                <option key={obj.id} value={obj.id}>{obj.name}</option>
+                            ))
+                            }
+                            </Form.Select>
+                            </td>
+                            <td style={{textAlign:"right"}}>
+                                Выгрузка расчетов с даты 
+                            </td>
+                            <td>
+                               <DatePicker locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                            </td>
+                            <td  style={{textAlign:"right"}}>
+                            по дату
+                            </td>
+                            <td>
+                                <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                            </td>
+                            <td>
+                                <Button onClick={updateReport} sm={1} variant="secondary" className="d-flex align-items-center">Построить отчет</Button>
+                            </td>
+                        </tr>
+
+                        </tbody>
+                    </Table>
+                    <div className="table-responsive" style={{maxHeight:"200px"}}>
+                        <Table bordered hover >
+                            <thead>
+                                <tr>
+                                    <th width="1%">Id</th>
+                                    <th width="30%">ФИО</th>
+                                    <th width="10%">В отчет</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {
+                                    employeeList ? 
+                                    employeeList.map((item) => (<tr key={item.id}>
+                                        <td>{item.id}</td>
+                                        <td>{item.fio}</td>
+                                        <td>
+                                            <Form.Check 
+                                            checked={
+                                                selectedEmployesList.includes(item.id) ? true : false
+                                                } 
+
+                                                onClick={(e) => {
+                                                    if(e.target.checked){
+                                                        setSelectedEmployesList([...selectedEmployesList, item.id]);
+                                                    }
+                                                    else{
+                                                        setSelectedEmployesList(selectedEmployesList.filter(id => id !== item.id));
+                                                    }
+                                                    //console.log(selectedEmployesList);
+                                                }}
+                                                type="checkbox" />
+                                        </td>
+                                        </tr>
+                                        ))
+                                    :
+                                    <></>
+                                }
+                            </tbody>
+                        </Table>
+                    </div>
+                </Card.Header>
+                
+                {
+                    setWorkHoursList == null ?
+                <div style={{textAlign:"center"}}>
+                    <FileText size={100} />
+                    <h4>Не выбраны даты отчета</h4>
+                </div>
+                : 
+                updateReportAnimation ? 
+                <div style={{textAlign:"center"}}>
+                    <Spinner />
+                    <h4>Загрузка данных...</h4>
+                </div>
+                  :
+                <div className="table-responsive" style={{height:"400px"}}>
+                <div>Данные о рабочих часах</div>
+                <Table bordered hover>
+                    <thead>
+                        <tr>
+                            <th width="5%">Id</th>
+                            <th width="30%">Дата</th>
+                            <th width="30%">Часы</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {   workHoursList ?
+                            workHoursList.map((item) => (<tr key={item.id}>
+                                    <td>{item.id}</td>
+                                    <td>{item.date}</td>
+                                    <td>{item.hours}</td>
+                                    <td>{item.itemSalary}</td>
+                                    </tr>)
+                            )
+                            :
+                            <></>
+                        }
+                    </tbody>
+                </Table>
+                <br/>
+                <div>Данные о списаниях/начислениях</div>
+                <Table bordered hover>
+                    <thead>
+                        <tr>
+                            <th  width="5%">Id</th>
+                            <th  width="30%">Дата</th>
+                            <th width="30%">Тип</th>
+                            <th>Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {   finOperationsList ?
+                            finOperationsList.map((item) => (<tr key={item.id}>
+                                    <td>{item.id}</td>
+                                    <td>{item.date}</td>
+                                    <td>{item.isPenalty ? "Списание" : "Начисление"}</td>
+                                    <td>{item.sum}</td>
+                                    </tr>)
+                            )
+                            :
+                            <></>
+                        }
+                    </tbody>
+                </Table>
+                </div>
+                }
+
+                {
+                    updateReportAnimation ? 
+                    <></>
+                    :
+                    <Table bordered>
+                        <thead>
+                            <tr>
+                                <th>Количество записей</th>
+                                <th>Количество часов</th>
+                                <th>Сумма</th>
+                            </tr>
+                            <tr>
+                                <td>{totalData.itemsCount}</td>
+                                <td>{totalData.totalHours}</td>
+                                <td>{totalData.totalSalary}</td>
+                            </tr>
+                        </thead>
+                    </Table>
+                }
+                </Card.Body>
+            </Card>
+        </Container>
+    )
+}

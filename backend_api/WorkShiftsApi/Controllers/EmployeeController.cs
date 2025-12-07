@@ -230,7 +230,7 @@ namespace WorkShiftsApi.Controllers
                     var canParse = DateTime.TryParseExact(date, "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime d);
                     if(canParse)
                     {
-                        list = list.Where(x=> x.Date.Date == d.Date);
+                        list = list.Where(x=> x.WorkDate.Date == d.Date);
                     }
                 }
 
@@ -268,11 +268,11 @@ namespace WorkShiftsApi.Controllers
                 //TODO:
                 // проверка полученных значений
 
-                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.Date == request.Date);
+                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate == request.Date);
 
                 if(one == null)
                 {
-                    var wh = new WorkHoursDb { Created = DateTime.Now, Date = request.Date, EmployeeId = request.EmployeeId, Hours = request.Hours, Rate = request.Rate };
+                    var wh = new WorkHoursDb { Created = DateTime.Now, WorkDate = request.Date, EmployeeId = request.EmployeeId, Hours = request.Hours, Rate = request.Rate };
                     _context.WorkHours.Add(wh);
                 }
                 else

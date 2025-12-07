@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navbar, Nav, Button, Container } from 'react-bootstrap';
+import { Navbar, Nav, Button, Container, NavDropdown  } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { Calendar, User, LogOut, Users } from 'lucide-react';
 import  {getRoleName} from '../../services/commonService';
+import '../../menu.css'
 
 const Header = () => {
   const { user, logout, isAuthenticated } = useAuth();
@@ -17,6 +18,7 @@ const Header = () => {
   };
 
   return (
+    <>
     <Navbar bg="dark" variant="dark" expand="lg">
       <Container>
         <Navbar.Brand as={Link} to="/">
@@ -25,7 +27,7 @@ const Header = () => {
         
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
+          <Nav className="me-auto  d-flex align-items-center">
             <Nav.Link style={{fontSize:"1.1rem", color:"#fff", fontWeight:"bold"}} as={Link} to="/">WorkShifts</Nav.Link>
             {
             //<Nav.Link as={Link} to="/public">Описание</Nav.Link>
@@ -33,9 +35,13 @@ const Header = () => {
             {isAuthenticated && (
               <>
               &nbsp;&nbsp;&nbsp;&nbsp;
-                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/dashboard">Учет времени</Nav.Link>
-                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
-                <Nav.Link style={{fontSize:"1.1rem", color:"#fff"}} as={Link} to="/report">Отчет</Nav.Link>
+                <Nav.Link  style={{ color:"#fff"}} as={Link} to="/dashboard">Учет времени</Nav.Link>
+                <Nav.Link style={{ color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
+                <NavDropdown className="d-flex align-items-center" style={{ backgroundColor:"#212529", color:"#fff"}}  title="Отчеты" id="basic-nav-dropdown">
+                  <NavDropdown.Item style={{backgroundColor:"#212529", color:"#fff"}} as={Link} to="/reportForEmployee">По одному сотруднику</NavDropdown.Item>
+                  <NavDropdown.Item style={{backgroundColor:"#212529", color:"#fff"}} as={Link} to="/reportForEmployesList">По списку сотрудников</NavDropdown.Item>
+                </NavDropdown>
+                
                 {
                 <Nav.Link style={{fontSize:"1.1rem"}}  as={Link} to="/profile">Профиль</Nav.Link>
                 }
@@ -102,6 +108,8 @@ const Header = () => {
         </Navbar.Collapse>
       </Container>
     </Navbar>
+
+    </>
   );
 };
 

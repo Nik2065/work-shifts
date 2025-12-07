@@ -1,0 +1,24 @@
+/* Выравнивание элементов навигации */
+.navbar-nav {
+  display: flex;
+  align-items: center;
+}
+
+/* Стили для NavDropdown, чтобы был на одном уровне */
+.navbar-nav .nav-link,
+.navbar-nav .dropdown-toggle {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+/* Специфичные стили для React Bootstrap NavDropdown */
+.navbar-nav .dropdown {
+  display: flex;
+  align-items: center;
+}
+
+/* Уберите отступы у dropdown menu */
+.dropdown-menu {
+  margin-top: 0;
+}

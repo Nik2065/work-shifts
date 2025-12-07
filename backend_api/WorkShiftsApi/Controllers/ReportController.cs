@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using WorkShiftsApi.DTO;
+using WorkShiftsApi.Services;
+using System.Data;
 
 namespace WorkShiftsApi.Controllers
 {
@@ -12,10 +14,14 @@ namespace WorkShiftsApi.Controllers
         private readonly AppDbContext _context;
         private NLog.Logger _logger;
 
-        public ReportController(AppDbContext context) 
-        { 
-            _context = context;
+        private readonly ExcelGenerator _excelGenerator = new();
+        private EmployeeService _employeeService;
+
+        public ReportController(AppDbContext context)
+        {
             _logger = NLog.LogManager.GetCurrentClassLogger();
+            _context = context;
+            _employeeService = new EmployeeService(context);
         }
 
 
@@ -36,12 +42,12 @@ namespace WorkShiftsApi.Controllers
                 end = end.AddDays(1);//до начала следующей даты
 
                 var items = _context.WorkHours.Where(x => x.EmployeeId == request.EmployeeId
-                && x.Date.Date >= start.Date
-                && x.Date.Date < end.Date).Select(x=> new WorkHourDto
+                && x.WorkDate.Date >= start.Date
+                && x.WorkDate.Date < end.Date).Select(x=> new WorkHourDto
                 {
                     EmployeeId = x.EmployeeId,
                     Created = x.Created,
-                    Date = x.Date.Date,
+                    Date = x.WorkDate.Date,
                     Hours = x.Hours,
                     Id = x.Id,
                     Rate = x.Rate,
@@ -83,10 +89,70 @@ namespace WorkShiftsApi.Controllers
                 result.Message = ex.ToString();
             }
 
-            Thread.Sleep(2000);
+            Thread.Sleep(1000);
 
             return Ok(result);
         }
+
+        [HttpGet("test")]
+        [AllowAnonymous]
+        public ActionResult Test()
+        {
+
+            var result = _employeeService.GetReportForEmplList(new DateTime(2025, 10, 1), new DateTime(2025, 12, 30), new List<int> { 1 });
+
+
+
+            return Ok();
+        }
+
+
+        [HttpGet("GetMainReportForPeriod")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriod([FromQuery] string startDate, 
+            [FromQuery] string endDate, 
+            [FromQuery] string employees)
+        {
+            var dataTable = GetSampleDataTable();
+
+            try
+            {
+                var fileBytes = _excelGenerator.CreateExcelFromDataTable(dataTable, "Отчет");
+
+                return File(
+                    fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Отчет_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+            }
+
+        }
+
+        private DataTable GetSampleDataTable()
+        {
+            var table = new DataTable();
+            table.Columns.Add("ID", typeof(int));
+            table.Columns.Add("Имя", typeof(string));
+            table.Columns.Add("Дата", typeof(DateTime));
+            table.Columns.Add("Сумма", typeof(decimal));
+
+            table.Rows.Add(1, "Иван", DateTime.Now, 1500.50m);
+            table.Rows.Add(2, "Мария", DateTime.Now.AddDays(-1), 2300.75m);
+            table.Rows.Add(3, "Алексей", DateTime.Now.AddDays(-2), 1890.00m);
+
+            return table;
+        }
+
+        //private DataTable GetMainReportData(DateTime start, DateTime end, List<int> emplIds)
+        //{
+            
+        //}
+
+
     }
 
 
@@ -111,6 +177,12 @@ namespace WorkShiftsApi.Controllers
 
     }
 
+    public class GetMainReportForPeriodRequest
+    {
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
+        public string Employees { get; set; }
+    }
 
 
 
