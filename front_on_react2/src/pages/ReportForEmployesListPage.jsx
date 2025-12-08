@@ -1,14 +1,18 @@
 import React, {useState, useEffect} from "react";
+import { apiUrl } from "../services/const"; 
 
 import { 
   Container, Row, Col, 
    Card, Button, 
-  Spinner, Form, Table
+  Spinner, Form, Table,
+  FormGroup
 } from 'react-bootstrap';
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import {GetEmployeeList, GetWorkHoursForPeriodApi, GetAllObjects} from '../services/apiService';
-import { FileText } from 'lucide-react';
+import {GetEmployeeList, 
+    GetMainReportForPeriodAsTable, 
+    GetAllObjects, 
+    DownloadFileWithAuth} from '../services/apiService';
 
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
@@ -20,16 +24,10 @@ export function ReportForEmployesListPage() {
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
     const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
-    const [workHoursList, setWorkHoursList] = useState(null);
-    const [finOperationsList, setFinOperationsList] = useState(null);
-    const [totalData, setTotalData] = useState({
-                    totalHours: 0,
-                    itemsCount: 0,
-                    totalSalary: 0});
-    //убрать
-    const [employeeId, setEmployeeId] = useState(null);
     const [selectedEmployesList, setSelectedEmployesList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
+    const [resultTable, setResultTable] = useState([]);
+
 
     useEffect(() => {
         updateObjects();
@@ -42,15 +40,10 @@ export function ReportForEmployesListPage() {
 
       GetEmployeeList()
         .then((data) => {
-            console.log(data);
+            //console.log(data);
 
             if(data.isSuccess){
                 setEmployeeList(data.employeesList);
-                //теперь скачиваем отработанные часы
-                //updateWorkHours(currentDate);
-                if(data.employeesList.length > 0){
-                    setEmployeeId(data.employeesList[0].id);
-                }
             }
         })
         .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
@@ -76,26 +69,33 @@ export function ReportForEmployesListPage() {
     }
 
 
+
     function updateReport() {
+
+        if(selectedEmployesList.length == 0){
+            alert("Список сотрудников пуст");
+            return;
+        }
+
+        const list = selectedEmployesList.join(",");
+
         const params = {
-            employeeId: employeeId,
+            employees: list,
             startDate: startDate.toISOString(),
             endDate: endDate.toISOString()
         };
 
         setUpdateReportAnimation(true);
-        GetWorkHoursForPeriodApi(params)
+        GetMainReportForPeriodAsTable(params)
         .then((data) => {
             setUpdateReportAnimation(false);
             console.log(data);
             if(data.isSuccess){
-                setWorkHoursList(data.workHoursList);
-                setFinOperationsList(data.finOperations);
-                setTotalData({
-                    totalHours: data.totalHours,
-                    itemsCount: data.itemsCount,
-                    totalSalary: data.totalSalary
-                });
+
+                setResultTable(
+                    data.mainReportTable.items
+                );
+
             }
             else {
                 //alert
@@ -106,6 +106,10 @@ export function ReportForEmployesListPage() {
             console.error('Ошибка при получении данных отчета:', error)
         });
     }
+
+
+   
+
 
 
     return (
@@ -198,12 +202,8 @@ export function ReportForEmployesListPage() {
                 </Card.Header>
                 
                 {
-                    setWorkHoursList == null ?
-                <div style={{textAlign:"center"}}>
-                    <FileText size={100} />
-                    <h4>Не выбраны даты отчета</h4>
-                </div>
-                : 
+
+                
                 updateReportAnimation ? 
                 <div style={{textAlign:"center"}}>
                     <Spinner />
@@ -211,23 +211,29 @@ export function ReportForEmployesListPage() {
                 </div>
                   :
                 <div className="table-responsive" style={{height:"400px"}}>
-                <div>Данные о рабочих часах</div>
+                <br/>
+                <div className="h3">Данные о рабочих часах</div>
+                
                 <Table bordered hover>
                     <thead>
                         <tr>
-                            <th width="5%">Id</th>
-                            <th width="30%">Дата</th>
-                            <th width="30%">Часы</th>
-                            <th>Сумма</th>
+                            <th width="30%">ФИО</th>
+                            <th width="15%">Дней</th>
+                            <th width="15%">Сумма за работу</th>
+                            <th width="12%">Начисления</th>
+                            <th width="12%">Списания</th>
+                            <th width="15%">Итого</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {   workHoursList ?
-                            workHoursList.map((item) => (<tr key={item.id}>
-                                    <td>{item.id}</td>
-                                    <td>{item.date}</td>
-                                    <td>{item.hours}</td>
-                                    <td>{item.itemSalary}</td>
+                        {   resultTable ?
+                            resultTable.map((item) => (<tr key={item[0]}>
+                                    <td>{item[0]}</td>
+                                    <td>{item[1]}</td>
+                                    <td>{item[2]}</td>
+                                    <td>{item[3]}</td>
+                                    <td>{item[4]}</td>
+                                    <td>{item[5]}</td>
                                     </tr>)
                             )
                             :
@@ -236,52 +242,61 @@ export function ReportForEmployesListPage() {
                     </tbody>
                 </Table>
                 <br/>
-                <div>Данные о списаниях/начислениях</div>
-                <Table bordered hover>
-                    <thead>
-                        <tr>
-                            <th  width="5%">Id</th>
-                            <th  width="30%">Дата</th>
-                            <th width="30%">Тип</th>
-                            <th>Сумма</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {   finOperationsList ?
-                            finOperationsList.map((item) => (<tr key={item.id}>
-                                    <td>{item.id}</td>
-                                    <td>{item.date}</td>
-                                    <td>{item.isPenalty ? "Списание" : "Начисление"}</td>
-                                    <td>{item.sum}</td>
-                                    </tr>)
-                            )
-                            :
-                            <></>
-                        }
-                    </tbody>
-                </Table>
+
                 </div>
                 }
 
-                {
-                    updateReportAnimation ? 
-                    <></>
-                    :
-                    <Table bordered>
-                        <thead>
-                            <tr>
-                                <th>Количество записей</th>
-                                <th>Количество часов</th>
-                                <th>Сумма</th>
-                            </tr>
-                            <tr>
-                                <td>{totalData.itemsCount}</td>
-                                <td>{totalData.totalHours}</td>
-                                <td>{totalData.totalSalary}</td>
-                            </tr>
-                        </thead>
-                    </Table>
-                }
+
+                <FormGroup  className="m-3" style={{textAlign:"right"}}>
+                        <Form.Label>Скачать отчет без разбивки по банкам</Form.Label>
+                         &nbsp; &nbsp;
+                        <Button type="button" variant="primary" onClick={() => {
+                            //проверяем выбран ли хотя бы один сотрудник
+                            if(selectedEmployesList.length > 0){
+                                
+                                const url = apiUrl + '/api/report/GetMainReportForPeriodAsXls?startDate=' 
+                                    + startDate.toISOString() 
+                                    + '&endDate=' + endDate.toISOString() + '&employees=' + selectedEmployesList.join(",");                   
+                                DownloadFileWithAuth(url, "Отчет без разбивки по банкам.xlsx");
+                            }
+                            else{
+                                alert("Выберите хотя бы одного сотрудника");
+                            }
+                        }}>
+                        Скачать
+                        </Button>
+                </FormGroup>
+                <FormGroup  className="m-3" style={{textAlign:"right"}}>
+                        <Form.Label>Скачать отчет с разбивкой по банкам</Form.Label>
+                         &nbsp; &nbsp;
+                        <Button type="button" variant="primary" onClick={() => {
+                            //проверяем выбран ли хотя бы один сотрудник
+                            if(selectedEmployesList.length > 0){
+
+                                const url = apiUrl + '/api/report/GetMainReportForPeriodAsXlsWithBanks?startDate=' 
+                                    + startDate.toISOString() 
+                                    + '&endDate=' + endDate.toISOString() + '&employees=' + selectedEmployesList.join(",");
+
+                                DownloadFileWithAuth(url, "Отчет с разбивкой по банкам.xlsx");
+                            }
+                            else{
+                                alert("Выберите хотя бы одного сотрудника");
+                            }
+                        }}>
+                        Скачать
+                        </Button>
+                </FormGroup>
+                <FormGroup className="m-3" style={{textAlign:"right"}}>
+                        <Form.Label>Отметить платежи в отчете исполненными </Form.Label>
+                        &nbsp; &nbsp;
+                        <Button disabled type="button" variant="primary" onClick={() => {}}>
+                        Поставить отметку
+                        </Button>
+                </FormGroup>
+
+                <br/>
+                <br/>
+
                 </Card.Body>
             </Card>
         </Container>

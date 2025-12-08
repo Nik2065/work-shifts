@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using System.Data;
+using System.Net;
+using System.Text.Json.Serialization;
 using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
-using System.Data;
 
 namespace WorkShiftsApi.Controllers
 {
@@ -99,25 +103,51 @@ namespace WorkShiftsApi.Controllers
         public ActionResult Test()
         {
 
-            var result = _employeeService.GetReportForEmplList(new DateTime(2025, 10, 1), new DateTime(2025, 12, 30), new List<int> { 1 });
+            var resultTable = _employeeService.GetReportForEmplList(new DateTime(2025, 10, 1), new DateTime(2025, 12, 30), new List<int> { 1, 2 });
 
 
-
-            return Ok();
-        }
-
-
-        [HttpGet("GetMainReportForPeriod")]
-        [AllowAnonymous]
-        public ActionResult GetMainReportForPeriod([FromQuery] string startDate, 
-            [FromQuery] string endDate, 
-            [FromQuery] string employees)
-        {
-            var dataTable = GetSampleDataTable();
+            //var dataTable = GetSampleDataTable();
 
             try
             {
-                var fileBytes = _excelGenerator.CreateExcelFromDataTable(dataTable, "Отчет");
+                var fileBytes = _excelGenerator.CreateExcelFromDataTable(resultTable, "Отчет");
+
+                return File(
+                    fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Отчет_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+            }
+
+
+            //return Ok();
+        }
+
+
+        [HttpGet("GetMainReportForPeriodAsXls")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriodAsXls([FromQuery] string startDate, 
+            [FromQuery] string endDate, 
+            [FromQuery] string employees)
+        {
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(startDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+
+                var resultTable = _employeeService.GetReportForEmplList(start, end, list);
+                var fileBytes = _excelGenerator.CreateExcelFromDataTable(resultTable, "Отчет");
 
                 return File(
                     fileBytes,
@@ -132,30 +162,111 @@ namespace WorkShiftsApi.Controllers
 
         }
 
-        private DataTable GetSampleDataTable()
+        [HttpGet("GetMainReportForPeriodAsXlsWithBanks")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriodAsXlsWithBanks([FromQuery] string startDate,
+            [FromQuery] string endDate,
+            [FromQuery] string employees)
         {
-            var table = new DataTable();
-            table.Columns.Add("ID", typeof(int));
-            table.Columns.Add("Имя", typeof(string));
-            table.Columns.Add("Дата", typeof(DateTime));
-            table.Columns.Add("Сумма", typeof(decimal));
 
-            table.Rows.Add(1, "Иван", DateTime.Now, 1500.50m);
-            table.Rows.Add(2, "Мария", DateTime.Now.AddDays(-1), 2300.75m);
-            table.Rows.Add(3, "Алексей", DateTime.Now.AddDays(-2), 1890.00m);
+            try
+            {
+                var canParseStart = DateTime.TryParse(startDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
 
-            return table;
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+
+                var resultTable = _employeeService.GetReportForEmplList(start, end, list);
+                var tables = new List<TableDataDto>();
+                tables.Add(new TableDataDto { Title = "Some title", DataTable = resultTable });
+                var fileBytes = _excelGenerator.CreateExcelFromDataTables(tables, "Отчет");
+
+                return File(
+                    fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Отчет_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
+                );
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+            }
+
         }
 
-        //private DataTable GetMainReportData(DateTime start, DateTime end, List<int> emplIds)
-        //{
-            
-        //}
+        [HttpGet("GetMainReportForPeriodAsTable")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriodAsTable([FromQuery] string startDate,
+            [FromQuery] string endDate,
+            [FromQuery] string employees)
+        {
+
+            var result = new GetMainReportForPeriodAsTableResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(startDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+                var resultTable = _employeeService.GetReportForEmplList(start, end, list);
+
+                var resultList = new List<string[]>();
+                foreach(DataRow row in resultTable.Rows)
+                {
+                    var arr = row.ItemArray.Select(x => x?.ToString()).ToArray();
+                    resultList.Add(arr);
+                }
+
+                var table = new MainReportTable();
+                table.Items = resultList.ToArray();
+                result.Table = table;
+            }
+            catch (Exception ex)
+            {
+                //return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message,"", (int)HttpStatusCode.InternalServerError);
+            }
+
+
+            return Ok(result);
+
+        }
+
 
 
     }
 
+    public class GetMainReportForPeriodAsTableResponse : ResponseBase
+    {
+        [JsonPropertyName("mainReportTable")]
+        public MainReportTable Table { get; set;}
+    }
 
+    public class MainReportTable
+    {
+        [JsonPropertyName("items")]
+        public string[][] Items { get; set; }
+    }
+
+    /*
+    table.Columns.Add("ФИО", typeof(string));
+    table.Columns.Add("Дней", typeof(int));
+    table.Columns.Add("Сумма за работу", typeof(int));
+    table.Columns.Add("Начисления", typeof(int));
+    table.Columns.Add("Списания", typeof(int));
+    table.Columns.Add("Итого", typeof(int));
+    */
 
     public class GetReportRequest
     {

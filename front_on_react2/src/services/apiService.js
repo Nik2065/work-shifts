@@ -235,6 +235,7 @@ export async function SaveWorkHoursItemOnServer(params) {
     );
 }
 
+//отчет для одного сотрудника
 export async function GetWorkHoursForPeriodApi(params) {
     console.log(params);
     const url = apiUrl + '/api/report/GetWorkHoursForPeriod';
@@ -243,6 +244,43 @@ export async function GetWorkHoursForPeriodApi(params) {
             body: JSON.stringify(params)
     });
     return parseJSON(response);
+}
+
+//отчет для списка сотрудников
+export async function GetMainReportForPeriodAsTable(params) {
+    
+    console.log(params);
+    const url = apiUrl + '/api/report/GetMainReportForPeriodAsTable?startDate=' 
+    + params.startDate 
+    + '&endDate=' + params.endDate + '&employees=' + params.employees;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+
+}
+
+
+ export async function DownloadFileWithAuth(url, filename = 'file') {
+        
+    try {
+            console.log(url);
+            const response = await authenticatedFetch(url);
+            if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            
+            // Создаем временную ссылку для скачивания
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Освобождаем память
+            window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+        console.error('Download failed:', error);
+    }
 }
 
 
