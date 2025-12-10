@@ -52,33 +52,38 @@ namespace WorkShiftsApi.Services
             var list = string.Join(',', emplList);
 
             string sql = $@"
-            select fio, count(*) days, IFNULL(sum(revenue),0) as revenue, IFNULL(sum(Nachislenia),0) as Nachislenia
+            select fio, count(*) days, 
+            IFNULL(sum(revenue),0) as revenue, 
+            IFNULL(sum(Nachislenia),0) as Nachislenia
             , IFNULL(sum(Spisania),0) as Spisania, 
             (IFNULL((revenue), 0) + IFNULL(sum(Nachislenia),0) - IFNULL(sum(Spisania),0)) as Total
             , EmplOption
             , BankName
-            
+
             from (
 
-	            select  e.fio, cast(w.work_date as date), 
+                select  e.fio, cast(w.work_date as date), 
                 sum(w.hours * w.rate) as revenue, 
                 sum(notPenalty.sum) as Nachislenia,
                 sum(penalty.sum) as Spisania
                 , e.empl_options as EmplOption
                 , e.bank_name as BankName
     
-	            from employees e
-	            left join  work_hours w on w.employee_id=e.id
-                left join fin_operations penalty on penalty.employee_id=e.id and penalty.is_penalty=true
-                left join fin_operations notPenalty on notPenalty.employee_id=e.id and notPenalty.is_penalty=false
-	            where w.work_date >= '{begin.ToString("yyyy-MM-dd")}'
-	            and w.work_date< '{end.ToString("yyyy-MM-dd")}'
+                from employees e
+                left join  work_hours w on w.employee_id=e.id
+                left join fin_operations penalty on penalty.employee_id=e.id  and cast(penalty.date as date)=cast(w.work_date as date)  and penalty.is_penalty=true
+                left join fin_operations notPenalty on notPenalty.employee_id=e.id and cast(notPenalty.date as date)=cast(w.work_date as date) and notPenalty.is_penalty=false
+                where w.work_date >= '{begin.ToString("yyyy-MM-dd")}'
+                and w.work_date< '{end.ToString("yyyy-MM-dd")}'
                 and e.id in ({list})
-	            group by fio, cast(w.work_date as date)
+                group by fio, cast(w.work_date as date), e.empl_options, e.bank_name
 
             )
             as q
-            group by fio;";
+            group by fio, revenue, Nachislenia, Spisania, EmplOption, BankName;
+            ";
+
+
 
             //FormattableString formattable = sql.ToFormattableString(begin.ToString("yyyy-MM-dd"), end.ToString("yyyy-MM-dd"), list);
 
