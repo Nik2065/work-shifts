@@ -10,7 +10,7 @@ import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 import { ModalForWorkShift } from '../components/modal/ModalForWorkShift';
 import { ModalForAddOperation } from '../components/modal/ModalForAddOperation';
-import {GetEmployeeList, GetWorkHoursList, 
+import {GetWorkHoursList, 
   SaveWorkHoursItemOnServer, GetAllObjects,
   GetEmployeeWithFinOpListFromApi,
   DeleteFinOperationFromApi
@@ -30,11 +30,11 @@ export function DashboardPage () {
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
     const [employeeList, setEmployeeList] = useState([]);
-    //const [workShiftsList, setWorkShiftsList] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [workHoursList, setWorkHoursList] = useState({});
     const [savingWorkHours, setSavingWorkHours] = useState(false);
-    const [showToastMsg, setShowToastMsg] = useState({
+    const 
+    [showToastMsg, setShowToastMsg] = useState({
       show: false,
       msg: "",
       variant: "success",
@@ -78,7 +78,7 @@ export function DashboardPage () {
 
 
 
-
+      //список отработанных часов
       function GetHours(employeeId) {
         let result = 0;
         if(workHoursList && workHoursList.length > 0){
@@ -101,6 +101,7 @@ export function DashboardPage () {
         return result;
       }
 
+      //меняем ставку в час на форме
       function SetRate(employeeId, rate) {
         if(workHoursList && workHoursList.length > 0){
           let newList = workHoursList.slice();
@@ -164,33 +165,6 @@ export function DashboardPage () {
           }]);
         }
       }
-
-
-    //оновляет таблицу с сотрудниками
-    //старый вариант
-    function updateEmployeeList() {
-      
-      GetEmployeeList()
-        .then((data) => {
-            console.log(data);
-
-            if(data.isSuccess){
-              let empList = data.employeesList;
-
-                if(selectedObject && selectedObject != -1){
-                  empList = empList.filter(item => item.objectId == selectedObject);
-                }
-                if(fioToSearch && fioToSearch.length > 0){
-                  empList = empList.filter(item => item.fio.toLowerCase().includes(fioToSearch.toLowerCase()));
-                }
-
-                setEmployeeList(empList);
-                //теперь скачиваем отработанные часы
-                updateWorkHours(currentDate);
-            }
-        })
-        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
-    }
 
     //обновляем таблицу с сотрудниками и фин операциями
     //финансовые операции загружаются только на выбранную дату
@@ -291,7 +265,8 @@ export function DashboardPage () {
     function onDateChange(date){
       if(date){
         setCurrentDate(date);
-        updateWorkHours(date);
+        //updateWorkHours(date);
+        //updateEmployeeListAndFinOperations();
       }
     }
 
@@ -359,7 +334,7 @@ export function DashboardPage () {
                         className='form-control' locale="ru" 
                         selected={currentDate} 
                         onChange={(date) => {
-                          //onDateChange(date);
+                          onDateChange(date);
                           }} />
 
                       </Form.Group>
@@ -400,7 +375,7 @@ export function DashboardPage () {
                         
                       <Button 
                       onClick={updateEmployeeListAndFinOperations}
-                      variant="outline-secondary" 
+                      variant="primary" 
                       className="d-flex align-items-center">Показать</Button>
                       </Form.Group>
 

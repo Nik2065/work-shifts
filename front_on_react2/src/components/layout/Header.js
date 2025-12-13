@@ -37,13 +37,13 @@ const Header = () => {
               &nbsp;&nbsp;&nbsp;&nbsp;
                 <Nav.Link  style={{ color:"#fff"}} as={Link} to="/dashboard">Учет времени</Nav.Link>
                 <Nav.Link style={{ color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
-                <NavDropdown className="d-flex align-items-center" style={{ backgroundColor:"#212529", color:"#fff"}}  title="Отчеты" id="basic-nav-dropdown">
-                  <NavDropdown.Item style={{backgroundColor:"#212529", color:"#fff"}} as={Link} to="/reportForEmployee">По одному сотруднику</NavDropdown.Item>
-                  <NavDropdown.Item style={{backgroundColor:"#212529", color:"#fff"}} as={Link} to="/reportForEmployesList">По списку сотрудников</NavDropdown.Item>
+                <NavDropdown className="d-flex align-items-center" style={{ }}  title="Отчеты" id="basic-nav-dropdown">
+                  <NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForEmployee">По одному сотруднику</NavDropdown.Item>
+                  <NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForEmployesList">По списку сотрудников</NavDropdown.Item>
                 </NavDropdown>
                 
                 {
-                <Nav.Link style={{fontSize:"1.1rem"}}  as={Link} to="/profile">Профиль</Nav.Link>
+                <Nav.Link style={{ color:"#fff"}}  as={Link} to="/profile">Профиль</Nav.Link>
                 }
               </>
             )}

@@ -10,6 +10,11 @@
   display: flex;
   align-items: center;
   height: 100%;
+  font-size: 1.2rem;
+}
+
+.nav-link:hover{
+  background-color: #4f4f4f !important; /* светлее при наведении */
 }
 
 /* Специфичные стили для React Bootstrap NavDropdown */
@@ -21,4 +26,30 @@
 /* Уберите отступы у dropdown menu */
 .dropdown-menu {
   margin-top: 0;
+  /* margin-bottom: 0; 
+  background-color: red;
+  color: red;*/
+  background-color: #212121 !important; 
+}
+
+.dropdown-menu > .dropdown-item {
+  font-size: 1.2rem;
+
+}
+
+.dropdown-menu > .dropdown-item:hover {
+ /*rgba(255, 255, 255, 0.75)*/
+  background-color: #4f4f4f !important; /* светлее при наведении */
+  color: white !important;
+}
+
+.dropdown-menu {
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  animation: slideDown 0.2s ease;
+}
+
+.dropdown > .nav-link {
+  color: white;
 }

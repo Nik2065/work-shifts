@@ -147,7 +147,12 @@ namespace WorkShiftsApi.Controllers
         }
 
 
-
+        /// <summary>
+        /// Отдает данные для таблицы "учет времени"
+        /// </summary>
+        /// <param name="Date"></param>
+        /// <param name="objectId"></param>
+        /// <returns></returns>
         [HttpGet("GetEmployeeWithFinOpList")]
         public IActionResult GetEmployeeWithFinOpList([FromQuery] string Date, [FromQuery] int objectId)
         {
@@ -198,6 +203,17 @@ namespace WorkShiftsApi.Controllers
                                      })
                                     .ToList();
 
+                foreach(var emp in result.EmployeesList)
+                {
+                    var check = CheckWorkShifts(emp.WorkShiftList);
+                    if (check.IsInWorkShift)
+                    {
+                        emp.IsInWorkShift = check.IsInWorkShift;
+                        emp.WorkShiftStart = check.Start;
+                        emp.WorkShiftEnd = check.End;
+                    }
+                }
+
                 //var tmp = _context.FinOperations.Where(x => x.EmployeeId == 1 && x.Date.Date == selectedDate.Date).ToList();
 
             }
@@ -209,6 +225,27 @@ namespace WorkShiftsApi.Controllers
             }
 
             return Ok(result);
+        }
+
+        //проверяем есть ли вахта на текущую дату
+        private CheckWorkShiftsDto CheckWorkShifts(List<WorkShiftDto> workShifts)
+        {
+            var result = new CheckWorkShiftsDto();
+
+            var current = DateTime.Now.Date;
+
+            foreach (var w in workShifts) 
+            {
+                if (w.Start.Date <= current && current <= w.End.Date)
+                {
+                    result.IsInWorkShift = true;
+                    result.Start = w.Start.Date;
+                    result.End = w.End.Date;
+                    break;
+                }
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -565,6 +602,11 @@ namespace WorkShiftsApi.Controllers
         public List<WorkShiftDto> WorkShiftList { get; set; }
 
         public List<FinOpDto>? FinOperations { get; set; }
+
+        //даты вахты если текущая дата попадает в диапазон вахт
+        public DateTime? WorkShiftStart { get; set; }
+        public DateTime? WorkShiftEnd { get; set; }
+        public bool IsInWorkShift { get; set; }//есть ли сейчас вахта
     }
 
     public class GetEmployeeWorkShiftsResponseDto : ResponseBase
@@ -678,5 +720,12 @@ namespace WorkShiftsApi.Controllers
     public class DeleteFinOperationRequest
     {
         public int OperationId { get; set; }
+    }
+
+    public class CheckWorkShiftsDto
+    {
+        public DateTime? Start;
+        public DateTime? End;
+        public bool IsInWorkShift = false;
     }
 }

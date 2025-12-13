@@ -217,11 +217,12 @@ export function ReportForEmployesListPage() {
                 <Table bordered hover>
                     <thead>
                         <tr>
+                            <th width="5%">Id</th>
                             <th width="30%">ФИО</th>
                             <th width="15%">Дней</th>
                             <th width="15%">Сумма за работу</th>
-                            <th width="12%">Начисления</th>
                             <th width="12%">Списания</th>
+                            <th width="12%">Начисления</th>
                             <th width="15%">Итого</th>
                         </tr>
                     </thead>
@@ -234,6 +235,7 @@ export function ReportForEmployesListPage() {
                                     <td>{item[3]}</td>
                                     <td>{item[4]}</td>
                                     <td>{item[5]}</td>
+                                    <td>{item[6]}</td>
                                     </tr>)
                             )
                             :
