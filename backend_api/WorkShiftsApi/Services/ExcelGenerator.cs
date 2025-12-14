@@ -66,7 +66,7 @@ namespace WorkShiftsApi.Services
                     rowNumber += 1;
                     for (int i = 0; i < dataTable.Columns.Count; i++)
                     {
-                        var cell = worksheet.Cell(rowNumber, i + 1);
+                        var cell = worksheet.Cell(rowNumber, i + 1 + rowNumber);
                         cell.Value = dataTable.Columns[i].ColumnName;
                         cell.Style.Font.SetBold(true);
                         cell.Style.Fill.SetBackgroundColor(XLColor.LightBlue);

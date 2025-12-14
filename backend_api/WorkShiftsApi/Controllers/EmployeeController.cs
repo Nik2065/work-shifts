@@ -1,8 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Globalization;
-using System.Runtime.Serialization;
 using WorkShiftsApi.DTO;
 
 namespace WorkShiftsApi.Controllers
@@ -152,9 +150,10 @@ namespace WorkShiftsApi.Controllers
         /// </summary>
         /// <param name="Date"></param>
         /// <param name="objectId"></param>
+        /// <param name="isInWorkShift">отображать только тех кто сейчас на вахте</param>
         /// <returns></returns>
         [HttpGet("GetEmployeeWithFinOpList")]
-        public IActionResult GetEmployeeWithFinOpList([FromQuery] string Date, [FromQuery] int objectId)
+        public IActionResult GetEmployeeWithFinOpList([FromQuery] string Date, [FromQuery] int objectId, [FromQuery] int isInWorkShift)
         {
 
             var result = new GetEmployeeListResponse { IsSuccess = true, Message = "" };
@@ -203,7 +202,8 @@ namespace WorkShiftsApi.Controllers
                                      })
                                     .ToList();
 
-                foreach(var emp in result.EmployeesList)
+
+                foreach (var emp in result.EmployeesList)
                 {
                     var check = CheckWorkShifts(emp.WorkShiftList);
                     if (check.IsInWorkShift)
@@ -214,7 +214,18 @@ namespace WorkShiftsApi.Controllers
                     }
                 }
 
-                //var tmp = _context.FinOperations.Where(x => x.EmployeeId == 1 && x.Date.Date == selectedDate.Date).ToList();
+                //только на вахте
+                if (isInWorkShift == 1) 
+                {
+                    result.EmployeesList = result.EmployeesList.Where(x => x.IsInWorkShift == true).ToList();
+                }
+                //только не на вахте
+                else if (isInWorkShift == 2)
+                {
+                    result.EmployeesList = result.EmployeesList.Where(x => x.IsInWorkShift == false).ToList();
+                }
+                //если -1 то отображаем всех
+                
 
             }
             catch (Exception ex)
@@ -332,16 +343,23 @@ namespace WorkShiftsApi.Controllers
         }
 
 
-
-        [HttpGet("getEmployeeWorkShifts")]
-        public IActionResult GetEmployeeWorkShifts([FromQuery] int employeeId)
+        /// <summary>
+        /// Получить список вахт для сотрудника
+        /// </summary>
+        /// <param name="employeeId"></param>
+        /// <returns></returns>
+        [HttpGet("GetWorkShifts")]
+        public IActionResult GetWorkShifts([FromQuery] int employeeId)
         {
+
+            Thread.Sleep(1000);
 
             var result = new GetEmployeeWorkShiftsResponseDto { IsSuccess = true, Message = "" };
 
             try
             {
                 result.WorkShiftList = _context.WorkShifts
+                    .Where(x=>x.EmployeeId == employeeId)
                     .Select(x => new WorkShiftDto
                     {
                         Created = x.Created,
@@ -447,8 +465,22 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
+                //проверки
+
                 var canParseStart = DateTime.TryParse(request.Start, out DateTime s);
                 var canParseEnd = DateTime.TryParse(request.End, out DateTime e);
+
+                //дата окончания должна быь позже даты начала
+                //длительность вахты от 1 до 20 дней
+                if (!canParseStart || !canParseEnd)
+                    throw new Exception("Ошибка в формате даты");
+
+                var dif = e - s;
+                if (dif.Days < 0)
+                    throw new Exception("Дата окончания вахты должна быть больше чем дата начала");
+
+                if(dif.Days >20 || dif.Days <1)
+                    throw new Exception("Длительность вахты должна быть от 1 до 20 дней");
 
 
                 var ws = new WorkShiftsDb

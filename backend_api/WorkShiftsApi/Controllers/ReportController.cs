@@ -30,7 +30,7 @@ namespace WorkShiftsApi.Controllers
         [HttpPost("GetWorkHoursForPeriod")]
         public ActionResult GetWorkHoursForPeriod([FromBody] GetReportRequest request)
         {
-            var result = new GetReportResponse {IsSuccess = true, Message = "Отчет сформирован"};
+            var result = new GetReportResponse { IsSuccess = true, Message = "Отчет сформирован" };
 
             try
             {
@@ -40,12 +40,12 @@ namespace WorkShiftsApi.Controllers
 
                 if (!canParseStart || !canParseEnd)
                     throw new Exception("Ошибка при разборе даты");
-                
+
                 end = end.AddDays(1);//до начала следующей даты
 
                 var items = _context.WorkHours.Where(x => x.EmployeeId == request.EmployeeId
                 && x.WorkDate.Date >= start.Date
-                && x.WorkDate.Date < end.Date).Select(x=> new WorkHourDto
+                && x.WorkDate.Date < end.Date).Select(x => new WorkHourDto
                 {
                     EmployeeId = x.EmployeeId,
                     Created = x.Created,
@@ -54,7 +54,7 @@ namespace WorkShiftsApi.Controllers
                     Id = x.Id,
                     Rate = x.Rate,
                     ItemSalary = x.Hours * x.Rate
-                }).OrderBy(x=>x.Date)
+                }).OrderBy(x => x.Date)
                 .ToList();
 
                 //начисления / списания
@@ -82,7 +82,7 @@ namespace WorkShiftsApi.Controllers
                 }
 
                 result.TotalSalary = sum + totalBonus - totalPenalty;
-                
+
             }
             catch (Exception ex)
             {
@@ -128,8 +128,8 @@ namespace WorkShiftsApi.Controllers
 
         [HttpGet("GetMainReportForPeriodAsXls")]
         [AllowAnonymous]
-        public ActionResult GetMainReportForPeriodAsXls([FromQuery] string startDate, 
-            [FromQuery] string endDate, 
+        public ActionResult GetMainReportForPeriodAsXls([FromQuery] string startDate,
+            [FromQuery] string endDate,
             [FromQuery] string employees)
         {
 
@@ -169,6 +169,8 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
+                var tables = new List<TableDataDto>();
+
                 var canParseStart = DateTime.TryParse(startDate, out DateTime start);
                 var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
 
@@ -177,11 +179,29 @@ namespace WorkShiftsApi.Controllers
                     .Select(x => Int32.Parse(x))
                     .ToList();
 
+                var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
+                //для ведомости
+                var vedEmplList = emplList.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
 
-                var resultTable = _employeeService.GetReportForEmplList(start, end, list);
-                var tables = new List<TableDataDto>();
-                tables.Add(new TableDataDto { Title = "Some title", DataTable = resultTable });
+                var resultTable1 = _employeeService.GetReportForEmplList(start, end, vedEmplList.Select(x => x.Id).ToList());
+                tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1 });
+
+                //карты
+
+                foreach (var b in Banks.BanksList)
+                {
+                    var empListN = emplList.Where(x => x.BankName.Trim().ToLower() == b.Trim().ToLower());
+                    if (empListN.Count() == 0)
+                        continue;
+
+
+                    var resultTableN = _employeeService.GetReportForEmplList(start, end, empListN.Select(x => x.Id).ToList());
+                    tables.Add(new TableDataDto { Title = "Расчет для карт банка " + b , DataTable = resultTableN });
+
+                }
+
                 var fileBytes = _excelGenerator.CreateExcelFromDataTables(tables, "Отчет");
+
 
                 return File(
                     fileBytes,
@@ -193,6 +213,11 @@ namespace WorkShiftsApi.Controllers
             {
                 return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
             }
+
+        }
+
+        private void GetEmplList(List<int> ids)
+        {
 
         }
 
@@ -218,7 +243,7 @@ namespace WorkShiftsApi.Controllers
                 var resultTable = _employeeService.GetReportForEmplList(start, end, list);
 
                 var resultList = new List<string[]>();
-                foreach(DataRow row in resultTable.Rows)
+                foreach (DataRow row in resultTable.Rows)
                 {
                     var arr = row.ItemArray.Select(x => x?.ToString()).ToArray();
                     resultList.Add(arr);
@@ -233,7 +258,7 @@ namespace WorkShiftsApi.Controllers
                 //return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
                 result.IsSuccess = false;
                 result.Message = ex.Message;
-                return Problem(ex.Message,"", (int)HttpStatusCode.InternalServerError);
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
             }
 
 
@@ -248,7 +273,7 @@ namespace WorkShiftsApi.Controllers
     public class GetMainReportForPeriodAsTableResponse : ResponseBase
     {
         [JsonPropertyName("mainReportTable")]
-        public MainReportTable Table { get; set;}
+        public MainReportTable Table { get; set; }
     }
 
     public class MainReportTable
@@ -278,9 +303,9 @@ namespace WorkShiftsApi.Controllers
     {
         public List<WorkHourDto> WorkHoursList { get; set; }
 
-        public List<FinOperationDto> FinOperations {  get; set; }
+        public List<FinOperationDto> FinOperations { get; set; }
 
-        public decimal TotalSalary {  get; set; }
+        public decimal TotalSalary { get; set; }
         public int ItemsCount { get; set; }//всего записей о начислении и списании
         public int TotalHours { get; set; }
 
@@ -293,6 +318,16 @@ namespace WorkShiftsApi.Controllers
         public string Employees { get; set; }
     }
 
+    public class EmplOptionEnums
+    {
+        public static readonly string Vedomost = "Ведомость";
+        public static readonly string Card = "Карта";
+    }
+
+    public class Banks
+    {
+        public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер Банк" };
+    }
 
 
 }

@@ -44,6 +44,8 @@ export function DashboardPage () {
     const [fioToSearch, setFioToSearch] = useState("");
     const [showOperationsModal, setShowOperationsModal] = useState(false);
     const [savingWorkHoursEmplId, setSavingWorkHoursEmplId] = useState(null);
+    //фильтр для таблицы //на вахте
+    const [isInWorkShift, setIsInWorkShift] = useState(-1);
 
     useEffect(() => {
         //updateEmployeeList();
@@ -173,6 +175,7 @@ export function DashboardPage () {
       const params = {
         date: currentDate,
         objectId: selectedObject,
+        isInWorkShift: isInWorkShift,
       }
 
       GetEmployeeWithFinOpListFromApi(params)
@@ -328,7 +331,7 @@ export function DashboardPage () {
       <Card className=" h-100">
                   <Card.Header className="bg-white border-0">
                     <Row className="align-items-end">
-                      <Form.Group as={Col} sm={3}>
+                      <Form.Group as={Col} sm={2}>
                         <Form.Label>Дата &nbsp;</Form.Label><br/>
                         <DatePicker style={{width: "100%"}} 
                         className='form-control' locale="ru" 
@@ -339,7 +342,21 @@ export function DashboardPage () {
 
                       </Form.Group>
 
-                      <Form.Group as={Col} sm={3}>
+                      <Form.Group as={Col} sm={2}>
+                        <Form.Label>На вахте &nbsp;</Form.Label><br/>
+
+                          <Form.Select 
+                          value={isInWorkShift}
+                          onChange={e => setIsInWorkShift(e.target.value)}>
+                              <option value={-1}>Все</option>
+                              <option value={1}>Да</option>
+                              <option value={2}>Нет</option>
+                          </Form.Select>
+
+
+                      </Form.Group>
+
+                      <Form.Group as={Col} sm={2}>
                       <Form.Label>Объект &nbsp;</Form.Label>
                       <Form.Select
 
@@ -361,7 +378,7 @@ export function DashboardPage () {
                       
 
 
-                      <Form.Group as={Col} sm={3}>
+                      <Form.Group as={Col} sm={4}>
                       <Form.Label>Поиск по имени &nbsp;</Form.Label>
                       <Form.Control 
                       value={fioToSearch}
@@ -371,17 +388,18 @@ export function DashboardPage () {
                       </Form.Group>
 
 
-                      <Form.Group as={Col} sm={3} className="text-end">
+                      <Form.Group as={Col} sm={2} style={{textAlign:"right"}}>
                         
                       <Button 
                       onClick={updateEmployeeListAndFinOperations}
                       variant="primary" 
-                      className="d-flex align-items-center">Показать</Button>
+                      className="">Показать</Button>
                       </Form.Group>
 
                     </Row>
                   </Card.Header>
                   <Card.Body>
+                    <br/>
                     <div className="table-responsive">
                         {
                     employeeList ? 
@@ -392,7 +410,7 @@ export function DashboardPage () {
                             <th rowSpan={2} width="30%"><strong>Фамилия Имя Отчество</strong></th>
                             <th rowSpan={2} width="10%"><strong>Объект</strong></th>
                             <th colSpan={3} width="30%" className='text-center' style={{fontSize:"1.2rem"}}>{getDateFormat1(currentDate)}</th>
-                            <th rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
+                            <th colSpan={2} rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
                           </tr>
                           <tr>
                             <th width="10%">Смена</th>
@@ -411,10 +429,23 @@ export function DashboardPage () {
                                             {employee.id}
                                           </td>
                                         <td>
-                                            <a className='button button-link' href="#" 
+                                            <a className='button button-link' style={{fontSize:"1.1rem"}} href="#" 
                                             onClick={()=> handleEmployeeClick(employee.id)}>
                                             {employee.fio}
                                             </a>
+                                            {
+                                              employee.isInWorkShift ?
+                                              <> <br/>
+                                              <span style={{fontSize:"0.9rem"}} className='badge bg-success'> 
+                                                {
+                                                  getDateFormat1(new Date(employee.workShiftStart))
+                                                }
+                                                &nbsp;-&nbsp;
+                                                {getDateFormat1(new Date(employee.workShiftEnd))}
+                                              </span>
+                                              </>
+                                              : null
+                                            }
                                           </td>
                                         <td>{employee.objectName}</td>
                                         <td>
@@ -463,10 +494,9 @@ export function DashboardPage () {
                                         max={10000}
                                         />
                                         </td>
+                                        
                                         <td>
-                                        <Row style={{width:"100%"}}>
-                                        <Col>
-                                        <Button 
+ <Button 
                                         disabled={savingWorkHours && savingWorkHoursEmplId == employee.id } 
                                         title='Сохранить' 
                                         onClick={()=>{setSavingWorkHoursEmplId(employee.id);  SaveWorkHoursItem(employee.id);}} variant="outline-primary" size="sm">
@@ -476,20 +506,19 @@ export function DashboardPage () {
                                         : <SaveIcon />
                                         }
                                         </Button>
-                                        </Col>
-                                        <Col>
+                                        </td>
+                                        <td>
                                         <Button onClick={()=> {
                                           setShowOperationsModal(true);
                                           setSavingWorkHoursEmplId(employee.id); }}
                                            variant="outline-primary" size="sm">Начисл./Списания</Button>
-                                        </Col>
-                                        </Row>
+      
                                         </td>
                                     </tr>
                                     {
                                       employee.finOperations ?
                                       <tr key={employee.id.toString() + "b"}>
-                                              <td  colSpan="7">
+                                              <td  colSpan="8">
                                                 <FinTable operations={employee.finOperations} deleteFinOperation={deleteFinOperation} />
                                                 </td>
                                       </tr>

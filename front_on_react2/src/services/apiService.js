@@ -161,11 +161,8 @@ function GetEmployeeMock() {
 
 async function GetEmployeeFromApi(employeeId) {
     const url = apiUrl + '/api/employee/getemployee/?employeeId=' + employeeId;
-    //console.log(localStorage.getItem('token'));
-    return fetch(url, {
-            method: 'GET',
-            headers: GetSeqHeaders()
-        })
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
 }
 
 async function GetEmployeeListFromApi() {
@@ -176,22 +173,11 @@ async function GetEmployeeListFromApi() {
 
 export async function GetEmployeeWithFinOpListFromApi(params) {
     const url = apiUrl + '/api/employee/GetEmployeeWithFinOpList?date=' + params.date.toISOString()
-    + "&objectId=" + params.objectId;
+    + "&objectId=" + params.objectId + "&isInWorkShift=" + params.isInWorkShift;
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
 
-export async function GetEmployeeWorkShifts(employeeId) {
-
-    const url = apiUrl + '/api/employee/getEmployeeWorkShifts?employeeId=' + employeeId;
-    //console.log(localStorage.getItem('token'));
-    return fetch(url, {
-            method: 'GET',
-            headers: GetSeqHeaders(),
-        }
-    );
-
-}
 
 
 export async function CreateEmployee(params) {
@@ -329,3 +315,17 @@ export async function GetFinOperationsFromApi(date) {
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
+
+export async function GetWorkShifts(params){
+    
+    try {
+        const url = apiUrl + '/api/employee/GetWorkShifts?employeeId=' + params.employeeId;
+        const response = await authenticatedFetch(url, "GET");
+        return parseJSON(response);
+    } catch (error) {
+        console.error('Error fetching work shifts:', error);
+        return [];
+    }
+}
+
+

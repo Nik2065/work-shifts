@@ -271,7 +271,7 @@ export function ReportForEmployesListPage() {
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Скачать отчет с разбивкой по банкам</Form.Label>
                          &nbsp; &nbsp;
-                        <Button disabled type="button" variant="primary" onClick={() => {
+                        <Button type="button" variant="primary" onClick={() => {
                             //проверяем выбран ли хотя бы один сотрудник
                             if(selectedEmployesList.length > 0){
 

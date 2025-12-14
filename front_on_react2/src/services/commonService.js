@@ -21,6 +21,37 @@ export function getDateFormat1(date) {
     return result;
 }
 
+
+export function getDateFormat2(date) {
+    
+    if (date == null) {
+        return "";
+    }
+
+    let result = "";
+    
+    try {
+        let date1 = new Date(date);
+        let year = date1.getFullYear();
+        let month = date1.getMonth() + 1;
+        let day = date1.getDate();
+        result = addZero(day) + "-" + addZero(month) + "-" + addZero(year);
+    } catch (e) {
+        result = "";
+    }
+
+    return result;
+}
+
+function addZero(num) {
+    if(num < 10) {
+        return "0" + num;
+    } else {
+        return num;
+    }
+}
+
+
 function GetMonthName(month) {
     let monthName = "";
     switch (month) {

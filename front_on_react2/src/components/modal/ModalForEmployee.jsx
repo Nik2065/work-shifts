@@ -21,8 +21,8 @@ import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
 registerLocale('ru', ru)
 
-import {CreateWorkShiftFromApi, DeteleWorkShiftFromApi} from '../../services/apiService';
-
+import {CreateWorkShiftFromApi, DeteleWorkShiftFromApi, GetWorkShifts} from '../../services/apiService';
+import {getDateFormat2} from '../../services/commonService';
 //{/* Модальное окно добавления/редактирования сотрудника */}
 
 export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, updateEmployees}) {
@@ -40,8 +40,16 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
       const [objectsList, setObjectsList] = useState([]);
       const [startDate, setStartDate] = useState(new Date());
       const [endDate, setEndDate] = useState(new Date());
+      const [workShiftList, setWorkShiftList] = useState([]);
 
       const [alertData, setAlertData] = useState({
+        show: false,
+        message: '',
+        variant: 'success'
+      });
+      
+      //для таблицы вахт
+      const [alertData2, setAlertData2] = useState({
         show: false,
         message: '',
         variant: 'success'
@@ -78,15 +86,18 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     }, 
     [employeeId]);*/
 
+
+    //получаем данные сотрудника
     function GetEmployeeOnShow(){
 
       if (employeeId) {
         GetEmployee(employeeId)  
-        .then(response => response.json())
         .then(data => {
           console.log(data);
           if (data.isSuccess) {
             setCurrentEmployee(data.employee);
+            if(data.employee.workShiftList)
+              setWorkShiftList(data.employee.workShiftList);
           }
           else {
             // Обработка ошибки
@@ -184,7 +195,9 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
       .catch(error => console.log(error));
     }
 
-    function addWorkShift(){
+    async function addWorkShift(){
+
+      setAlertData2({message: "", show: false, variant: ''});
 
       const params = {
         employeeId: employeeId,
@@ -197,20 +210,21 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
       .then(data => {
         console.log(data);
         if (data.isSuccess) {
-          // Обработка успешного создания сотрудника
-          setAlertData({message: data.message, show: true, variant: 'success'});
+          // Обработка успешного создания вахты
+          //setAlertData2({message: data.message, show: true, variant: 'success'});
           //setCreateButtonDisabled(true);
-          //обновляем список сотрудников
-          //updateEmployees();
+          alert("Вахта успешно создана");
+
         }
         else {
-          setAlertData({message: data.message, show: true, variant: 'danger'});
+          //setAlertData2({message: data.message, show: true, variant: 'danger'});
+          alert("Ошибка добавления вахты:" + data.message);
         }
       })
       .catch(error => console.log(error));
     }
 
-    function deleteWorkShift(wsId){
+    async function deleteWorkShift(wsId){
       const params = {
         workShiftId: wsId,
       };
@@ -232,8 +246,31 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     }
 
 
+    async function updateWorkShiftTable(){
+      const params = {
+        employeeId: employeeId,
+      };
+
+      GetWorkShifts(params)
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          //todo: крутилка
+          setWorkShiftList(data.workShiftList);
+        }
+        else {
+        }
+      })
+      .catch(error => 
+        console.log(error));
+    }
+    
+
+
+
+
     return (
-        <Modal onExit={resetForm} show={showEmpModal} 
+        <Modal size='xl' onExit={resetForm} show={showEmpModal} 
         onHide={() => setShowEmpModal(false)} 
         onShow={() => {
                         updateObjects();
@@ -248,6 +285,12 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
+          <Row>
+            <Col lg={6}>
+            
+
+
+
         <Form>
           <Row >
             <Form.Group as={Col} md={12} className="mb-3">
@@ -305,6 +348,18 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               </Form.Select>
             </Form.Group>
             <Form.Group as={Col} md={6} className="mb-3">
+              <Form.Label>Оформление</Form.Label>
+              <Form.Select
+                value={currentEmployee.emplOptions}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
+                placeholder="Выберите оформление"
+              >
+                <option value="Карта">Карта</option>
+                <option value="Ведомость">Ведомость</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>Банк</Form.Label>
               <Form.Select
 
@@ -318,20 +373,19 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 <option value="ПСБ">ПСБ</option>
               </Form.Select>
             </Form.Group>
+          
+          </Row>
+        </Form>
+        <br/>
+        <Alert show={alertData.show} variant={alertData.variant}>
+            {alertData.message}
+        </Alert>
 
-            <Form.Group as={Col} md={6} className="mb-3">
-              <Form.Label>Оформление</Form.Label>
-              <Form.Select
+            </Col>
 
-                value={currentEmployee.emplOptions}
-                onChange={(e) => setCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
-                placeholder="Выберите оформление"
-              >
-                <option value="Карта">Карта</option>
-                <option value="Ведомость">Ведомость</option>
-              </Form.Select>
-            </Form.Group>
-          <Card>
+
+            <Col>
+            <Card>
             <Card.Body>
               <Card.Title>Вахты</Card.Title>
               <Row>
@@ -342,14 +396,14 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                   <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                 </Col>
                 <Col md={4} style={{textAlign:"right"}}>
-                  <Button onClick={() => {addWorkShift(); GetEmployeeOnShow();}}
+                  <Button onClick={async() => {await addWorkShift(); await updateWorkShiftTable();}}
                   variant='outline-primary' 
                   size='sm'>Добавить</Button>
                 </Col>
               </Row>
 
                   <br/>
-                <div className="table-responsive">
+                <div className="table-responsive" style={{maxHeight:"200px"}}>
               <Table bordered>
                 <thead>
                   <tr>
@@ -360,14 +414,13 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 </thead>
                 <tbody>
                   {
-                    currentEmployee && currentEmployee.workShiftList  ?
-                    
-                    currentEmployee.workShiftList.map(w => (
+                    workShiftList ?
+                    workShiftList.map(w => (
                       <tr key={w.id}>
-                        <td>{w.start}</td>
-                        <td>{w.end}</td>
+                        <td>{getDateFormat2(w.start)}</td>
+                        <td>{getDateFormat2(w.end)}</td>
                         <td><Button title='Удалить'
-                            onClick={() => {deleteWorkShift(w.id); GetEmployeeOnShow();}} 
+                            onClick={async() => {await deleteWorkShift(w.id); await updateWorkShiftTable();}} 
                             variant='outline-danger' size='sm'>Х</Button></td>
                       </tr>
                     ))
@@ -376,14 +429,14 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 </tbody>
               </Table>
               </div>
+              <Alert variant={alertData2.variant} show={alertData2.show} >
+                    {alertData2.message}
+              </Alert>
             </Card.Body>
           </Card>
+
+            </Col>
           </Row>
-        </Form>
-        <br/>
-        <Alert show={alertData.show} variant={alertData.variant}>
-            {alertData.message}
-        </Alert>
 
         </Modal.Body>
         <Modal.Footer>
