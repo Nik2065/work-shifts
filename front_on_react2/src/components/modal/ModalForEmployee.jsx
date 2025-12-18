@@ -265,7 +265,16 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         console.log(error));
     }
     
+    async function addWorkShiftHandler(){
+        await addWorkShift(); 
+        await updateWorkShiftTable();
+    }
 
+    //удаление вахты
+    async function deleteWorkShiftHandler(workshiftId) {
+      await deleteWorkShift(workshiftId); 
+      await updateWorkShiftTable();
+    }
 
 
 
@@ -396,7 +405,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                   <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                 </Col>
                 <Col md={4} style={{textAlign:"right"}}>
-                  <Button onClick={async() => {await addWorkShift(); await updateWorkShiftTable();}}
+                  <Button onClick={addWorkShiftHandler}
                   variant='outline-primary' 
                   size='sm'>Добавить</Button>
                 </Col>
@@ -420,7 +429,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                         <td>{getDateFormat2(w.start)}</td>
                         <td>{getDateFormat2(w.end)}</td>
                         <td><Button title='Удалить'
-                            onClick={async() => {await deleteWorkShift(w.id); await updateWorkShiftTable();}} 
+                            onClick={() => deleteWorkShiftHandler(w.id)} 
                             variant='outline-danger' size='sm'>Х</Button></td>
                       </tr>
                     ))

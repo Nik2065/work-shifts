@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Linq;
 using WorkShiftsApi.DTO;
 
 namespace WorkShiftsApi.Controllers
@@ -173,34 +175,46 @@ namespace WorkShiftsApi.Controllers
                 }
 
                 result.EmployeesList = (from emp in employees
-                                        join o in _context.Objects on emp.ObjectId equals o.Id
-                                        //join ws in _context.WorkShifts on emp.Id equals ws.EmployeeId into empWorkshifts
-                                        //from workShift in empWorkshifts.DefaultIfEmpty()
-                                        //join fin in _context.FinOperations on emp.Id equals fin.EmployeeId into empFin
-                                        //from operations in empFin.DefaultIfEmpty()
+                                        select new EmployeeDto
+                                        {
+                                            Created = emp.Created,
+                                            Fio = emp.Fio,
+                                            Id = emp.Id,
+                                            Age = emp.Age,
+                                            BankName = emp.BankName,
+                                            ChopCertificate = emp.ChopCertificate,
+                                            EmplOptions = emp.EmplOptions,
 
-                                        select
-                                     new EmployeeDto
-                                     {
-                                         Created = emp.Created,
-                                         Fio = emp.Fio,
-                                         Id = emp.Id,
-                                         Age = emp.Age,
-                                         BankName = emp.BankName,
-                                         ChopCertificate = emp.ChopCertificate,
-                                         ObjectName = o.Name,
-                                         ObjectId = emp.ObjectId,
-                                         EmplOptions = emp.EmplOptions,
-                                         WorkShiftList = _context.WorkShifts.Where(x => x.EmployeeId == emp.Id).Select(x =>
-                                           new WorkShiftDto
-                                           { Created = x.Created, Id = x.Id, End = x.End, Start = x.Start }).ToList(),
-                                         FinOperations = _context.FinOperations
-                                         .Where(x => x.EmployeeId == emp.Id && x.Date.Date == selectedDate.Date)
-                                         .Select(x=> 
-                                         new FinOpDto { Comment = x.Comment, Date = x.Date, Id = x.Id, IsPenalty = x.IsPenalty, Sum = x.Sum }).ToList(),
-                                         
-                                     })
-                                    .ToList();
+                                            ObjectId = emp.ObjectId,
+                                            ObjectName = emp.Object.Name,
+
+                                            FinOperations = emp.FinOperations
+                                            .Where(x =>x.Date.Date == selectedDate.Date)
+                                            .Select(x=> 
+                                            new FinOpDto 
+                                            { 
+                                                Comment = x.Comment,
+                                                Id = x.Id,
+                                                Date = selectedDate,
+                                                IsPenalty = x.IsPenalty,
+                                                Sum = x.Sum,
+                                                TypeId = x.TypeId,
+                                                TypeName = x.FinOperationType.OperationName,
+                                            }
+                                            ).ToList(),
+
+                                            WorkShiftList = emp.WorkShifts.Select(x => new WorkShiftDto
+                                            {
+                                                Id = x.Id,
+                                                Created = x.Created,
+                                                End = x.End,
+                                                Start = x.Start
+                                                
+
+                                            }).ToList(),
+
+
+                                        }).ToList();
 
 
                 foreach (var emp in result.EmployeesList)
@@ -316,7 +330,7 @@ namespace WorkShiftsApi.Controllers
                 //TODO:
                 // проверка полученных значений
 
-                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate == request.Date);
+                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == request.Date.Date);
 
                 if(one == null)
                 {
@@ -600,11 +614,33 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
-        //[HttpGet]
-        //public async Task<ActionResult> GetFinOperations()
-        //{
+        [HttpGet("GetFinOperationTypes")]
+        public async Task<ActionResult> GetFinOperationTypes()
+        {
+            var result = new GetFinOperationTypesResponse { IsSuccess = true, Message = "" };
 
-        //}
+            try
+            {
+                result.OperationTypes = 
+                _context
+                    .FinOperationTypes
+                    .Select(x => new OpTypeDto 
+                    { 
+                        Id = x.Id, 
+                        OperationName = x.OperationName, 
+                        IsPayroll=x.IsPayroll 
+                    }).ToList();
+
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+
+            return Ok(result);
+        }
 
 
     }
@@ -619,27 +655,7 @@ namespace WorkShiftsApi.Controllers
         public List<EmployeeDto> EmployeesList { get; set; }
     }
 
-    public class EmployeeDto
-    {
-        public int Id { get; set; }
-        public string Fio { get; set; }
-        public DateTime Created { get; set; }
-        public string? BankName { get; set; }
-        public int? Age { get; set; }
-        public bool ChopCertificate { get; set; }
-        public string ObjectName {get;set;}
-        public int ObjectId { get; set; }
-        public string? EmplOptions { get; set; }
-
-        public List<WorkShiftDto> WorkShiftList { get; set; }
-
-        public List<FinOpDto>? FinOperations { get; set; }
-
-        //даты вахты если текущая дата попадает в диапазон вахт
-        public DateTime? WorkShiftStart { get; set; }
-        public DateTime? WorkShiftEnd { get; set; }
-        public bool IsInWorkShift { get; set; }//есть ли сейчас вахта
-    }
+   
 
     public class GetEmployeeWorkShiftsResponseDto : ResponseBase
     {
@@ -653,6 +669,7 @@ namespace WorkShiftsApi.Controllers
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
         public DateTime Created { get; set; }
+
     }
 
     public class FinOpDto
@@ -662,6 +679,9 @@ namespace WorkShiftsApi.Controllers
         public bool IsPenalty { get; set; }
         public DateTime Date { get; set; } //дата финансовой операции
         public string? Comment { get; set; }
+        public int? TypeId { get; set; }
+        public string? TypeName { get; set; }
+
     }
 
     public class CreateEmployeeRequestDto
@@ -714,6 +734,8 @@ namespace WorkShiftsApi.Controllers
         public DateTime Date { get; set; }
         public bool IsPenalty { get; set; }
         public int Sum { get; set; }
+
+        public int? TypeId { get; set; }
     }
 
     public class SaveWorkHoursItemRequest
@@ -746,7 +768,9 @@ namespace WorkShiftsApi.Controllers
         public bool IsPenalty { get; set; }
 
         public string Date { get; set; } //дата финансовой операции
-        public string? Comment { get; set; } 
+        public string? Comment { get; set; }
+
+        public int TypeId { get; set; }
     }
 
     public class DeleteFinOperationRequest
@@ -759,5 +783,19 @@ namespace WorkShiftsApi.Controllers
         public DateTime? Start;
         public DateTime? End;
         public bool IsInWorkShift = false;
+    }
+
+
+    public class GetFinOperationTypesResponse : ResponseBase
+    {
+        public List<OpTypeDto> OperationTypes { get; set; }
+    }
+
+    public class OpTypeDto
+    {
+        public int Id { get; set; }
+        public string OperationName { get; set; }
+        public bool IsPayroll { get; set; }
+
     }
 }

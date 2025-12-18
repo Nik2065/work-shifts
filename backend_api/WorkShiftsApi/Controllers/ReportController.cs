@@ -67,7 +67,8 @@ namespace WorkShiftsApi.Controllers
                     Date = x.Date.Date,
                     EmployeeId = x.EmployeeId,
                     IsPenalty = x.IsPenalty,
-                    Sum = x.Sum
+                    Sum = x.Sum,
+                    TypeId = x.TypeId
                 }).ToList();
 
                 result.TotalHours = items.Select(x => x.Hours).Sum();
@@ -182,8 +183,11 @@ namespace WorkShiftsApi.Controllers
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
                 //для ведомости
                 var vedEmplList = emplList.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
+                var vedIds = vedEmplList.Select(x => x.Id).ToList();
+                emplList = emplList.Where(x => !vedIds.Contains(x.Id)).ToList();
 
-                var resultTable1 = _employeeService.GetReportForEmplList(start, end, vedEmplList.Select(x => x.Id).ToList());
+
+                var resultTable1 = _employeeService.GetReportForEmplList(start, end, vedIds);
                 tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1 });
 
                 //карты

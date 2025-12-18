@@ -9,7 +9,7 @@ import {
 } from 'react-bootstrap';
 
 import {GetEmployee, CreateFinOperationFromApi
-    , DeleteFinOperationFromApi
+    , GetFinOperationTypesFromApi
   } from '../../services/apiService';
 
 
@@ -24,6 +24,7 @@ export function ModalForAddOperation({employeeId,
     const [penaltySelected, setPenaltySelected] = useState(false);//если true, то штраф
     const [sum, setSum] = useState(0);
     const [comment, setComment] = useState('');
+    const [selectedOperationType, setSelectedOperationType] = useState(undefined);
     const [disableSaveButton, setDisableSaveButton] = useState(false);
     const [alertData, setAlertData] = useState({
         show: false,
@@ -31,16 +32,18 @@ export function ModalForAddOperation({employeeId,
         variant: 'danger'
     });
 
+    const [operationTypes, setOperationTypes] = useState([]);
+    const [filteredOperationTypes, setFilteredOperationTypes] = useState([]);
 
 
-    function GetEmployeeOnShow(){
+    async function GetEmployeeOnShow(){
 
     //console.log("GetEmployeeOnShow");
     //console.log("employeeId", employeeId);
 
       if (employeeId) {
-        GetEmployee(employeeId)  
-        .then(response => response.json())
+        GetEmployee(employeeId) 
+        //.then(response => response.json())
         .then(data => {
           console.log(data);
           if (data.isSuccess) {
@@ -53,6 +56,24 @@ export function ModalForAddOperation({employeeId,
         .catch(error => console.log(error));
 
       }
+
+
+      GetFinOperationTypesFromApi()
+      .then(data => {
+        console.log(data);
+        if (data.isSuccess) {
+          setOperationTypes(data.operationTypes);
+          const filtered = data.operationTypes.filter( x=> x.isPayroll == true);
+          //console.log(filtered);
+          setFilteredOperationTypes([...filtered]);
+          setSelectedOperationType(filtered[0]);
+        }
+        else {
+          // Обработка ошибки
+        }
+      })
+      .catch(error => console.log(error));
+
     }
 
 
@@ -68,7 +89,8 @@ export function ModalForAddOperation({employeeId,
                 Sum: sum,
                 Comment: comment,
                 IsPenalty: penaltySelected,
-                Date: selectedDate
+                Date: selectedDate,
+                TypeId: selectedOperationType
             };
 
             //console.log("params", params);
@@ -101,6 +123,13 @@ export function ModalForAddOperation({employeeId,
         setComment('');
     }
 
+    function changeOperationTypeHandler(isPenalty)
+    {
+        setPenaltySelected(isPenalty);
+        const filtered = operationTypes.filter( x=> x.isPayroll == !isPenalty);
+        console.log(filtered);
+        setFilteredOperationTypes([...filtered]);
+    }
 
     return (
         <Modal 
@@ -122,13 +151,13 @@ export function ModalForAddOperation({employeeId,
                     <Form.Group as={Col} md={6} className='mb-3' >
                         <Form.Label>Тип операции</Form.Label>
                         <Form.Check style={{fontSize:"1.2rem"}}
-                        onChange={() => setPenaltySelected(false)}
+                        onChange={() => changeOperationTypeHandler(false)}
                         checked={!penaltySelected}
                         type="radio"
                         label="Начисление"
                         />
                         <Form.Check style={{fontSize:"1.2rem"}}
-                        onChange={(e) => setPenaltySelected(true)}
+                        onChange={(e) => changeOperationTypeHandler(true)}
                         checked={penaltySelected}
                         type="radio"
                         label="Списание"
@@ -144,7 +173,25 @@ export function ModalForAddOperation({employeeId,
                         placeholder="" />
                     </Form.Group>
                     </Row>
-                        <Form.Group  className='mb-3'>
+                    <Form.Group  className='mb-3'>
+                        <Form.Label>Тип</Form.Label>
+                        <Form.Select
+                        value={selectedOperationType}
+                        onChange={e=>setSelectedOperationType(e.target.value)}
+                        >
+                        {
+                            
+                            filteredOperationTypes ?
+                            filteredOperationTypes.map(item => (
+                                <option key={item.id} value={item.id}>{item.operationName}</option>
+                            ))
+                            : null
+                        }
+                        
+                        </Form.Select>
+                    </Form.Group>
+
+                    <Form.Group  className='mb-3'>
                         <Form.Label>Комментарий (если нужно)</Form.Label>
                         <Form.Control
                         value={comment}

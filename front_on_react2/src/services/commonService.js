@@ -1,4 +1,4 @@
-
+import { getTimezoneOffset } from 'date-fns-tz';
 
 export function getDateFormat1(date) {
     
@@ -108,4 +108,15 @@ export function getRoleName(roleCode) {
     } else {
         return "Неизвестно";
     }
+}
+
+
+
+export function converDateToIsoStringWithTimeZone(date) {
+
+    const timezone = 'Europe/Moscow';
+    const offset = getTimezoneOffset(timezone);
+    //console.log("offset", offset);
+    const date2 = (new Date(date.getTime() + offset)).toISOString();
+    return date2;
 }

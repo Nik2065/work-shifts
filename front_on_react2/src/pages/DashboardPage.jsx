@@ -20,12 +20,15 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
+import {converDateToIsoStringWithTimeZone} from '../services/commonService';
 registerLocale('ru', ru)
 
 
 
 export function DashboardPage () {
     
+
+
     const [showEmpModal, setShowEmpModal] = useState(false);
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
@@ -231,6 +234,7 @@ export function DashboardPage () {
         rate: GetRate(employeeId),
         date: currentDate,
       };
+
       setSavingWorkHours(true);//анимация
       SaveWorkHoursItemOnServer(params)
       .then((response) => response.json())
@@ -267,6 +271,7 @@ export function DashboardPage () {
   
     function onDateChange(date){
       if(date){
+
         setCurrentDate(date);
         //updateWorkHours(date);
         //updateEmployeeListAndFinOperations();
@@ -334,10 +339,12 @@ export function DashboardPage () {
                       <Form.Group as={Col} sm={2}>
                         <Form.Label>Дата &nbsp;</Form.Label><br/>
                         <DatePicker style={{width: "100%"}} 
-                        className='form-control' locale="ru" 
+                        className='form-control'
+                        //utcOffset={offset} 
+                        locale={ru}
                         selected={currentDate} 
                         onChange={(date) => {
-                          onDateChange(date);
+                            onDateChange(date);
                           }} />
 
                       </Form.Group>
@@ -413,7 +420,7 @@ export function DashboardPage () {
                             <th colSpan={2} rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
                           </tr>
                           <tr>
-                            <th width="10%">Смена</th>
+                            <th width="10%">Вахта</th>
                             <th width="10%">Отработанно часов</th>
                             <th width="10%">Ставка в час, руб.</th>
                             
@@ -449,7 +456,9 @@ export function DashboardPage () {
                                           </td>
                                         <td>{employee.objectName}</td>
                                         <td>
-                                        Да
+                                        {
+                                          employee.isInWorkShift ? "Да" : "Нет"
+                                        }
                                         </td>
                                         <td>
                                         <Form.Control 
@@ -590,6 +599,7 @@ function FinTable({operations, deleteFinOperation}){
               
               <td className="py-0" style={{backgroundColor:op.isPenalty ? "#f9d5e5" : "#96ceb4"}}
               >{op.isPenalty ? "Списание" : "Начисление"}</td>
+              <td>Тип: {op.typeName}</td>
               <td className="py-0">Сумма: {op.sum}</td>
               <td className="py-0">Комментарий: {op.comment}</td>
               <td className="py-0" style={{textAlign:"center"}}>

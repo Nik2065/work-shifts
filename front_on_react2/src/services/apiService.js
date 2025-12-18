@@ -1,6 +1,8 @@
 import { apiUrl } from "./const"; 
 import { Navigate } from "react-router-dom";
 
+import {converDateToIsoStringWithTimeZone} from './commonService.js'; 
+
 const GetHeaders =() => {
     return {
     'Content-Type': 'application/json' };
@@ -172,8 +174,10 @@ async function GetEmployeeListFromApi() {
 }
 
 export async function GetEmployeeWithFinOpListFromApi(params) {
-    const url = apiUrl + '/api/employee/GetEmployeeWithFinOpList?date=' + params.date.toISOString()
-    + "&objectId=" + params.objectId + "&isInWorkShift=" + params.isInWorkShift;
+    const url = apiUrl + '/api/employee/GetEmployeeWithFinOpList?date=' 
+    + converDateToIsoStringWithTimeZone(params.date) + "&objectId=" 
+    + params.objectId 
+    + "&isInWorkShift=" + params.isInWorkShift;
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
@@ -329,3 +333,8 @@ export async function GetWorkShifts(params){
 }
 
 
+export async function GetFinOperationTypesFromApi() {
+    const url = apiUrl + '/api/employee/GetFinOperationTypes';
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}

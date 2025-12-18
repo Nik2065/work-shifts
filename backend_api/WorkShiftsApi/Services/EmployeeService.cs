@@ -84,35 +84,40 @@ namespace WorkShiftsApi.Services
             ";*/
 
             string sql = $@"
-            select 
-               eid as employeeid,
-               fio,
-               count(*) days, 
-               sum(revenue) as totalRevenue,
-               sum(Spisania) as totalSpisania,
-               sum(Nachislenia) as totalNachislenia
-               ,  (sum(revenue) + sum(Nachislenia) - sum(Spisania)) as Total
-
-               from (
-                   select 
-                   e.id as eid, 
-                   e.fio, 
-                   cast(w.work_date as date) as wdate, 
-                   sum(w.hours * w.rate) as revenue, 
-                   sum(ifnull(notPenalty.sum, 0)) as Nachislenia,
-                   sum(ifnull(penalty.sum, 0)) as Spisania
-                   from  employees e
-                   left join  work_hours w on w.employee_id=e.id
-                   left join fin_operations penalty on penalty.employee_id=e.id and cast(penalty.date as date)=cast(w.work_date as date) and  penalty.is_penalty=true
-                   left join fin_operations notPenalty on notPenalty.employee_id=e.id and cast(notPenalty.date as date)=cast(w.work_date as date)  and notPenalty.is_penalty=false
-                   where w.work_date >= '{begin.ToString("yyyy-MM-dd")}'
-                   and w.work_date< '{end.ToString("yyyy-MM-dd")}'
-                   and e.id in ({list})
-                   group by 
-                   cast(w.work_date as date), 
-                   eid, fio
-               ) as q
-               group by fio, employeeid
+                select 
+                employeeid,
+                fio,
+                count(wdate) as days, 
+                coalesce(sum(revenue), 0) as totalRevenue,
+                coalesce(sum(Spisania), 0) as totalSpisania,
+                coalesce(sum(Nachislenia), 0) as totalNachislenia,
+                coalesce(sum(revenue) + sum(Nachislenia) - sum(Spisania), 0) as Total
+            from (
+                select 
+                    e.id as employeeid, 
+                    e.fio, 
+                    cast(w.work_date as date) as wdate, 
+                    sum(w.hours * w.rate) as revenue, 
+                    sum(ifnull(notPenalty.sum, 0)) as Nachislenia,
+                    sum(ifnull(penalty.sum, 0)) as Spisania
+                from employees e
+                left join work_hours w on w.employee_id = e.id
+                    and w.work_date >= '{begin.ToString("yyyy-MM-dd")}'
+                    and w.work_date < '{end.ToString("yyyy-MM-dd")}'
+                left join fin_operations penalty on penalty.employee_id = e.id 
+                    and cast(penalty.date as date) = cast(w.work_date as date) 
+                    and penalty.is_penalty = true
+                left join fin_operations notPenalty on notPenalty.employee_id = e.id 
+                    and cast(notPenalty.date as date) = cast(w.work_date as date)  
+                    and notPenalty.is_penalty = false
+                where e.id in ({list})
+                group by 
+                    e.id, 
+                    e.fio,
+                    cast(w.work_date as date)
+            ) as q
+            group by fio, employeeid
+            order by employeeid
             ";
 
 

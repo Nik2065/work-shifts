@@ -8,6 +8,33 @@ namespace WorkShiftsApi
     {
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+        //fluent api
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<FinOperationDb>()
+                .HasOne(f => f.Employee)
+                .WithMany(e => e.FinOperations)
+                .HasForeignKey(f => f.EmployeeId);
+
+            modelBuilder.Entity<WorkShiftsDb>()
+                .HasOne(f => f.Employee)
+                .WithMany(e => e.WorkShifts)
+                .HasForeignKey(f => f.EmployeeId);
+
+            // Один ко многим
+            modelBuilder.Entity<FinOperationDb>()
+                .HasOne(f => f.FinOperationType)   // FinOperation имеет один Type
+                .WithMany()      
+                .HasForeignKey(f => f.TypeId) // Внешний ключ в FinOperation
+                .IsRequired(false);           // Не обязательная связь (TypeId может быть null)
+
+            modelBuilder.Entity<EmployeesDb>()
+               .HasOne(e => e.Object) // У сотрудника один объект
+               .WithMany() // У объекта много сотрудников
+               .HasForeignKey(e => e.ObjectId)
+               .IsRequired(); // object_id NOT NULL
+        }
+
         public DbSet<SiteUserDb> SiteUsers { get; set; }
 
         public DbSet<EmployeesDb> Employees { get; set; }
@@ -21,6 +48,8 @@ namespace WorkShiftsApi
         public DbSet<UserToObjectDb> UserToObject { get; set; }
 
         public DbSet<FinOperationDb> FinOperations { get; set; }
+
+        public DbSet<FinOperationTypeDb> FinOperationTypes { get; set; }
 
     }
 
@@ -84,6 +113,13 @@ namespace WorkShiftsApi
         [Column("empl_options")]
         public string? EmplOptions { get; set; }
 
+        //
+        public virtual ICollection<FinOperationDb> FinOperations { get; set; }
+
+        public virtual ICollection<WorkShiftsDb> WorkShifts { get; set; }
+
+        public virtual ObjectDb Object { get; set; }
+
     }
 
 
@@ -106,6 +142,7 @@ namespace WorkShiftsApi
         [Column("end")]
         public DateTime End { get; set; }
 
+        public virtual EmployeesDb Employee { get; set; }
     }
 
 
@@ -181,6 +218,32 @@ namespace WorkShiftsApi
 
         [Column("comment")]
         public string? Comment { get; set; }
+
+
+        [Column("type_id")]
+        public int? TypeId { get; set; }
+
+        public virtual EmployeesDb Employee { get; set; }
+
+        public virtual FinOperationTypeDb FinOperationType { get; set; }
+    }
+
+    /// <summary>
+    /// типы финансовых операций
+    /// </summary>
+    [Table("op_types")]
+    public class FinOperationTypeDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("op_name")]
+        public string OperationName { get; set; }
+
+        //относится ли данный тип операции к начислениям
+        //если false - то это какой-то штраф
+        [Column("is_payroll")]
+        public bool IsPayroll { get; set; }
 
     }
 }

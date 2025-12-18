@@ -16,10 +16,14 @@ builder.Services.AddLogging(builder =>
 
 // Добавляем DbContext
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
+    options
+    .UseLazyLoadingProxies()
+    .UseMySql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
         ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))
-    ));
+    )
+    
+ );
 
 // Добавляем сервисы
 builder.Services.AddScoped<IAuthService, AuthService>();
