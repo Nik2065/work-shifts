@@ -79,7 +79,8 @@ namespace WorkShiftsApi.Services
 
                         for (int col = 0; col < dataTable.Columns.Count; col++)
                         {
-                            worksheet.Cell(rowNumber, col + 1).Value = dataTable.Rows[row][col]?.ToString() ?? string.Empty;
+                            var value = dataTable.Rows[row][col]?.ToString();
+                            worksheet.Cell(rowNumber, col + 1).Value = value ?? string.Empty;
                         }
                     }
 

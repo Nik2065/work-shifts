@@ -27,6 +27,11 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        /// <summary>
+        /// Таблица на сайте для одного сотрудника
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost("GetWorkHoursForPeriod")]
         public ActionResult GetWorkHoursForPeriod([FromBody] GetReportRequest request)
         {
@@ -161,6 +166,13 @@ namespace WorkShiftsApi.Controllers
 
         }
 
+        /// <summary>
+        /// Выгрузка на сайте по списку сотрудников с разбивкой на банки
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="employees"></param>
+        /// <returns></returns>
         [HttpGet("GetMainReportForPeriodAsXlsWithBanks")]
         [AllowAnonymous]
         public ActionResult GetMainReportForPeriodAsXlsWithBanks([FromQuery] string startDate,
@@ -187,7 +199,7 @@ namespace WorkShiftsApi.Controllers
                 emplList = emplList.Where(x => !vedIds.Contains(x.Id)).ToList();
 
 
-                var resultTable1 = _employeeService.GetReportForEmplList(start, end, vedIds);
+                var resultTable1 = _employeeService.GetReportForEmplList2(start, end, vedIds);
                 tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1 });
 
                 //карты
@@ -199,7 +211,7 @@ namespace WorkShiftsApi.Controllers
                         continue;
 
 
-                    var resultTableN = _employeeService.GetReportForEmplList(start, end, empListN.Select(x => x.Id).ToList());
+                    var resultTableN = _employeeService.GetReportForEmplList2(start, end, empListN.Select(x => x.Id).ToList());
                     tables.Add(new TableDataDto { Title = "Расчет для карт банка " + b , DataTable = resultTableN });
 
                 }

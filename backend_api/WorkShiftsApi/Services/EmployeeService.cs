@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -21,7 +22,7 @@ namespace WorkShiftsApi.Services
         }
 
         //private readonly IConfiguration _config;
-        private  AppDbContext  _context { get; set; }
+        private AppDbContext _context { get; set; }
 
 
         public DataTable GetReportForEmplList(DateTime begin, DateTime end, List<int> emplList)
@@ -128,15 +129,15 @@ namespace WorkShiftsApi.Services
 
             var a = rows.ToList();
 
-            foreach (var row in a) 
+            foreach (var row in a)
             {
                 var arr = new object[]
-                { 
+                {
                     row?.Employeeid,
-                    row?.Fio ?? "", 
+                    row?.Fio ?? "",
                     row?.Days,
                     row?.TotalRevenue,
-                    row?.TotalSpisania, 
+                    row?.TotalSpisania,
                     row?.TotalNachislenia,
                     row?.Total//, 
                     //row?.EmplOption,
@@ -155,11 +156,131 @@ namespace WorkShiftsApi.Services
 
         //private string GetSqlCommand(DateTime begin, DateTime end, List<int> emplList)
         //{
-            //string result = 
-            //return result;
+        //string result = 
+        //return result;
         //}
 
+
+
+        public DataTable GetReportForEmplList2(DateTime begin, DateTime end, List<int> emplList)
+        {
+            var table = new DataTable();
+            //table.Columns.Add("# id", typeof(int));
+            table.Columns.Add("ФИО", typeof(string));
+            table.Columns.Add("Дней", typeof(int));
+            //table.Columns.Add("Дата", typeof(DateTime));
+            table.Columns.Add("Сумма за работу", typeof(int));
+            table.Columns.Add("Списания: Штрафы", typeof(int));
+            table.Columns.Add("Списания: Форма", typeof(int));
+            table.Columns.Add("Списания: УЧО", typeof(int));
+            table.Columns.Add("Списания: Другое", typeof(int));
+            table.Columns.Add("Начисления: Другое", typeof(int));
+
+            table.Columns.Add("Итого", typeof(int));
+
+
+
+            if (emplList.Count > 0)
+            {
+
+                //var rows = new List<DataRow>();
+                
+
+                foreach (var employeeId in emplList)
+                {
+
+                    var row = table.NewRow();
+                    //var employeeId = emplList[0];
+                    //row[0] =employeeId; 
+
+                    var emp = _context.Employees.FirstOrDefault(x => x.Id == employeeId);
+                    if (emp == null) continue;
+
+                    row[0] = emp.Fio;
+
+                    var wh = _context.WorkHours
+                        .Where(x => x.EmployeeId == employeeId
+                        && x.WorkDate.Date >= begin.Date
+                        && x.WorkDate.Date < end.Date);
+
+                    var days = wh.Select(x => x.WorkDate.Date)
+                        .Distinct()
+                        .Count();
+                    row[1] = days;
+
+
+                    var revenue = wh.Sum(x => x.Hours * x.Rate);//сумма за работу
+                    row[2] = revenue;
+
+
+                    //fin 
+                    var finOperation = _context.FinOperations
+                        .Where(x => x.EmployeeId == employeeId
+                        && x.Date.Date >= begin.Date.Date
+                        && x.Date.Date < end.Date.Date).ToList();
+
+
+                    //списания
+                    //типы списаний: штрафы
+                    var shtraf = finOperation
+                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Shtraf)
+                        .Select(x => x.Sum)
+                        .Sum();
+                    row[3] = shtraf;
+
+                    //Forma
+                    var forma = finOperation
+                        .Where(x => x.FinOperationType != null &&  x.FinOperationType.Id == (int)FinOperationTypeEnum.Forma)
+                        .Select(x => x.Sum)
+                        .Sum();
+                    row[4] = forma;
+
+                    //ucho
+                    var ucho = finOperation
+                        .Where(x => x.FinOperationType != null &&  x.FinOperationType.Id == (int)FinOperationTypeEnum.Ucho)
+                        .Select(x => x.Sum)
+                        .Sum();
+                    row[5] = ucho;
+
+                    //Other
+                    var other = finOperation
+                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Other)
+                        .Select(x => x.Sum)
+                        .Sum();
+                    row[6] = other;
+
+
+                    //начисления
+                    //другие
+                    var otherPayroll = finOperation
+                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.OtherPayroll)
+                        .Select(x => x.Sum)
+                        .Sum();
+
+                    row[7] = otherPayroll;
+
+                    //итог для одного сотрудника
+                    var empTotal = revenue + otherPayroll - (shtraf + forma + ucho + other);
+
+                    row[8] = empTotal;
+                    table.Rows.Add(row);
+                }
+            }
+
+            return table;
+        }
+
     }
+
+
+    public class EmployeeDataForReport
+    {
+        public int Employeeid { get; set; }
+        public string? Fio { get; set; }
+
+
+    }
+
 
     public class ReportItem
     {
