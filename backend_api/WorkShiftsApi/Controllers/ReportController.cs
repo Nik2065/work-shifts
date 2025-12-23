@@ -199,8 +199,9 @@ namespace WorkShiftsApi.Controllers
                 emplList = emplList.Where(x => !vedIds.Contains(x.Id)).ToList();
 
 
-                var resultTable1 = _employeeService.GetReportForEmplList2(start, end, vedIds);
-                tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1 });
+                _employeeService.GetReportForEmplList2(start, end, vedIds, out DataTable resultTable1, out int tableSum);
+
+                tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1, TotalSum = tableSum });
 
                 //карты
 
@@ -210,10 +211,14 @@ namespace WorkShiftsApi.Controllers
                     if (empListN.Count() == 0)
                         continue;
 
-
-                    var resultTableN = _employeeService.GetReportForEmplList2(start, end, empListN.Select(x => x.Id).ToList());
-                    tables.Add(new TableDataDto { Title = "Расчет для карт банка " + b , DataTable = resultTableN });
-
+                    var ids = empListN.Select(x => x.Id).ToList();
+                    _employeeService.GetReportForEmplList2(start, end, ids, out DataTable resultTableN, out int tableSumN);
+                    tables.Add(new TableDataDto 
+                    { 
+                        Title = "Расчет для карт банка " + b , 
+                        DataTable = resultTableN, 
+                        TotalSum = tableSumN
+                    });
                 }
 
                 var fileBytes = _excelGenerator.CreateExcelFromDataTables(tables, "Отчет");

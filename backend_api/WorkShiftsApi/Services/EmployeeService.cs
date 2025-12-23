@@ -162,9 +162,10 @@ namespace WorkShiftsApi.Services
 
 
 
-        public DataTable GetReportForEmplList2(DateTime begin, DateTime end, List<int> emplList)
+        public void GetReportForEmplList2(DateTime begin, DateTime end, List<int> emplList, out DataTable table, out int totalSum)
         {
-            var table = new DataTable();
+            table = new DataTable();
+            totalSum = 0;
             //table.Columns.Add("# id", typeof(int));
             table.Columns.Add("ФИО", typeof(string));
             table.Columns.Add("Дней", typeof(int));
@@ -174,8 +175,8 @@ namespace WorkShiftsApi.Services
             table.Columns.Add("Списания: Форма", typeof(int));
             table.Columns.Add("Списания: УЧО", typeof(int));
             table.Columns.Add("Списания: Другое", typeof(int));
-            table.Columns.Add("Начисления: Другое", typeof(int));
-
+            //table.Columns.Add("Начисления: Другое", typeof(int));
+            table.Columns.Add("Начисления: Другое", typeof(string));
             table.Columns.Add("Итого", typeof(int));
 
 
@@ -184,8 +185,8 @@ namespace WorkShiftsApi.Services
             {
 
                 //var rows = new List<DataRow>();
-                
 
+                var empListSum = 0;
                 foreach (var employeeId in emplList)
                 {
 
@@ -261,13 +262,21 @@ namespace WorkShiftsApi.Services
 
                     //итог для одного сотрудника
                     var empTotal = revenue + otherPayroll - (shtraf + forma + ucho + other);
-
+                    empListSum = empListSum + empTotal;
                     row[8] = empTotal;
+                    
                     table.Rows.Add(row);
                 }
-            }
 
-            return table;
+                //итоговая строка
+                var rowTotal = table.NewRow();
+                rowTotal[0] = "";
+                rowTotal[7] = "Итого:";
+                rowTotal[8] = empListSum;
+                totalSum = empListSum;
+
+                table.Rows.Add(rowTotal);
+            }
         }
 
     }

@@ -48,6 +48,9 @@ namespace WorkShiftsApi.Services
             {
                 var worksheet = workbook.Worksheets.Add(sheetName);
 
+
+                var allTablesSum = 0;
+
                 int rowNumber = 1;
                 foreach (var tData in tables)
                 {
@@ -81,12 +84,34 @@ namespace WorkShiftsApi.Services
                         {
                             var value = dataTable.Rows[row][col]?.ToString();
                             worksheet.Cell(rowNumber, col + 1).Value = value ?? string.Empty;
+                            //считаем итоги. Итоги хранятся в колонке 8
+                            /*if (col == 8 && value!= null) {
+                                if (int.TryParse(value, out int r1))
+                                {
+                                    allTablesSum = allTablesSum + r1;
+                                }
+                            }*/
                         }
                     }
+
+                    allTablesSum += tData.TotalSum;
 
                     rowNumber += 1;
                 }
 
+                //итоговая строка по всем таблицам
+                rowNumber += 1;
+                {
+                    var cellTotal = worksheet.Cell(rowNumber, 8);
+                    cellTotal.Value = "Общий итог:";
+                    cellTotal.Style.Font.SetBold(true);
+                    cellTotal.Style.Fill.SetBackgroundColor(XLColor.LightBlue);
+
+                    var cellTotal2 = worksheet.Cell(rowNumber, 9);
+                    cellTotal2.Value = allTablesSum;
+                    cellTotal2.Style.Font.SetBold(true);
+                    cellTotal2.Style.Fill.SetBackgroundColor(XLColor.LightBlue);
+                }
 
                 // Автоширина столбцов
                 worksheet.Columns().AdjustToContents();
@@ -130,5 +155,6 @@ namespace WorkShiftsApi.Services
         public DataTable DataTable { get; set; }
 
         public string Title { get; set; }
+        public int TotalSum { get; set; }
     }
 }
