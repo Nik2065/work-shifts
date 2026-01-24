@@ -1,8 +1,10 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using DataTable = System.Data.DataTable;
 
 namespace WorkShiftsApi.Services
 {
@@ -169,15 +171,18 @@ namespace WorkShiftsApi.Services
             //table.Columns.Add("# id", typeof(int));
             table.Columns.Add("ФИО", typeof(string));
             table.Columns.Add("Дней", typeof(int));
+            table.Columns.Add("Ставка", typeof(int));
+
             //table.Columns.Add("Дата", typeof(DateTime));
             table.Columns.Add("Сумма за работу", typeof(int));
             table.Columns.Add("Списания: Штрафы", typeof(int));
             table.Columns.Add("Списания: Форма", typeof(int));
             table.Columns.Add("Списания: УЧО", typeof(int));
-            table.Columns.Add("Списания: Другое", typeof(int));
+            table.Columns.Add("Списания: Другое", typeof(string));
             //table.Columns.Add("Начисления: Другое", typeof(int));
-            table.Columns.Add("Начисления: Другое", typeof(string));
+            table.Columns.Add("Начисления: Другое", typeof(int));
             table.Columns.Add("Итого", typeof(int));
+
 
 
 
@@ -189,30 +194,16 @@ namespace WorkShiftsApi.Services
                 var empListSum = 0;
                 foreach (var employeeId in emplList)
                 {
-
-                    var row = table.NewRow();
-                    //var employeeId = emplList[0];
-                    //row[0] =employeeId; 
-
-                    var emp = _context.Employees.FirstOrDefault(x => x.Id == employeeId);
-                    if (emp == null) continue;
-
-                    row[0] = emp.Fio;
-
                     var wh = _context.WorkHours
                         .Where(x => x.EmployeeId == employeeId
                         && x.WorkDate.Date >= begin.Date
                         && x.WorkDate.Date < end.Date);
 
-                    var days = wh.Select(x => x.WorkDate.Date)
-                        .Distinct()
-                        .Count();
-                    row[1] = days;
+                    //узнаем какие были ставки у этого сотрудника
+                    var emplRates = wh.Select(x=>x.Rate).Distinct().ToList();
 
-
-                    var revenue = wh.Sum(x => x.Hours * x.Rate);//сумма за работу
-                    row[2] = revenue;
-
+                    var emp = _context.Employees.FirstOrDefault(x => x.Id == employeeId);
+                    if (emp == null) continue;
 
                     //fin 
                     var finOperation = _context.FinOperations
@@ -220,59 +211,104 @@ namespace WorkShiftsApi.Services
                         && x.Date.Date >= begin.Date.Date
                         && x.Date.Date < end.Date.Date).ToList();
 
+                    //делаем для сотрудника столько строк сколько было ставок
+                    bool firstRateRow = true;
+                    int employeeSpisania = 0;
+                    int employeeRevenue = 0;
+                    int employeeOtherPayroll = 0;
+                    DataRow row1 = null;
+                    foreach (var rate in emplRates)
+                    {
+                        var row = table.NewRow();
+                        if (firstRateRow)
+                        {
+                            row1 = row;//запоминаем первую строку
+                            row[0] = emp.Fio;
+                        }
 
-                    //списания
-                    //типы списаний: штрафы
-                    var shtraf = finOperation
-                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Shtraf)
-                        .Select(x => x.Sum)
-                        .Sum();
-                    row[3] = shtraf;
+                        //дни у каждой ставки будут свои
+                        var days = wh.Where(x=>x.Rate == rate).Select(x => x.WorkDate.Date)
+                                    .Distinct()
+                                    .Count();
+                        row[1] = days;
+                        row[2] = rate;
 
-                    //Forma
-                    var forma = finOperation
-                        .Where(x => x.FinOperationType != null &&  x.FinOperationType.Id == (int)FinOperationTypeEnum.Forma)
-                        .Select(x => x.Sum)
-                        .Sum();
-                    row[4] = forma;
+                        var revenue = wh.Where(x => x.Rate == rate)
+                            .Sum(x => x.Hours * x.Rate);//сумма за работу
+                        row[3] = revenue;
+                        employeeRevenue += revenue;//складываем выплаты с разной ставкой
 
-                    //ucho
-                    var ucho = finOperation
-                        .Where(x => x.FinOperationType != null &&  x.FinOperationType.Id == (int)FinOperationTypeEnum.Ucho)
-                        .Select(x => x.Sum)
-                        .Sum();
-                    row[5] = ucho;
+                        //заполняем прочие доходы/расходы только для 1й строки
+                        if (firstRateRow)
+                        {
+                            //списания
+                            //типы списаний: штрафы
+                            var shtraf = finOperation
+                                .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Shtraf)
+                                .Select(x => x.Sum)
+                                .Sum();
+                            row[4] = shtraf;
 
-                    //Other
-                    var other = finOperation
-                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Other)
-                        .Select(x => x.Sum)
-                        .Sum();
-                    row[6] = other;
+                            //Forma
+                            var forma = finOperation
+                                .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Forma)
+                                .Select(x => x.Sum)
+                                .Sum();
+                            row[5] = forma;
+
+                            //ucho
+                            var ucho = finOperation
+                                .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Ucho)
+                                .Select(x => x.Sum)
+                                .Sum();
+                            row[6] = ucho;
+
+                            //Other
+                            var other = finOperation
+                                .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.Other)
+                                .Select(x => x.Sum)
+                                .Sum();
+                            row[7] = other;
+
+                            //начисления
+                            //другие
+                            var otherPayroll = finOperation
+                                .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.OtherPayroll)
+                                .Select(x => x.Sum)
+                                .Sum();
+
+                            row[8] = otherPayroll;
+                            employeeOtherPayroll = otherPayroll;
+                            //
+                            //итог для одного сотрудника
+                            employeeSpisania = shtraf + forma + ucho + other;
+                            //выплаты
+
+                            //var empTotal = revenue + otherPayroll - (shtraf + forma + ucho + other);
+                            //empListSum = empListSum + empTotal;
+                            //row[9] = empTotal;
+                            
+                        }
+                        table.Rows.Add(row);
+
+                        firstRateRow = false;
+                    }
+
+                    if (row1 != null)
+                    {
+                        var empTotal = employeeRevenue + employeeOtherPayroll - employeeSpisania;
+                        empListSum = empListSum + empTotal;
+                        row1[9] = empTotal;
+                    }
 
 
-                    //начисления
-                    //другие
-                    var otherPayroll = finOperation
-                        .Where(x => x.FinOperationType != null && x.FinOperationType.Id == (int)FinOperationTypeEnum.OtherPayroll)
-                        .Select(x => x.Sum)
-                        .Sum();
-
-                    row[7] = otherPayroll;
-
-                    //итог для одного сотрудника
-                    var empTotal = revenue + otherPayroll - (shtraf + forma + ucho + other);
-                    empListSum = empListSum + empTotal;
-                    row[8] = empTotal;
-                    
-                    table.Rows.Add(row);
                 }
 
                 //итоговая строка
                 var rowTotal = table.NewRow();
                 rowTotal[0] = "";
-                rowTotal[7] = "Итого:";
-                rowTotal[8] = empListSum;
+                rowTotal[7] = "Общий итог:";
+                rowTotal[9] = empListSum;
                 totalSum = empListSum;
 
                 table.Rows.Add(rowTotal);

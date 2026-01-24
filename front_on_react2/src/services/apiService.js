@@ -236,11 +236,23 @@ export async function GetWorkHoursForPeriodApi(params) {
     return parseJSON(response);
 }
 
-//отчет для списка сотрудников
+//отчет для списка сотрудников для отображения на странице
 export async function GetMainReportForPeriodAsTable(params) {
     
     console.log(params);
     const url = apiUrl + '/api/report/GetMainReportForPeriodAsTable?startDate=' 
+    + params.startDate 
+    + '&endDate=' + params.endDate + '&employees=' + params.employees;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+
+}
+
+//отчет для списка сотрудников для отображения на странице. версия 2
+export async function GetMainReportForPeriodAsTable2(params) {
+    
+    console.log(params);
+    const url = apiUrl + '/api/report/GetMainReportForPeriodAsTable2?startDate=' 
     + params.startDate 
     + '&endDate=' + params.endDate + '&employees=' + params.employees;
     const response = await authenticatedFetch(url);

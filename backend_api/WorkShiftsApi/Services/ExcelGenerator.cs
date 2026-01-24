@@ -103,7 +103,7 @@ namespace WorkShiftsApi.Services
                 rowNumber += 1;
                 {
                     var cellTotal = worksheet.Cell(rowNumber, 8);
-                    cellTotal.Value = "Общий итог:";
+                    cellTotal.Value = "Итого (все банки):";
                     cellTotal.Style.Font.SetBold(true);
                     cellTotal.Style.Fill.SetBackgroundColor(XLColor.LightBlue);
 

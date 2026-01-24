@@ -57,28 +57,30 @@ export function ModalForAddOperation({employeeId,
 
       }
 
+    }
 
-      GetFinOperationTypesFromApi()
-      .then(data => {
-        console.log(data);
-        if (data.isSuccess) {
-          setOperationTypes(data.operationTypes);
-          const filtered = data.operationTypes.filter( x=> x.isPayroll == true);
-          //console.log(filtered);
-          setFilteredOperationTypes([...filtered]);
-          setSelectedOperationType(filtered[0]);
-        }
-        else {
-          // Обработка ошибки
-        }
-      })
-      .catch(error => console.log(error));
-
+    async function GetFinTypes() {
+    
+        GetFinOperationTypesFromApi()
+        .then(data => {
+            console.log(data);
+            if (data.isSuccess) {
+            setOperationTypes(data.operationTypes);
+            const filtered = data.operationTypes.filter( x=> x.isPayroll == true);
+            //console.log(filtered);
+            setFilteredOperationTypes([...filtered]);
+            setSelectedOperationType(filtered[0].id);
+            }
+            else {
+            // Обработка ошибки
+            }
+        })
+        .catch(error => console.log(error));
     }
 
 
     //сохранить результатфинансовой операции
-    function saveFinOperation(){
+    async function saveFinOperation(){
         setAlertData({show: false});
         if(currentEmployee){
             console.log("saveFinOperation");
@@ -93,7 +95,7 @@ export function ModalForAddOperation({employeeId,
                 TypeId: selectedOperationType
             };
 
-            //console.log("params", params);
+            console.log("params", params);
 
             CreateFinOperationFromApi(params)
             .then(data => {
@@ -121,6 +123,8 @@ export function ModalForAddOperation({employeeId,
         setDisableSaveButton(false);
         setSum(0);
         setComment('');
+        changeOperationTypeHandler(false);
+        setAlertData({show:false,message:"",variant:""});
     }
 
     function changeOperationTypeHandler(isPenalty)
@@ -128,14 +132,21 @@ export function ModalForAddOperation({employeeId,
         setPenaltySelected(isPenalty);
         const filtered = operationTypes.filter( x=> x.isPayroll == !isPenalty);
         console.log(filtered);
-        setFilteredOperationTypes([...filtered]);
+        if(filtered && filtered.length>0){
+            setFilteredOperationTypes([...filtered]);
+            setSelectedOperationType(filtered[0].id);
+        }
     }
 
     return (
         <Modal 
         show={showOperationsModal} 
         onHide={() => setShowOperationsModal(false)}
-        onShow={() => {GetEmployeeOnShow(); resetFormData();}}>
+        onShow={async() => {
+            await GetFinTypes();
+            await GetEmployeeOnShow(); 
+            await resetFormData();
+            }}>
             <Modal.Header closeButton>
                 <Modal.Title>Начисления и списания для:<br/>
                     {

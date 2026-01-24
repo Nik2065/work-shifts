@@ -288,6 +288,59 @@ namespace WorkShiftsApi.Controllers
         }
 
 
+        /// <summary>
+        /// //отчет для списка сотрудников для отображения на странице. версия 2
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="employees"></param>
+        /// <returns></returns>
+        [HttpGet("GetMainReportForPeriodAsTable2")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriodAsTable2([FromQuery] string startDate,
+            [FromQuery] string endDate,
+            [FromQuery] string employees)
+        {
+
+            var result = new GetMainReportForPeriodAsTableResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(startDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+                var resultTable = _employeeService.GetReportForEmplList(start, end, list);
+
+                var resultList = new List<string[]>();
+                foreach (DataRow row in resultTable.Rows)
+                {
+                    var arr = row.ItemArray.Select(x => x?.ToString()).ToArray();
+                    resultList.Add(arr);
+                }
+
+                var table = new MainReportTable();
+                table.Items = resultList.ToArray();
+                result.Table = table;
+            }
+            catch (Exception ex)
+            {
+                //return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+
+            return Ok(result);
+
+        }
+
+
 
     }
 
@@ -347,7 +400,7 @@ namespace WorkShiftsApi.Controllers
 
     public class Banks
     {
-        public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер Банк" };
+        public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер", "ПСБ" };
     }
 
 

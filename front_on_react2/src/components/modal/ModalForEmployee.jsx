@@ -380,6 +380,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 <option value="Сбер">Сбер</option>
                 <option value="ВТБ">ВТБ</option>
                 <option value="ПСБ">ПСБ</option>
+                <option value="Т-Банк">Т-Банк</option>
               </Form.Select>
             </Form.Group>
           

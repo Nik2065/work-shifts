@@ -27,7 +27,7 @@ export function ReportForEmployesListPage() {
     const [selectedEmployesList, setSelectedEmployesList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
     const [resultTable, setResultTable] = useState([]);
-
+    const [resultTable2, setResultTable2] = useState([]);
 
     useEffect(() => {
         updateObjects();
@@ -107,6 +107,42 @@ export function ReportForEmployesListPage() {
         });
     }
 
+    function updateReport2() {
+
+        if(selectedEmployesList.length == 0){
+            alert("Список сотрудников пуст");
+            return;
+        }
+
+        const list = selectedEmployesList.join(",");
+
+        const params = {
+            employees: list,
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        };
+
+        setUpdateReportAnimation(true);
+        GetMainReportForPeriodAsTable(params)
+        .then((data) => {
+            setUpdateReportAnimation(false);
+            console.log(data);
+            if(data.isSuccess){
+
+                setResultTable(
+                    data.mainReportTable.items
+                );
+
+            }
+            else {
+                //alert
+            }
+        })
+        .catch((error) => {
+            setUpdateReportAnimation(false);
+            console.error('Ошибка при получении данных отчета:', error)
+        });
+    }
 
    
 
@@ -249,6 +285,52 @@ export function ReportForEmployesListPage() {
                 }
 
 
+                {
+                    updateReportAnimation ? 
+                    <div style={{textAlign:"center"}}>
+                        <Spinner />
+                        <h4>Загрузка данных...</h4>
+                    </div>
+                    :
+                    <div className="table-responsive" style={{height:"400px"}}>
+                    <br/>
+                    <div className="h3">Данные о рабочих часах</div>
+                     <Table bordered hover>
+                    <thead>
+                        <tr>
+                            <th width="5%">Id</th>
+                            <th width="30%">ФИО</th>
+                            <th width="15%">Дней</th>
+                            <th width="15%">Сумма за работу</th>
+                            <th width="12%">Списания</th>
+                            <th width="12%">Начисления</th>
+                            <th width="15%">Итого</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {   resultTable ?
+                            resultTable.map((item) => (<tr key={item[0]}>
+                                    <td>{item[0]}</td>
+                                    <td>{item[1]}</td>
+                                    <td>{item[2]}</td>
+                                    <td>{item[3]}</td>
+                                    <td>{item[4]}</td>
+                                    <td>{item[5]}</td>
+                                    <td>{item[6]}</td>
+                                    </tr>)
+                            )
+                            :
+                            <></>
+                        }
+                    </tbody>
+                    </Table>
+                    <br/>
+
+                    </div>
+                }
+
+
+                {    /*
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Скачать отчет без разбивки по банкам</Form.Label>
                          &nbsp; &nbsp;
@@ -268,6 +350,7 @@ export function ReportForEmployesListPage() {
                         Скачать
                         </Button>
                 </FormGroup>
+                 */   }   
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Скачать отчет с разбивкой по банкам</Form.Label>
                          &nbsp; &nbsp;
@@ -288,6 +371,8 @@ export function ReportForEmployesListPage() {
                         Скачать
                         </Button>
                 </FormGroup>
+                {
+                    /*
                 <FormGroup className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Отметить платежи в отчете исполненными </Form.Label>
                         &nbsp; &nbsp;
@@ -295,7 +380,8 @@ export function ReportForEmployesListPage() {
                         Поставить отметку
                         </Button>
                 </FormGroup>
-
+                */
+                }
                 <br/>
                 <br/>
 

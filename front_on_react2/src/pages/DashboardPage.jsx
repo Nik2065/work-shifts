@@ -20,20 +20,20 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
-import {converDateToIsoStringWithTimeZone} from '../services/commonService';
+//import {converDateToIsoStringWithTimeZone} from '../services/commonService';
 registerLocale('ru', ru)
 
 
 
 export function DashboardPage () {
-    
-
 
     const [showEmpModal, setShowEmpModal] = useState(false);
     const [showShiftsModal, setShowShiftsModal] = useState(false);
     const [employeeId, setEmployeeId] = useState(null);
     const [employeeList, setEmployeeList] = useState([]);
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [tempDate, setTempDate] = useState(new Date());
+
     const [workHoursList, setWorkHoursList] = useState({});
     const [savingWorkHours, setSavingWorkHours] = useState(false);
     const 
@@ -47,6 +47,7 @@ export function DashboardPage () {
     const [fioToSearch, setFioToSearch] = useState("");
     const [showOperationsModal, setShowOperationsModal] = useState(false);
     const [savingWorkHoursEmplId, setSavingWorkHoursEmplId] = useState(null);
+    const [loadingMainTable, setLoadingMainTable] = useState(false);
     //фильтр для таблицы //на вахте
     const [isInWorkShift, setIsInWorkShift] = useState(-1);
 
@@ -173,8 +174,10 @@ export function DashboardPage () {
 
     //обновляем таблицу с сотрудниками и фин операциями
     //финансовые операции загружаются только на выбранную дату
-    function updateEmployeeListAndFinOperations() {
+    function updateEmployeeListAndFinOperations(dateToCalc) {
       
+      setLoadingMainTable(true);
+
       const params = {
         date: currentDate,
         objectId: selectedObject,
@@ -184,6 +187,7 @@ export function DashboardPage () {
       GetEmployeeWithFinOpListFromApi(params)
         .then((data) => {
             console.log(data);
+            setLoadingMainTable(false);
 
             if(data.isSuccess){
               let empList = data.employeesList;
@@ -197,10 +201,13 @@ export function DashboardPage () {
 
                 setEmployeeList(empList);
                 //теперь скачиваем отработанные часы
-                updateWorkHours(currentDate);
+                updateWorkHours(dateToCalc);
             }
         })
-        .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
+        .catch((error) => {
+          setLoadingMainTable(false);
+          console.error('Ошибка при получении данных сотрудников:', error);
+        });
     }
 
     function updateWorkHours(date){
@@ -272,7 +279,8 @@ export function DashboardPage () {
     function onDateChange(date){
       if(date){
 
-        setCurrentDate(date);
+        //setCurrentDate(date);
+        setTempDate(date);
         //updateWorkHours(date);
         //updateEmployeeListAndFinOperations();
       }
@@ -342,7 +350,7 @@ export function DashboardPage () {
                         className='form-control'
                         //utcOffset={offset} 
                         locale={ru}
-                        selected={currentDate} 
+                        selected={tempDate} 
                         onChange={(date) => {
                             onDateChange(date);
                           }} />
@@ -398,7 +406,10 @@ export function DashboardPage () {
                       <Form.Group as={Col} sm={2} style={{textAlign:"right"}}>
                         
                       <Button 
-                      onClick={updateEmployeeListAndFinOperations}
+                      onClick={() => {
+                        setCurrentDate(tempDate);
+                        updateEmployeeListAndFinOperations(tempDate);
+                      }}
                       variant="primary" 
                       className="">Показать</Button>
                       </Form.Group>
@@ -407,8 +418,13 @@ export function DashboardPage () {
                   </Card.Header>
                   <Card.Body>
                     <br/>
-                    <div className="table-responsive">
+                    <div className="table-responsive" style={{minHeight:"100px"}}>
                         {
+                    loadingMainTable ?
+                    <div style={{textAlign:"center"}}>
+                      <Spinner size='xl' />
+                    </div>
+                    :
                     employeeList ? 
                       <table className="table table-bordered table-hover">
                         <thead>

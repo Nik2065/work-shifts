@@ -568,7 +568,8 @@ namespace WorkShiftsApi.Controllers
                     Date = s,
                     IsPenalty = request.IsPenalty,
                     Sum = request.Sum,
-                    Comment = request.Comment
+                    Comment = request.Comment,
+                    TypeId = request.TypeId
                 };
 
                 _context.FinOperations.Add(f);
