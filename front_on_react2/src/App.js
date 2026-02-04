@@ -13,8 +13,9 @@ import 'bootstrap-icons/font/bootstrap-icons.css';
 // Pages
 import PublicPage from './pages/PublicPage';
 import Home from './pages/Home';
+import PageNotFound from './pages/PageNotFound.js';
 import { DashboardPage } from './pages/DashboardPage';
-import DashboardLayout from './pages/DashboardLayout.jsx';
+//import DashboardLayout from './pages/DashboardLayout.jsx';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 import { ReportForEmployeePage } from './pages/ReportForEmployeePage.jsx';
 import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx';
@@ -33,17 +34,6 @@ function App() {
             <Route path="/public" element={<PublicPage />} />
             <Route path="/login" element={<LoginForm />} />
             
-            {/* Protected routes 
-            <Route 
-              path="/dashboard2" 
-              element={
-                <ProtectedRoute>
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-              */
-            }
 
             <Route 
               path="/dashboard" 
@@ -54,19 +44,7 @@ function App() {
               }
             />
 
-              {/*
-            <Route 
-              path="/dashboard3" 
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout />
-                </ProtectedRoute>
-              }
-            />
-
-              */}
-
-
+ 
             <Route 
               path="/profile" 
               element={
@@ -113,7 +91,7 @@ function App() {
             />
 
             {/* 404 fallback */}
-            <Route path="*" element={<Home />} />
+            <Route path="*" element={<PageNotFound />} />
           </Routes>
         </Layout>
       </Router>
