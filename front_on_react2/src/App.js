@@ -1,25 +1,25 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import LoginForm from './components/auth/LoginForm';
+import Layout from './components/layout/Layout.js'
 
-// Pages
-import Home from './pages/Home';
-import PublicPage from './pages/PublicPage';
-import Dashboard from './components/dashboard/Dashboard';
-//import Profile from './pages/Profile';
 
 // Bootstrap CSS
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
+
+// Pages
+import PublicPage from './pages/PublicPage';
+import Home from './pages/Home';
 import { DashboardPage } from './pages/DashboardPage';
 import DashboardLayout from './pages/DashboardLayout.jsx';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 import { ReportForEmployeePage } from './pages/ReportForEmployeePage.jsx';
 import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx';
 import { ProfilePage } from './pages/ProfilePage.jsx';
+import { PayoutReportPage } from './pages/PayoutReportPage.jsx';
 
 
 function App() {
@@ -33,7 +33,7 @@ function App() {
             <Route path="/public" element={<PublicPage />} />
             <Route path="/login" element={<LoginForm />} />
             
-            {/* Protected routes */}
+            {/* Protected routes 
             <Route 
               path="/dashboard2" 
               element={
@@ -42,6 +42,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+              */
+            }
 
             <Route 
               path="/dashboard" 
@@ -52,6 +54,7 @@ function App() {
               }
             />
 
+              {/*
             <Route 
               path="/dashboard3" 
               element={
@@ -60,6 +63,8 @@ function App() {
                 </ProtectedRoute>
               }
             />
+
+              */}
 
 
             <Route 
@@ -96,6 +101,15 @@ function App() {
                   <ReportForEmployesListPage />
                 </ProtectedRoute>
               } 
+            />
+
+            <Route 
+              path="/reportForPayout"
+              element={
+                <ProtectedRoute>
+                  <PayoutReportPage />
+                </ProtectedRoute>
+              }
             />
 
             {/* 404 fallback */}

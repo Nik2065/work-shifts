@@ -205,12 +205,13 @@ export async function GetSiteUsersList() {
 }
 
 export async function GetWorkHoursList(date) {
-    const url = apiUrl + '/api/employee/GetWorkHours?date=' + new Date(date).toISOString();
-        return fetch(url, {
-            method: 'GET',
-            headers: GetSeqHeaders(),
-        }
-    );
+
+    let url = apiUrl + '/api/employee/GetWorkHours?date=';
+    if(date)
+     url = url + new Date(date).toISOString();
+    
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
 }
 
 export async function SaveWorkHoursItemOnServer(params) {

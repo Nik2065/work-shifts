@@ -52,8 +52,9 @@ export function DashboardPage () {
     const [isInWorkShift, setIsInWorkShift] = useState(-1);
 
     useEffect(() => {
-        //updateEmployeeList();
-        updateEmployeeListAndFinOperations();
+        //сначала получаем данные для сегодняшней даты
+        const d = new Date();
+        updateEmployeeListAndFinOperations(d);
         }
     , []);
 
@@ -213,7 +214,6 @@ export function DashboardPage () {
     function updateWorkHours(date){
 
         GetWorkHoursList(date)
-        .then((response) => response.json())
         .then((data) => {
             console.log(data);
 

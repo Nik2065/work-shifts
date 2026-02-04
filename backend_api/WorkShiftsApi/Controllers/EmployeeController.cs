@@ -287,23 +287,24 @@ namespace WorkShiftsApi.Controllers
             {
                 var list = _context.WorkHours.AsQueryable();
 
-                if (!string.IsNullOrEmpty(date))
-                {
-                    var canParse = DateTime.TryParseExact(date, "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime d);
-                    if(canParse)
-                    {
-                        list = list.Where(x=> x.WorkDate.Date == d.Date);
-                    }
-                }
+                if (string.IsNullOrEmpty(date))
+                    throw new Exception("Ошибка: Передана пустая строка даты");
 
-                var listDto = list.Select(x => new WorkHourDto 
-                    { 
-                        Created = x.Created,
-                        EmployeeId = x.EmployeeId,
-                        Hours = x.Hours,
-                        Id = x.Id,
-                        Rate = x.Rate,
-                    }             
+                var canParse = DateTime.TryParseExact(date, "yyyy-MM-ddTHH:mm:ss.fffZ", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime d);
+                if (canParse)
+                    list = list.Where(x => x.WorkDate.Date == d.Date);
+                else
+                    throw new Exception("Не удалось разобрать строку как дату:" + date);
+
+
+                var listDto = list.Select(x => new WorkHourDto
+                {
+                    Created = x.Created,
+                    EmployeeId = x.EmployeeId,
+                    Hours = x.Hours,
+                    Id = x.Id,
+                    Rate = x.Rate,
+                }
                 ).ToList();
 
                 result.WorkHoursList = listDto;
