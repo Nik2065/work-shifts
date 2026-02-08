@@ -89,9 +89,9 @@ export async function GetEmployee(employeeId) {
 
 };
 
-export async function GetEmployeeList() {
+export async function GetEmployeeList(objectId) {
 
-    return GetEmployeeListFromApi();
+    return GetEmployeeListFromApi(objectId);
     //return GetEmployeeMock();
 
 };
@@ -167,8 +167,10 @@ async function GetEmployeeFromApi(employeeId) {
     return parseJSON(response);
 }
 
-async function GetEmployeeListFromApi() {
-    const url = apiUrl + '/api/employee/getEmployeeList';
+async function GetEmployeeListFromApi(objectId) {
+    let url = apiUrl + '/api/employee/getEmployeeList?objectId=';
+    if(objectId)
+        url = url + objectId;
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
@@ -250,10 +252,10 @@ export async function GetMainReportForPeriodAsTable(params) {
 }
 
 //отчет для списка сотрудников для отображения на странице. версия 2
-export async function GetMainReportForPeriodAsTable2(params) {
+export async function GetMainReportForPeriodAsTableWithBanks(params) {
     
     console.log(params);
-    const url = apiUrl + '/api/report/GetMainReportForPeriodAsTable2?startDate=' 
+    const url = apiUrl + '/api/report/GetMainReportForPeriodAsTableWithBanks?startDate=' 
     + params.startDate 
     + '&endDate=' + params.endDate + '&employees=' + params.employees;
     const response = await authenticatedFetch(url);

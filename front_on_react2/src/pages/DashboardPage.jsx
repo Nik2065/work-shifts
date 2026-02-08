@@ -319,6 +319,10 @@ export function DashboardPage () {
         .catch(error => console.log(error));
     }
 
+    const handleFocus = (e) => {
+      e.target.select();
+    };
+
 
 
     return (
@@ -476,9 +480,14 @@ export function DashboardPage () {
                                           employee.isInWorkShift ? "Да" : "Нет"
                                         }
                                         </td>
+                                          {
+                                            //Столбец: Отработанно часов
+                                          }
                                         <td>
+
                                         <Form.Control 
                                         type='number'
+                                        onFocus={(e) => handleFocus(e)}
                                         onChange={(e) => {
                                             //const value = e.target.value.replace(/[^\d ]/g, '');
                                             const value = e.target.value;
@@ -496,8 +505,12 @@ export function DashboardPage () {
                                         
                                         />
                                         </td>
+                                          {
+                                            //Столбец: Ставка в час, руб.
+                                          }
                                         <td>
                                         <Form.Control 
+                                        onFocus={(e) => handleFocus(e)}
                                         //onChange={(e) => onChangeRate(e.target.value, employee.id)} 
                                         //value={workShiftsList[employee.id]?.rate}
                                         onChange={(e) => {

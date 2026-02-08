@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
+using System.Linq;
 using System.Net;
 using System.Text.Json.Serialization;
 using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace WorkShiftsApi.Controllers
 {
@@ -166,6 +168,18 @@ namespace WorkShiftsApi.Controllers
 
         }
 
+        private void CreateReportTableFromTablesArray(List<TableDataDto> tables)
+        {
+            var allTablesSum = 0;
+
+            int rowNumber = 1;
+            foreach (var tData in tables)
+            {
+
+            }
+
+        }
+
         /// <summary>
         /// Выгрузка на сайте по списку сотрудников с разбивкой на банки
         /// </summary>
@@ -182,8 +196,6 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
-                var tables = new List<TableDataDto>();
-
                 var canParseStart = DateTime.TryParse(startDate, out DateTime start);
                 var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
 
@@ -193,36 +205,9 @@ namespace WorkShiftsApi.Controllers
                     .ToList();
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
-                //для ведомости
-                var vedEmplList = emplList.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
-                var vedIds = vedEmplList.Select(x => x.Id).ToList();
-                emplList = emplList.Where(x => !vedIds.Contains(x.Id)).ToList();
 
-
-                _employeeService.GetReportForEmplList2(start, end, vedIds, out DataTable resultTable1, out int tableSum);
-
-                tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1, TotalSum = tableSum });
-
-                //карты
-
-                foreach (var b in Banks.BanksList)
-                {
-                    var empListN = emplList.Where(x => x.BankName.Trim().ToLower() == b.Trim().ToLower());
-                    if (empListN.Count() == 0)
-                        continue;
-
-                    var ids = empListN.Select(x => x.Id).ToList();
-                    _employeeService.GetReportForEmplList2(start, end, ids, out DataTable resultTableN, out int tableSumN);
-                    tables.Add(new TableDataDto 
-                    { 
-                        Title = "Расчет для карт банка " + b , 
-                        DataTable = resultTableN, 
-                        TotalSum = tableSumN
-                    });
-                }
-
+                var tables = _employeeService.CreateTablesList(start, end, emplList);
                 var fileBytes = _excelGenerator.CreateExcelFromDataTables(tables, "Отчет");
-
 
                 return File(
                     fileBytes,
@@ -234,14 +219,94 @@ namespace WorkShiftsApi.Controllers
             {
                 return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
             }
-
+        
         }
 
-        private void GetEmplList(List<int> ids)
+
+
+
+
+        /// <summary>
+        /// Отчет для отображения на странице с разделением по банкам
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="employees"></param>
+        /// <returns></returns>
+        [HttpGet("GetMainReportForPeriodAsTableWithBanks")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportForPeriodAsTableWithBanks([FromQuery] string startDate,
+                [FromQuery] string endDate,
+                [FromQuery] string employees)
         {
 
+            var result = new GetMainReportForPeriodAsTableResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(startDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(endDate, out DateTime end);
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+
+                var empList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
+                var tables = _employeeService.CreateTablesList(start, end, empList);
+                //_employeeService.GetReportForEmplList2(start, end, empList, out DataTable table, out int totalSum);
+
+                //пока одна таблица
+                var table = tables[0].DataTable;
+
+                var resultTable = new MainReportTable();
+                resultTable.Rows = new MrRow[table.Rows.Count];
+
+
+                var i = 0;
+                foreach (DataRow row in table.Rows)
+                {
+                    var ggg = row.ItemArray;
+                    var ggg1 = GetStrArray(row.ItemArray);
+
+                    resultTable.Rows[i] = new MrRow();
+                    resultTable.Rows[i].RowItems = ggg1;
+                    i += 1;
+
+                }
+
+
+                result.Table = resultTable;
+            }
+            catch (Exception ex)
+            {
+                //return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+
+            return Ok(result);
+
         }
 
+        private string[] GetStrArray(object[] items)
+        {
+            var length = items.Length;
+            var ggg1 = new string[length];
+            for (int j = 0; j < length; j++)
+            {
+                var result = "";
+                if (items[j] != null) result = items[j].ToString();
+                ggg1[j] = result;
+            }
+            return ggg1;
+        }
+
+
+        /*
         [HttpGet("GetMainReportForPeriodAsTable")]
         [AllowAnonymous]
         public ActionResult GetMainReportForPeriodAsTable([FromQuery] string startDate,
@@ -285,7 +350,7 @@ namespace WorkShiftsApi.Controllers
 
             return Ok(result);
 
-        }
+        }*/
 
 
         /// <summary>
@@ -295,7 +360,7 @@ namespace WorkShiftsApi.Controllers
         /// <param name="endDate"></param>
         /// <param name="employees"></param>
         /// <returns></returns>
-        [HttpGet("GetMainReportForPeriodAsTable2")]
+        /*[HttpGet("GetMainReportForPeriodAsTable2")]
         [AllowAnonymous]
         public ActionResult GetMainReportForPeriodAsTable2([FromQuery] string startDate,
             [FromQuery] string endDate,
@@ -338,7 +403,7 @@ namespace WorkShiftsApi.Controllers
 
             return Ok(result);
 
-        }
+        }*/
 
 
 
@@ -354,6 +419,14 @@ namespace WorkShiftsApi.Controllers
     {
         [JsonPropertyName("items")]
         public string[][] Items { get; set; }
+
+        [JsonPropertyName("rows")]
+        public MrRow[] Rows { get; set; }
+    }
+
+    public class MrRow
+    {
+        public string[] RowItems { get; set; }
     }
 
     /*

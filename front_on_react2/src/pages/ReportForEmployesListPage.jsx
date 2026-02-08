@@ -10,7 +10,8 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {GetEmployeeList, 
-    GetMainReportForPeriodAsTable, 
+    GetMainReportForPeriodAsTable,
+    GetMainReportForPeriodAsTableWithBanks,
     GetAllObjects, 
     DownloadFileWithAuth} from '../services/apiService';
 
@@ -31,14 +32,17 @@ export function ReportForEmployesListPage() {
 
     useEffect(() => {
         updateObjects();
-        updateEmployeeList();
+        //updateEmployeeList();
         }
     , []);
 
-    function updateEmployeeList() {
-    //console.log("updateEmployeeList");
 
-      GetEmployeeList()
+    //загружаем сотрудников только для выделеного объекта
+    function updateEmployeeList(objectId) {
+    console.log("updateEmployeeList");
+
+      GetEmployeeList(objectId)
+
         .then((data) => {
             //console.log(data);
 
@@ -57,6 +61,11 @@ export function ReportForEmployesListPage() {
             console.log(data);
             if (data.isSuccess) {
               setObjectsList(data.objects);
+              //загружаем пользователей для объекта [0]
+              if(data.objects && data.objects.length>0){
+                updateEmployeeList(data.objects[0].id);
+              }
+
               //устанавливаем айдишник для пользователя 
               //if(data.objects.length>0)
               //  setSelectedObject(data.objects[0].id)
@@ -107,6 +116,9 @@ export function ReportForEmployesListPage() {
         });
     }
 
+    //
+    //Новая версия кнопки. Показываем в интерфейсе разбивку по банкам
+    //
     function updateReport2() {
 
         if(selectedEmployesList.length == 0){
@@ -123,7 +135,7 @@ export function ReportForEmployesListPage() {
         };
 
         setUpdateReportAnimation(true);
-        GetMainReportForPeriodAsTable(params)
+        GetMainReportForPeriodAsTableWithBanks(params)
         .then((data) => {
             setUpdateReportAnimation(false);
             console.log(data);
@@ -145,7 +157,11 @@ export function ReportForEmployesListPage() {
     }
 
    
-
+    function onSelectObject(e){
+        //console.log(e.target.value);
+        const objId = e.target.value;
+        updateEmployeeList(objId);
+    }
 
 
     return (
@@ -155,7 +171,7 @@ export function ReportForEmployesListPage() {
         {/* Заголовок страницы */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <h2 className="mb-1">Отчет</h2>
+                <h2 className="mb-1">Отчет по списку сотрудников</h2>
                 <p className="text-muted mb-0"></p>
               </div>
 
@@ -168,7 +184,7 @@ export function ReportForEmployesListPage() {
                         <tbody>
                         <tr>
                             <td width="35%">
-                            <Form.Select >
+                            <Form.Select onChange={(e) => onSelectObject(e)} >
                             {
                             objectsList.map((obj) => (
                                 <option key={obj.id} value={obj.id}>{obj.name}</option>
@@ -189,7 +205,13 @@ export function ReportForEmployesListPage() {
                                 <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                             </td>
                             <td>
-                                <Button onClick={updateReport} sm={1} variant="secondary" className="d-flex align-items-center">Построить отчет</Button>
+                                <Button onClick={updateReport} sm={1} 
+                                variant="secondary" 
+                                className="d-flex align-items-center">Построить отчет</Button>
+
+                                <Button onClick={updateReport2} sm={1} 
+                                variant="secondary" 
+                                className="d-flex align-items-center">Построить отчет 2</Button>
                             </td>
                         </tr>
 
@@ -211,7 +233,7 @@ export function ReportForEmployesListPage() {
                                         <td>{item.id}</td>
                                         <td>{item.fio}</td>
                                         <td>
-                                            <Form.Check 
+                                            <Form.Check  key={item.id}
                                             checked={
                                                 selectedEmployesList.includes(item.id) ? true : false
                                                 } 
@@ -350,7 +372,7 @@ export function ReportForEmployesListPage() {
                         Скачать
                         </Button>
                 </FormGroup>
-                 */   }   
+                 */   }
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Скачать отчет с разбивкой по банкам</Form.Label>
                          &nbsp; &nbsp;

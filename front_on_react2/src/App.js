@@ -19,7 +19,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 import { ReportForEmployeePage } from './pages/ReportForEmployeePage.jsx';
 import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx';
-import { ProfilePage } from './pages/ProfilePage.jsx';
+import { EmployeesPage } from './pages/EmployeesPage.jsx';
 import { PayoutReportPage } from './pages/PayoutReportPage.jsx';
 
 
@@ -44,7 +44,16 @@ function App() {
               }
             />
 
- 
+            <Route 
+              path="/employees" 
+              element={
+                <ProtectedRoute>
+                  <EmployeesPage />
+                </ProtectedRoute>
+              }
+            />
+
+              {/*
             <Route 
               path="/profile" 
               element={
@@ -53,6 +62,7 @@ function App() {
                 </ProtectedRoute>
               } 
             />
+            */}
 
             <Route 
               path="/users" 
@@ -78,7 +88,7 @@ function App() {
                 <ProtectedRoute>
                   <ReportForEmployesListPage />
                 </ProtectedRoute>
-              } 
+              }
             />
 
             <Route 

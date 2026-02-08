@@ -41,6 +41,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
       const [startDate, setStartDate] = useState(new Date());
       const [endDate, setEndDate] = useState(new Date());
       const [workShiftList, setWorkShiftList] = useState([]);
+      const [blokBankInput, setBlokBankInput] = useState(false);
 
       const [alertData, setAlertData] = useState({
         show: false,
@@ -61,6 +62,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
       setCurrentEmployee(defaultEmpData);
       setAlertData({show: false, message: '', variant: 'success'});
       setCreateButtonDisabled(false);
+      setBlokBankInput(false);
     }
 
 
@@ -96,6 +98,11 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           console.log(data);
           if (data.isSuccess) {
             setCurrentEmployee(data.employee);
+            if(data.employee.emplOptions == "Ведомость")
+                    setBlokBankInput(true);
+                  else
+                    setBlokBankInput(false);
+
             if(data.employee.workShiftList)
               setWorkShiftList(data.employee.workShiftList);
           }
@@ -327,7 +334,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
             <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>&nbsp;</Form.Label>
               <Form.Check
-                label="Удостоверение ЧОП"
+                label="УЛЧО"
                 type="checkbox"
                 checked={currentEmployee.chopCertificate}
                 onChange={(e) => {
@@ -360,7 +367,14 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Label>Оформление</Form.Label>
               <Form.Select
                 value={currentEmployee.emplOptions}
-                onChange={(e) => setCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value })}
+                onChange={(e) => {
+                  setCurrentEmployee({ ...currentEmployee, emplOptions: e.target.value });
+                  if(e.target.value == "Ведомость")
+                    setBlokBankInput(true);
+                  else
+                    setBlokBankInput(false);
+
+                }}
                 placeholder="Выберите оформление"
               >
                 <option value="Карта">Карта</option>
@@ -371,7 +385,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
             <Form.Group as={Col} md={6} className="mb-3">
               <Form.Label>Банк</Form.Label>
               <Form.Select
-
+                disabled={blokBankInput}
                 value={currentEmployee.bankName}
                 onChange={(e) => setCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
                 placeholder="Выберите Банк"

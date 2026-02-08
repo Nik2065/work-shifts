@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using WorkShiftsApi.Controllers;
 using DataTable = System.Data.DataTable;
 
 namespace WorkShiftsApi.Services
@@ -162,6 +163,39 @@ namespace WorkShiftsApi.Services
         //return result;
         //}
 
+
+        //Подготавливаем список таблиц с данными отчета
+        public List<TableDataDto> CreateTablesList(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
+        {
+            var tables = new List<TableDataDto>();
+
+            //для ведомости
+            var vedEmplList = emplList.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
+            var vedIds = vedEmplList.Select(x => x.Id).ToList();
+            emplList = emplList.Where(x => !vedIds.Contains(x.Id)).ToList();
+
+            GetReportForEmplList2(startDate, endDate, vedIds, out DataTable resultTable1, out int tableSum);
+            tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1, TotalSum = tableSum });
+
+            //разные типы карт
+            foreach (var b in Banks.BanksList)
+            {
+                var empListN = emplList.Where(x => x.BankName.Trim().ToLower() == b.Trim().ToLower());
+                if (empListN.Count() == 0)
+                    continue;
+
+                var ids = empListN.Select(x => x.Id).ToList();
+                GetReportForEmplList2(startDate, endDate, ids, out DataTable resultTableN, out int tableSumN);
+                tables.Add(new TableDataDto
+                {
+                    Title = "Расчет для карт банка " + b,
+                    DataTable = resultTableN,
+                    TotalSum = tableSumN
+                });
+            }
+
+            return tables;
+        }
 
 
         public void GetReportForEmplList2(DateTime begin, DateTime end, List<int> emplList, out DataTable table, out int totalSum)

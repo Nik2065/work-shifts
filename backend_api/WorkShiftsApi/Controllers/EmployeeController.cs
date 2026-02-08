@@ -105,7 +105,7 @@ namespace WorkShiftsApi.Controllers
 
 
         [HttpGet("GetEmployeeList")]
-        public IActionResult GetEmployeeList()
+        public IActionResult GetEmployeeList([FromQuery]int? objectId)
         {
 
             var result = new GetEmployeeListResponse { IsSuccess = true, Message = "" };
@@ -135,6 +135,10 @@ namespace WorkShiftsApi.Controllers
                                             { Created=x.Created, Id=x.Id, End=x.End, Start=x.Start}).ToList()
                                      })
                                     .ToList();
+                if (objectId != null)
+                {
+                    result.EmployeesList = result.EmployeesList.Where(x => x.ObjectId == (int)objectId).ToList();
+                }
             }
             catch (Exception ex)
             {
