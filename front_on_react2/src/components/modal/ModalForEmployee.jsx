@@ -29,12 +29,22 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
 
     // сотрудник
     const defaultEmpData = {fio:'', 
-        age:30,
+        dateOfBirth: null,
         chopCertificate: false,
         objectId: 0,
         bankName: 'Альфа',
         emplOptions: 'Карта',
       };
+
+    function getAgeFromDateOfBirth(dateOfBirth) {
+      if (dateOfBirth == null || dateOfBirth === '') return null;
+      const birth = new Date(dateOfBirth);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age;
+    }
 
       const [currentEmployee, setCurrentEmployee] = useState(defaultEmpData);
       const [objectsList, setObjectsList] = useState([]);
@@ -146,7 +156,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           setAlertData({message: "Имя сотрудника должно быть не менее 5 символов", show: true, variant: 'danger'});
           return;
         }
-        if(currentEmployee.age<18 || currentEmployee.age >60){
+        const age = getAgeFromDateOfBirth(currentEmployee.dateOfBirth);
+        if (age != null && (age < 18 || age > 60)) {
           setAlertData({message: "Возраст должен быть в диапазоне от 18 до 60 лет", show: true, variant: 'danger'});
           return;
         }
@@ -178,7 +189,8 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           setAlertData({message: "Имя сотрудника должно быть не менее 5 символов", show: true, variant: 'danger'});
           return;
         }
-        if(currentEmployee.age<18 || currentEmployee.age >60){
+        const age = getAgeFromDateOfBirth(currentEmployee.dateOfBirth);
+        if (age != null && (age < 18 || age > 60)) {
           setAlertData({message: "Возраст должен быть в диапазоне от 18 до 60 лет", show: true, variant: 'danger'});
           return;
         }
@@ -319,15 +331,11 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               />
             </Form.Group>
             <Form.Group as={Col} md={6} className="mb-3">
-              <Form.Label>Возраст</Form.Label>
+              <Form.Label>Дата рождения</Form.Label>
               <Form.Control
-                type="text"
-                value={currentEmployee.age}
-                onChange={(e) => {
-                  e.target.value = e.target.value.replace(/[^\d]/g, '');
-                  setCurrentEmployee({ ...currentEmployee, age: parseInt(e.target.value) })
-                }}
-                placeholder="Введите возраст"
+                type="date"
+                value={currentEmployee.dateOfBirth ? (typeof currentEmployee.dateOfBirth === 'string' ? currentEmployee.dateOfBirth.slice(0, 10) : new Date(currentEmployee.dateOfBirth).toISOString().slice(0, 10)) : ''}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, dateOfBirth: e.target.value || null })}
               />
             </Form.Group>
 

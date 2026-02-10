@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
@@ -47,7 +47,7 @@ namespace WorkShiftsApi.Controllers
                         Created = one.Created,
                         Fio = one.Fio,
                         Id = one.Id,
-                        Age = one.Age,
+                        DateOfBirth = one.DateOfBirth,
                         BankName = one.BankName,
                         ChopCertificate = one.ChopCertificate,
                         ObjectName = o?.Name ?? "",
@@ -124,7 +124,7 @@ namespace WorkShiftsApi.Controllers
                                             Created = emp.Created,
                                             Fio = emp.Fio,
                                             Id = emp.Id,
-                                            Age = emp.Age,
+                                            DateOfBirth = emp.DateOfBirth,
                                             BankName = emp.BankName,
                                             ChopCertificate = emp.ChopCertificate,
                                             ObjectName = o.Name,
@@ -184,7 +184,7 @@ namespace WorkShiftsApi.Controllers
                                             Created = emp.Created,
                                             Fio = emp.Fio,
                                             Id = emp.Id,
-                                            Age = emp.Age,
+                                            DateOfBirth = emp.DateOfBirth,
                                             BankName = emp.BankName,
                                             ChopCertificate = emp.ChopCertificate,
                                             EmplOptions = emp.EmplOptions,
@@ -415,7 +415,7 @@ namespace WorkShiftsApi.Controllers
                 _logger.Info("-CreateEmployee-");
                 var e = new EmployeesDb
                 {
-                    Age = request.Age,
+                    DateOfBirth = request.DateOfBirth,
                     BankName = request.BankName,
                     ChopCertificate = request.ChopCertificate,
                     Created = DateTime.Now,
@@ -457,7 +457,7 @@ namespace WorkShiftsApi.Controllers
                 if (one == null)
                     throw new Exception("Изменяемый сотрудник не найден");
 
-                one.Age = request.Age;
+                one.DateOfBirth = request.DateOfBirth;
                 one.BankName = request.BankName;
                 one.ChopCertificate = request.ChopCertificate;
                 one.EmplOptions = request.EmplOptions;
@@ -694,7 +694,7 @@ namespace WorkShiftsApi.Controllers
     {
         public string Fio { get; set; }
         public string? BankName { get; set; }
-        public int? Age { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
@@ -705,7 +705,7 @@ namespace WorkShiftsApi.Controllers
         public int Id { get; set; }
         public string Fio { get; set; }
         public string? BankName { get; set; }
-        public int? Age { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }

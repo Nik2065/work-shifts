@@ -1,4 +1,4 @@
-﻿using WorkShiftsApi.Controllers;
+using WorkShiftsApi.Controllers;
 
 namespace WorkShiftsApi.DTO
 {
@@ -8,7 +8,7 @@ namespace WorkShiftsApi.DTO
         public string Fio { get; set; }
         public DateTime Created { get; set; }
         public string? BankName { get; set; }
-        public int? Age { get; set; }
+        public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
         public string ObjectName { get; set; }
         public int ObjectId { get; set; }

@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -99,8 +99,8 @@ namespace WorkShiftsApi
         [Column("bank_name")]
         public string? BankName { get; set; }
 
-        [Column("age")]
-        public int? Age { get; set; }
+        [Column("date_of_birth")]
+        public DateTime? DateOfBirth { get; set; }
 
         [Column("chop_certificate")]
         public bool ChopCertificate { get; set; }
