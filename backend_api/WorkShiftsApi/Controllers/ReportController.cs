@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using System.Linq;
@@ -206,7 +207,7 @@ namespace WorkShiftsApi.Controllers
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
 
-                var tables = _employeeService.CreateTablesList(start, end, emplList);
+                var tables = _employeeService.CreateMainReportTablesList(start, end, emplList);
                 var fileBytes = _excelGenerator.CreateExcelFromDataTables(tables, "Отчет");
 
                 return File(
@@ -254,13 +255,30 @@ namespace WorkShiftsApi.Controllers
 
 
                 var empList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
-                var tables = _employeeService.CreateTablesList(start, end, empList);
-                //_employeeService.GetReportForEmplList2(start, end, empList, out DataTable table, out int totalSum);
+                var tables = _employeeService.CreateMainReportTablesList(start, end, empList);
+                var table = _employeeService.SplitMainReportTablesList(tables);
 
                 //пока одна таблица
-                var table = tables[0].DataTable;
+                //var table = tables[0].DataTable;
 
                 var resultTable = new MainReportTable();
+                int rowCount = table.Rows.Count;
+                int colCount = table.Columns.Count;
+
+                resultTable.Items = new string[rowCount][];
+
+                for (int i = 0; i < rowCount; i++)
+                {
+                    resultTable.Items[i] = new string[colCount];
+
+                    for (int j = 0; j < colCount; j++)
+                    {
+                        resultTable.Items[i][j] = table.Rows[i][j]?.ToString() ?? string.Empty;
+                    }
+                }
+
+
+                /*
                 resultTable.Rows = new MrRow[table.Rows.Count];
 
 
@@ -274,7 +292,7 @@ namespace WorkShiftsApi.Controllers
                     resultTable.Rows[i].RowItems = ggg1;
                     i += 1;
 
-                }
+                }*/
 
 
                 result.Table = resultTable;
@@ -290,19 +308,6 @@ namespace WorkShiftsApi.Controllers
 
             return Ok(result);
 
-        }
-
-        private string[] GetStrArray(object[] items)
-        {
-            var length = items.Length;
-            var ggg1 = new string[length];
-            for (int j = 0; j < length; j++)
-            {
-                var result = "";
-                if (items[j] != null) result = items[j].ToString();
-                ggg1[j] = result;
-            }
-            return ggg1;
         }
 
 

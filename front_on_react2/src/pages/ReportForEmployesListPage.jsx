@@ -205,13 +205,9 @@ export function ReportForEmployesListPage() {
                                 <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
                             </td>
                             <td>
-                                <Button onClick={updateReport} sm={1} 
-                                variant="secondary" 
-                                className="d-flex align-items-center">Построить отчет</Button>
-
                                 <Button onClick={updateReport2} sm={1} 
                                 variant="secondary" 
-                                className="d-flex align-items-center">Построить отчет 2</Button>
+                                className="d-flex align-items-center">Построить отчет</Button>
                             </td>
                         </tr>
 
@@ -273,17 +269,7 @@ export function ReportForEmployesListPage() {
                 <div className="h3">Данные о рабочих часах</div>
                 
                 <Table bordered hover>
-                    <thead>
-                        <tr>
-                            <th width="5%">Id</th>
-                            <th width="30%">ФИО</th>
-                            <th width="15%">Дней</th>
-                            <th width="15%">Сумма за работу</th>
-                            <th width="12%">Списания</th>
-                            <th width="12%">Начисления</th>
-                            <th width="15%">Итого</th>
-                        </tr>
-                    </thead>
+
                     <tbody>
                         {   resultTable ?
                             resultTable.map((item) => (<tr key={item[0]}>
@@ -294,6 +280,9 @@ export function ReportForEmployesListPage() {
                                     <td>{item[4]}</td>
                                     <td>{item[5]}</td>
                                     <td>{item[6]}</td>
+                                    <td>{item[7]}</td>
+                                    <td>{item[8]}</td>
+                                    <td>{item[9]}</td>
                                     </tr>)
                             )
                             :
@@ -305,52 +294,6 @@ export function ReportForEmployesListPage() {
 
                 </div>
                 }
-
-
-                {
-                    updateReportAnimation ? 
-                    <div style={{textAlign:"center"}}>
-                        <Spinner />
-                        <h4>Загрузка данных...</h4>
-                    </div>
-                    :
-                    <div className="table-responsive" style={{height:"400px"}}>
-                    <br/>
-                    <div className="h3">Данные о рабочих часах</div>
-                     <Table bordered hover>
-                    <thead>
-                        <tr>
-                            <th width="5%">Id</th>
-                            <th width="30%">ФИО</th>
-                            <th width="15%">Дней</th>
-                            <th width="15%">Сумма за работу</th>
-                            <th width="12%">Списания</th>
-                            <th width="12%">Начисления</th>
-                            <th width="15%">Итого</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {   resultTable ?
-                            resultTable.map((item) => (<tr key={item[0]}>
-                                    <td>{item[0]}</td>
-                                    <td>{item[1]}</td>
-                                    <td>{item[2]}</td>
-                                    <td>{item[3]}</td>
-                                    <td>{item[4]}</td>
-                                    <td>{item[5]}</td>
-                                    <td>{item[6]}</td>
-                                    </tr>)
-                            )
-                            :
-                            <></>
-                        }
-                    </tbody>
-                    </Table>
-                    <br/>
-
-                    </div>
-                }
-
 
                 {    /*
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>

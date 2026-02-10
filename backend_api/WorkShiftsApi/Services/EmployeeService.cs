@@ -1,4 +1,5 @@
 ﻿using DocumentFormat.OpenXml.Drawing.Charts;
+using DocumentFormat.OpenXml.Office2013.Drawing.ChartStyle;
 using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -165,7 +166,7 @@ namespace WorkShiftsApi.Services
 
 
         //Подготавливаем список таблиц с данными отчета
-        public List<TableDataDto> CreateTablesList(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
+        public List<TableDataDto> CreateMainReportTablesList(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
         {
             var tables = new List<TableDataDto>();
 
@@ -196,6 +197,48 @@ namespace WorkShiftsApi.Services
 
             return tables;
         }
+
+        public DataTable SplitMainReportTablesList(List<TableDataDto> tables)
+        {
+            var result = new DataTable();
+
+            var columnsCount = 10;
+
+            var allTablesSum = 0;
+            //int rowNumber = 0;
+            for (int i = 0; i < columnsCount; i++)
+                result.Columns.Add("");
+
+
+            foreach (var tData in tables)
+            {
+                var row = result.NewRow();
+                row.ItemArray = new string[] { tData.Title, "", "", "", "", "", "", "", "", "" };
+                result.Rows.Add(row);
+                
+                // Заголовки столбцов
+                row = result.NewRow();
+                var a = new string[columnsCount];
+                for (int i = 0; i < columnsCount; i++)
+                    a[i] = tData.DataTable.Columns[i].ColumnName;
+                row.ItemArray = a;
+                result.Rows.Add(row);
+
+                // Данные
+                foreach (DataRow sourceRow in tData.DataTable.Rows)
+                {
+                    row = result.NewRow();
+                    row.ItemArray = sourceRow.ItemArray;
+                    result.Rows.Add(row);
+                }
+
+                //row.ItemArray = 
+            }
+
+
+            return result;
+        }
+
 
 
         public void GetReportForEmplList2(DateTime begin, DateTime end, List<int> emplList, out DataTable table, out int totalSum)
