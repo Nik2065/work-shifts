@@ -20,6 +20,7 @@ import { SiteUsersPage } from './pages/SiteUsersPage.jsx';
 import { ReportForEmployeePage } from './pages/ReportForEmployeePage.jsx';
 import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx';
 import { EmployeesPage } from './pages/EmployeesPage.jsx';
+import { ObjectsPage } from './pages/ObjectsPage.jsx';
 import { PayoutReportPage } from './pages/PayoutReportPage.jsx';
 
 
@@ -49,6 +50,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EmployeesPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route 
+              path="/objects" 
+              element={
+                <ProtectedRoute>
+                  <ObjectsPage />
                 </ProtectedRoute>
               }
             />

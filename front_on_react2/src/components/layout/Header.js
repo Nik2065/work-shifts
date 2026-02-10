@@ -37,7 +37,8 @@ const Header = () => {
               &nbsp;&nbsp;&nbsp;&nbsp;
                 <Nav.Link  style={{ color:"#fff"}} as={Link} to="/dashboard">Учет времени</Nav.Link>
                 <Nav.Link style={{ color:"#fff"}} as={Link} to="/users">Пользователи сайта</Nav.Link>
-                //<Nav.Link style={{ color:"#fff"}}  as={Link} to="/employees">Сотрудники</Nav.Link>
+                <Nav.Link style={{ color:"#fff"}} as={Link} to="/employees">Сотрудники</Nav.Link>
+                <Nav.Link style={{ color:"#fff"}} as={Link} to="/objects">Объекты</Nav.Link>
                 <NavDropdown className="d-flex align-items-center" style={{ }}  title="Отчеты" id="basic-nav-dropdown">
                   {
                   //<NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForEmployee">По одному сотруднику</NavDropdown.Item>

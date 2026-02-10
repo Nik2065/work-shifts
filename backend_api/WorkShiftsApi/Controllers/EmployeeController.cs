@@ -52,7 +52,8 @@ namespace WorkShiftsApi.Controllers
                         ChopCertificate = one.ChopCertificate,
                         ObjectName = o?.Name ?? "",
                         ObjectId = one.ObjectId,
-                        EmplOptions = one.EmplOptions
+                        EmplOptions = one.EmplOptions,
+                        Dismissed = one.Dismissed
                     };
 
                     var ws = _context.WorkShifts
@@ -130,6 +131,7 @@ namespace WorkShiftsApi.Controllers
                                             ObjectName = o.Name,
                                             ObjectId = emp.ObjectId,
                                             EmplOptions = emp.EmplOptions,
+                                            Dismissed = emp.Dismissed,
                                             WorkShiftList = _context.WorkShifts.Where(x=>x.EmployeeId == emp.Id).Select(x=> 
                                             new WorkShiftDto 
                                             { Created=x.Created, Id=x.Id, End=x.End, Start=x.Start}).ToList()
@@ -188,7 +190,7 @@ namespace WorkShiftsApi.Controllers
                                             BankName = emp.BankName,
                                             ChopCertificate = emp.ChopCertificate,
                                             EmplOptions = emp.EmplOptions,
-
+                                            Dismissed = emp.Dismissed,
                                             ObjectId = emp.ObjectId,
                                             ObjectName = emp.Object.Name,
 
@@ -421,7 +423,8 @@ namespace WorkShiftsApi.Controllers
                     Created = DateTime.Now,
                     EmplOptions = request.EmplOptions,
                     Fio = request.Fio,
-                    ObjectId = (int)request.ObjectId
+                    ObjectId = (int)request.ObjectId,
+                    Dismissed = request.Dismissed
                 };
 
 
@@ -463,7 +466,7 @@ namespace WorkShiftsApi.Controllers
                 one.EmplOptions = request.EmplOptions;
                 one.Fio = request.Fio;
                 one.ObjectId = (int)request.ObjectId;
-                
+                one.Dismissed = request.Dismissed;
                 _context.SaveChanges();
             }
             catch (Exception ex)
@@ -698,6 +701,7 @@ namespace WorkShiftsApi.Controllers
         public bool ChopCertificate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
+        public bool Dismissed { get; set; }
     }
 
     public class SaveEmployeeRequestDto
@@ -709,6 +713,7 @@ namespace WorkShiftsApi.Controllers
         public bool ChopCertificate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
+        public bool Dismissed { get; set; }
     }
 
     public class CreateEmployeeResponseDto : ResponseBase

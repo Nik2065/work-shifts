@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Table, Card, Spinner, Pagination
+  Container, Table, Card, Spinner, Pagination, Form, Row, Col
 } from 'react-bootstrap';
-import { GetEmployeeList } from '../services/apiService';
+import { GetEmployeeList, GetAllObjects } from '../services/apiService';
 
 const PAGE_SIZE = 50;
 
@@ -10,14 +10,26 @@ export function EmployeesPage() {
   const [employeeList, setEmployeeList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
+  const [objectsList, setObjectsList] = useState([]);
+  const [selectedObject, setSelectedObject] = useState(-1);
+  const [dismissedFilter, setDismissedFilter] = useState(-1); // -1 все, 0 нет, 1 да
+
+  useEffect(() => {
+    GetAllObjects()
+      .then((data) => {
+        if (data.isSuccess) setObjectsList(data.objects || []);
+      })
+      .catch((err) => console.error('Ошибка загрузки объектов:', err));
+  }, []);
 
   useEffect(() => {
     loadEmployees();
-  }, []);
+  }, [selectedObject]);
 
   function loadEmployees() {
     setLoading(true);
-    GetEmployeeList()
+    const objectId = selectedObject === -1 ? undefined : selectedObject;
+    GetEmployeeList(objectId)
       .then((data) => {
         if (data.isSuccess) {
           setEmployeeList(data.employeesList || []);
@@ -28,9 +40,14 @@ export function EmployeesPage() {
       .finally(() => setLoading(false));
   }
 
-  const totalPages = Math.ceil(employeeList.length / PAGE_SIZE);
+  const filteredList =
+    dismissedFilter === -1
+      ? employeeList
+      : employeeList.filter((e) => (dismissedFilter === 1 ? e.dismissed : !e.dismissed));
+
+  const totalPages = Math.ceil(filteredList.length / PAGE_SIZE);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedList = employeeList.slice(startIndex, startIndex + PAGE_SIZE);
+  const paginatedList = filteredList.slice(startIndex, startIndex + PAGE_SIZE);
 
   return (
     <Container expand="lg">
@@ -39,10 +56,44 @@ export function EmployeesPage() {
         <div>
           <h2 className="mb-1">Список сотрудников</h2>
           <p className="text-muted mb-0">
-            Всего: {employeeList.length}
+            Всего: {filteredList.length}
+            {dismissedFilter !== -1 && ` (из ${employeeList.length})`}
           </p>
         </div>
       </div>
+
+      <Card className="mb-3">
+        <Card.Body className="py-2">
+          <Row>
+            <Form.Group as={Col} sm={4} md={3}>
+              <Form.Label className="mb-1">Объект</Form.Label>
+              <Form.Select
+                value={selectedObject}
+                onChange={(e) => setSelectedObject(Number(e.target.value))}
+              >
+                <option value={-1}>Все</option>
+                {objectsList.map((obj) => (
+                  <option key={obj.id} value={obj.id}>{obj.name}</option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <Form.Group as={Col} sm={4} md={3}>
+              <Form.Label className="mb-1">Уволен</Form.Label>
+              <Form.Select
+                value={dismissedFilter}
+                onChange={(e) => {
+                  setDismissedFilter(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+              >
+                <option value={-1}>Все</option>
+                <option value={0}>Нет</option>
+                <option value={1}>Да</option>
+              </Form.Select>
+            </Form.Group>
+          </Row>
+        </Card.Body>
+      </Card>
 
       <Card>
         <Card.Body>
@@ -63,6 +114,7 @@ export function EmployeesPage() {
                       <th>Объект</th>
                       <th width="20%">Форма оплаты</th>
                       <th>Банк</th>
+                      <th width="8%">Уволен</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -75,11 +127,12 @@ export function EmployeesPage() {
                           <td>{item.objectName ?? item.object ?? '—'}</td>
                           <td>{item.emplOptions ?? '—'}</td>
                           <td>{item.bankName ?? '—'}</td>
+                          <td>{item.dismissed ? 'Да' : 'Нет'}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={6} className="text-center text-muted py-4">
+                        <td colSpan={7} className="text-center text-muted py-4">
                           Нет данных о сотрудниках
                         </td>
                       </tr>
@@ -92,7 +145,7 @@ export function EmployeesPage() {
                 <div className="d-flex justify-content-between align-items-center mt-3">
                   <span className="text-muted">
                     Страница {currentPage} из {totalPages}
-                    {' '}({startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, employeeList.length)} из {employeeList.length})
+                    {' '}({startIndex + 1}–{Math.min(startIndex + PAGE_SIZE, filteredList.length)} из {filteredList.length})
                   </span>
                   <Pagination>
                     <Pagination.First

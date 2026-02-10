@@ -119,7 +119,25 @@ export async function GetAllObjects() {
     const url = apiUrl + '/api/user/GetAllObjects';
     const response = await authenticatedFetch(url);
     return parseJSON(response);
-};
+}
+
+export async function SaveObjectFromApi(params) {
+    const url = apiUrl + '/api/user/SaveObject';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify(params),
+    });
+    return parseJSON(response);
+}
+
+export async function DeleteObjectFromApi(id) {
+    const url = apiUrl + '/api/user/DeleteObject';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ id }),
+    });
+    return parseJSON(response);
+}
 
 export async function CreateSiteUserFromApi(params) {
     const url = apiUrl + '/api/user/CreateUser/';

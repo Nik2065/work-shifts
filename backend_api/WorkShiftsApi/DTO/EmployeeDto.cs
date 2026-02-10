@@ -13,6 +13,7 @@ namespace WorkShiftsApi.DTO
         public string ObjectName { get; set; }
         public int ObjectId { get; set; }
         public string? EmplOptions { get; set; }
+        public bool Dismissed { get; set; }
 
         public List<WorkShiftDto> WorkShiftList { get; set; }
 

@@ -120,6 +120,9 @@ namespace WorkShiftsApi
 
         public virtual ObjectDb Object { get; set; }
 
+
+        [Column("dismissed")]
+        public bool Dismissed { get; set; }
     }
 
 
@@ -178,6 +181,9 @@ namespace WorkShiftsApi
 
         [Column("object_name")]
         public string Name { get; set; }
+
+        [Column("address")]
+        public string? Address { get; set; }
     }
 
     //связь пользователя с объектами

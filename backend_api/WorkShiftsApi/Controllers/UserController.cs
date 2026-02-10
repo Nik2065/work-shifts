@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.RegularExpressions;
 using WorkShiftsApi.DTO;
@@ -116,6 +116,7 @@ namespace WorkShiftsApi.Controllers
                     var p = new P();
                     p.Id = obj.Id;
                     p.Name = obj.Name;
+                    p.Address = obj.Address;
                     result.Objects.Add(p);
                 }
             }
@@ -126,6 +127,66 @@ namespace WorkShiftsApi.Controllers
                 result.Message = ex.Message;
             }
 
+            return Ok(result);
+        }
+
+        [HttpPost("SaveObject")]
+        [Authorize]
+        public async Task<IActionResult> SaveObject([FromBody] SaveObjectRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Объект сохранён" };
+            try
+            {
+                var one = _context.Objects.FirstOrDefault(x => x.Id == request.Id);
+                if (one == null)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Объект не найден";
+                    return Ok(result);
+                }
+                one.Name = request.Name ?? one.Name;
+                one.Address = request.Address;
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+            return Ok(result);
+        }
+
+        [HttpPost("DeleteObject")]
+        [Authorize]
+        public async Task<IActionResult> DeleteObject([FromBody] DeleteObjectRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Объект удалён" };
+            try
+            {
+                var one = _context.Objects.FirstOrDefault(x => x.Id == request.Id);
+                if (one == null)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Объект не найден";
+                    return Ok(result);
+                }
+                var hasEmployees = _context.Employees.Any(x => x.ObjectId == request.Id);
+                if (hasEmployees)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Невозможно удалить: к объекту привязаны сотрудники";
+                    return Ok(result);
+                }
+                _context.Objects.Remove(one);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
             return Ok(result);
         }
 
@@ -285,7 +346,20 @@ namespace WorkShiftsApi.Controllers
     public record P
     {
         public int Id { get; set; }
-        public string Name { get; set; } 
+        public string Name { get; set; }
+        public string? Address { get; set; }
+    }
+
+    public class SaveObjectRequest
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string? Address { get; set; }
+    }
+
+    public class DeleteObjectRequest
+    {
+        public int Id { get; set; }
     }
 
     public class SaveUserRequest 

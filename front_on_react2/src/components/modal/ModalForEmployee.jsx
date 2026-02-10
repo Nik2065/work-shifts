@@ -31,6 +31,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     const defaultEmpData = {fio:'', 
         dateOfBirth: null,
         chopCertificate: false,
+        dismissed: false,
         objectId: 0,
         bankName: 'Альфа',
         emplOptions: 'Карта',
@@ -345,11 +346,16 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 label="УЛЧО"
                 type="checkbox"
                 checked={currentEmployee.chopCertificate}
-                onChange={(e) => {
-                  //console.log(currentEmployee);
-                  //console.log(e.target.checked);
-                  setCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.checked })}
-                }
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, chopCertificate: e.target.checked })}
+              />
+            </Form.Group>
+            <Form.Group as={Col} md={6} className="mb-3">
+              <Form.Label>&nbsp;</Form.Label>
+              <Form.Check
+                label="Уволен"
+                type="checkbox"
+                checked={currentEmployee.dismissed}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, dismissed: e.target.checked })}
               />
             </Form.Group>
             
