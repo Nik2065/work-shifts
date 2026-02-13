@@ -137,16 +137,32 @@ namespace WorkShiftsApi.Controllers
             var result = new ResponseBase { IsSuccess = true, Message = "Объект сохранён" };
             try
             {
-                var one = _context.Objects.FirstOrDefault(x => x.Id == request.Id);
-                if (one == null)
+                if (request.Id == 0)
                 {
-                    result.IsSuccess = false;
-                    result.Message = "Объект не найден";
-                    return Ok(result);
+                    // Создание нового объекта
+                    var newObj = new ObjectDb
+                    {
+                        Name = request.Name ?? "",
+                        Address = request.Address
+                    };
+                    _context.Objects.Add(newObj);
+                    await _context.SaveChangesAsync();
+                    result.Message = "Объект создан";
                 }
-                one.Name = request.Name ?? one.Name;
-                one.Address = request.Address;
-                await _context.SaveChangesAsync();
+                else
+                {
+                    // Редактирование существующего
+                    var one = _context.Objects.FirstOrDefault(x => x.Id == request.Id);
+                    if (one == null)
+                    {
+                        result.IsSuccess = false;
+                        result.Message = "Объект не найден";
+                        return Ok(result);
+                    }
+                    one.Name = request.Name ?? one.Name;
+                    one.Address = request.Address;
+                    await _context.SaveChangesAsync();
+                }
             }
             catch (Exception ex)
             {

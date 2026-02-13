@@ -4,6 +4,7 @@ import {
 } from 'react-bootstrap';
 import { GetAllObjects, DeleteObjectFromApi } from '../services/apiService';
 import { ModalForObject } from '../components/modal/ModalForObject';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 
 const PAGE_SIZE = 50;
 
@@ -37,7 +38,7 @@ export function ObjectsPage() {
   const paginatedList = objectsList.slice(startIndex, startIndex + PAGE_SIZE);
 
   function openEditModal(item) {
-    setEditingObject({ id: item.id, name: item.name, address: item.address });
+    setEditingObject(item ? { id: item.id, name: item.name, address: item.address } : null);
     setEditModalShow(true);
   }
 
@@ -71,6 +72,10 @@ export function ObjectsPage() {
             Всего: {objectsList.length}
           </p>
         </div>
+        <Button variant="primary" className="d-flex align-items-center" onClick={() => openEditModal(null)}>
+          <Plus className="me-2" size={18} />
+          Добавить объект
+        </Button>
       </div>
 
       <Card>
@@ -96,24 +101,25 @@ export function ObjectsPage() {
                     {paginatedList && paginatedList.length > 0 ? (
                       paginatedList.map((item) => (
                         <tr key={item.id}>
-                          <td>{item.id}</td>
-                          <td>{item.name ?? '—'}</td>
-                          <td>{item.address ?? '—'}</td>
-                          <td>
-                            <Button
+                          <td width="5%">{item.id}</td>
+                          <td width="30%">{item.name ?? '—'}</td>
+                          <td width="">{item.address ?? '—'}</td>
+                          <td width="">
+                            <Button title='Редактировать'
                               variant="outline-primary"
                               size="sm"
                               className="me-1"
                               onClick={() => openEditModal(item)}
                             >
-                              Редактировать
+                              <Pencil /> 
                             </Button>
                             <Button
+                              title='Удалить'
                               variant="outline-danger"
                               size="sm"
                               onClick={() => handleDeleteConfirm(item)}
-                            >
-                              Удалить
+                            > <Trash2 />
+                              
                             </Button>
                           </td>
                         </tr>

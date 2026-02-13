@@ -12,6 +12,9 @@ export function ModalForObject({ show, onHide, objectItem, onSaved }) {
     if (objectItem) {
       setName(objectItem.name ?? '');
       setAddress(objectItem.address ?? '');
+    } else {
+      setName('');
+      setAddress('');
     }
     setAlertData({ show: false, message: '', variant: 'success' });
   }, [objectItem, show]);
@@ -25,7 +28,7 @@ export function ModalForObject({ show, onHide, objectItem, onSaved }) {
     }
     setSaving(true);
     SaveObjectFromApi({
-      id: objectItem.id,
+      id: objectItem?.id,
       name: name.trim(),
       address: (address || '').trim(),
     })
@@ -47,7 +50,7 @@ export function ModalForObject({ show, onHide, objectItem, onSaved }) {
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
-        <Modal.Title>Редактировать объект</Modal.Title>
+        <Modal.Title>{objectItem ? 'Редактировать объект' : 'Создать объект'}</Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
