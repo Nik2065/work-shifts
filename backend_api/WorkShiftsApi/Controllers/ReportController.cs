@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
@@ -410,8 +410,280 @@ namespace WorkShiftsApi.Controllers
 
         }*/
 
+        /// <summary>
+        /// Сохранить отметки об оплате для отчета
+        /// </summary>
+        [HttpPost("SavePayoutMarks")]
+        [Authorize]
+        public async Task<IActionResult> SavePayoutMarks([FromBody] SavePayoutMarksRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Отметки об оплате сохранены" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(request.StartDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(request.EndDate, out DateTime end);
+
+                if (!canParseStart || !canParseEnd)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Ошибка при разборе даты";
+                    return Ok(result);
+                }
+
+                var employeeIds = request.Employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+                if (employeeIds.Count == 0)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Не указаны сотрудники";
+                    return Ok(result);
+                }
+
+                // Получаем следующий номер отчета
+                int reportNumber = 1;
+                if (_context.RevenueReportsFin.Any())
+                {
+                    var maxReportNumber = _context.RevenueReportsFin
+                        .Select(x => x.ReportNumber)
+                        .Max();
+                    
+                    reportNumber = (int)(maxReportNumber + 1);
+                }
+
+                // Сохраняем запись в MainReportNumbers
+                var createAuthor = User.Identity?.Name ?? "";
+                var mainReportRecord = new MainReportNumbersDb
+                {
+                    Created = DateTime.Now,
+                    CreateAuthor = createAuthor,
+                    ReportNumber = reportNumber,
+                    StartDate = start,
+                    EndDate = end
+                };
+                _context.MainReportNumbers.Add(mainReportRecord);
+
+                // Получаем все work_hours для выбранных сотрудников за период
+                var workHoursList = _context.WorkHours
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        && x.WorkDate.Date >= start.Date
+                        && x.WorkDate.Date < end.Date)
+                    .ToList();
+
+                // Сохраняем work_hours в revenue_reports_wh
+                foreach (var wh in workHoursList)
+                {
+                    var revenueWh = new RevenueReportWhDb
+                    {
+                        Created = DateTime.Now,
+                        WorkHoursId = wh.Id,
+                        WhHours = wh.Hours,
+                        WhRate = wh.Rate,
+                        WhSum = wh.Hours * wh.Rate,
+                        WhWorkDate = wh.WorkDate,
+                        ReportNumber = reportNumber
+                    };
+                    _context.RevenueReportsWh.Add(revenueWh);
+                }
+
+                // Получаем все fin_operations для выбранных сотрудников за период
+                var finOperationsList = _context.FinOperations
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        && x.Date.Date >= start.Date
+                        && x.Date.Date < end.Date)
+                    .ToList();
+
+                // Сохраняем fin_operations в revenue_reports_fin
+                foreach (var fo in finOperationsList)
+                {
+                    var revenueFin = new RevenueReportFinDb
+                    {
+                        Created = DateTime.Now,
+                        FinOperationId = fo.Id,
+                        FoSum = fo.Sum,
+                        FoIsPenalty = fo.IsPenalty,
+                        FoTypeId = fo.TypeId,
+                        ReportNumber = reportNumber
+                    };
+                    _context.RevenueReportsFin.Add(revenueFin);
+                }
+
+                await _context.SaveChangesAsync();
+
+                result.Message = $"Отметки об оплате сохранены. Номер отчета: {reportNumber}";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Восстановить отчет по сохраненным отметкам об оплате (по report_number)
+        /// </summary>
+        [HttpGet("GetMainReportFromPayoutMarks")]
+        [Authorize]
+        public ActionResult GetMainReportFromPayoutMarks([FromQuery] int reportNumber)
+        {
+            var result = new GetMainReportForPeriodAsTableResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                // Проверяем, существует ли отчет с таким номером
+                if (!_context.RevenueReportsFin.Any(x => x.ReportNumber == reportNumber) &&
+                    !_context.RevenueReportsWh.Any(x => x.ReportNumber == reportNumber))
+                {
+                    result.IsSuccess = false;
+                    result.Message = $"Отчет с номером {reportNumber} не найден";
+                    return Ok(result);
+                }
+
+                // Получаем список сотрудников из сохраненных данных для разбивки по банкам
+                var whIds = _context.RevenueReportsWh
+                    .Where(x => x.ReportNumber == reportNumber)
+                    .Select(x => x.WorkHoursId)
+                    .ToList();
+
+                var workHoursList = _context.WorkHours
+                    .Where(x => whIds.Contains(x.Id))
+                    .ToList();
+
+                var employeeIds = workHoursList.Select(x => x.EmployeeId).Distinct().ToList();
+                var empList = _context.Employees.Where(x => employeeIds.Contains(x.Id)).ToList();
+
+                // Создаем таблицы с разбивкой по банкам
+                var tables = new List<TableDataDto>();
+
+                // Для ведомости
+                var vedEmplList = empList.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
+                var vedIds = vedEmplList.Select(x => x.Id).ToList();
+                var otherEmplList = empList.Where(x => !vedIds.Contains(x.Id)).ToList();
+
+                if (vedIds.Count > 0)
+                {
+                    _employeeService.GetReportForEmplListFromPayoutMarksByEmployees(reportNumber, vedIds, out DataTable resultTable1, out int tableSum);
+                    if (resultTable1.Rows.Count > 0)
+                    {
+                        tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1, TotalSum = tableSum });
+                    }
+                }
+
+                // Разные типы карт
+                foreach (var b in Banks.BanksList)
+                {
+                    var empListN = otherEmplList.Where(x => x.BankName?.Trim().ToLower() == b.Trim().ToLower());
+                    if (empListN.Count() == 0)
+                        continue;
+
+                    var ids = empListN.Select(x => x.Id).ToList();
+                    _employeeService.GetReportForEmplListFromPayoutMarksByEmployees(reportNumber, ids, out DataTable resultTableN, out int tableSumN);
+                    if (resultTableN.Rows.Count > 0)
+                    {
+                        tables.Add(new TableDataDto
+                        {
+                            Title = "Расчет для карт банка " + b,
+                            DataTable = resultTableN,
+                            TotalSum = tableSumN
+                        });
+                    }
+                }
+
+                // Если нет разбивки по банкам, создаем одну таблицу для всех
+                if (tables.Count == 0)
+                {
+                    _employeeService.GetReportForEmplListFromPayoutMarks(reportNumber, out DataTable resultTable1, out int tableSum);
+                    tables.Add(new TableDataDto { Title = "Отчет", DataTable = resultTable1, TotalSum = tableSum });
+                }
+
+                var table = _employeeService.SplitMainReportTablesList(tables);
+
+                var resultTable = new MainReportTable();
+                int rowCount = table.Rows.Count;
+                int colCount = table.Columns.Count;
+
+                resultTable.Items = new string[rowCount][];
+
+                for (int i = 0; i < rowCount; i++)
+                {
+                    resultTable.Items[i] = new string[colCount];
+
+                    for (int j = 0; j < colCount; j++)
+                    {
+                        resultTable.Items[i][j] = table.Rows[i][j]?.ToString() ?? string.Empty;
+                    }
+                }
+
+                result.Table = resultTable;
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Список сохраненных отчетов (MainReportNumbers)
+        /// </summary>
+        [HttpGet("GetMainReportNumbersList")]
+        [Authorize]
+        public ActionResult GetMainReportNumbersList()
+        {
+            var result = new GetMainReportNumbersListResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                result.Items = _context.MainReportNumbers
+                    .OrderByDescending(x => x.Created)
+                    .Select(x => new MainReportNumberItemDto
+                    {
+                        Id = x.Id,
+                        Created = x.Created,
+                        CreateAuthor = x.CreateAuthor ?? "",
+                        ReportNumber = x.ReportNumber,
+                        StartDate = x.StartDate,
+                        EndDate = x.EndDate
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+
+            return Ok(result);
+        }
 
 
+
+    }
+
+    public class MainReportNumberItemDto
+    {
+        public int Id { get; set; }
+        public DateTime Created { get; set; }
+        public string CreateAuthor { get; set; } = "";
+        public int ReportNumber { get; set; }
+        public DateTime StartDate { get; set; }
+        public DateTime EndDate { get; set; }
+    }
+
+    public class GetMainReportNumbersListResponse : ResponseBase
+    {
+        public List<MainReportNumberItemDto> Items { get; set; } = new List<MainReportNumberItemDto>();
     }
 
     public class GetMainReportForPeriodAsTableResponse : ResponseBase
@@ -464,6 +736,13 @@ namespace WorkShiftsApi.Controllers
     }
 
     public class GetMainReportForPeriodRequest
+    {
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
+        public string Employees { get; set; }
+    }
+
+    public class SavePayoutMarksRequest
     {
         public string StartDate { get; set; }
         public string EndDate { get; set; }

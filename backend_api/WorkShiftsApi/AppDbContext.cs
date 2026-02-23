@@ -51,6 +51,12 @@ namespace WorkShiftsApi
 
         public DbSet<FinOperationTypeDb> FinOperationTypes { get; set; }
 
+        public DbSet<RevenueReportWhDb> RevenueReportsWh { get; set; }
+
+        public DbSet<RevenueReportFinDb> RevenueReportsFin { get; set; }
+
+        public DbSet<MainReportNumbersDb> MainReportNumbers { get; set; }
+
     }
 
 
@@ -251,5 +257,89 @@ namespace WorkShiftsApi
         [Column("is_payroll")]
         public bool IsPayroll { get; set; }
 
+    }
+
+    /// <summary>
+    /// Отметки об оплате для work_hours
+    /// </summary>
+    [Table("revenue_reports_wh")]
+    public class RevenueReportWhDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("work_hours_id")]
+        public int WorkHoursId { get; set; }
+
+        [Column("wh_hours")]
+        public int WhHours { get; set; }
+
+        [Column("wh_rate")]
+        public int WhRate { get; set; }
+
+        [Column("wh_sum")]
+        public int WhSum { get; set; }
+
+        [Column("wh_work_date")]
+        public DateTime WhWorkDate { get; set; }
+        
+        [Column("report_number")]
+        public int ReportNumber { get; set; }
+    }
+
+    /// <summary>
+    /// Отметки об оплате для fin_operations
+    /// </summary>
+    [Table("revenue_reports_fin")]
+    public class RevenueReportFinDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("fin_operation_id")]
+        public int FinOperationId { get; set; }
+
+        [Column("fo_sum")]
+        public int FoSum { get; set; }
+
+        [Column("fo_is_penalty")]
+        public bool FoIsPenalty { get; set; }
+
+        [Column("fo_type_id")]
+        public int? FoTypeId { get; set; }
+
+        [Column("report_number")]
+        public int ReportNumber { get; set; }
+    }
+
+    /// <summary>
+    /// Номера отчетов (история сохраненных отчетов)
+    /// </summary>
+    [Table("main_report_numbers")]
+    public class MainReportNumbersDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("create_author")]
+        public string? CreateAuthor { get; set; }
+
+        [Column("report_number")]
+        public int ReportNumber { get; set; }
+
+        [Column("start_date")]
+        public DateTime StartDate { get; set; }
+
+        [Column("end_date")]
+        public DateTime EndDate { get; set; }
     }
 }

@@ -264,7 +264,7 @@ export function ReportForEmployesListPage() {
                     <h4>Загрузка данных...</h4>
                 </div>
                   :
-                <div className="table-responsive" style={{height:"400px"}}>
+                <div className="table-responsive" style={{minHeight:"400px"}}>
                 <br/>
                 <div className="h3">Данные о рабочих часах</div>
                 
@@ -316,6 +316,7 @@ export function ReportForEmployesListPage() {
                         </Button>
                 </FormGroup>
                  */   }
+                 { /*
                 <FormGroup  className="m-3" style={{textAlign:"right"}}>
                         <Form.Label>Скачать отчет с разбивкой по банкам</Form.Label>
                          &nbsp; &nbsp;
@@ -335,7 +336,48 @@ export function ReportForEmployesListPage() {
                         }}>
                         Скачать
                         </Button>
-                </FormGroup>
+                </FormGroup> */ }
+
+                <Table bordered={true}>
+                    <tbody>
+                        <tr>
+                            <td>
+                                Скачать отчет c разбивкой по банкам 
+                            </td>
+                            <td>
+                                <Button type="button" variant="primary" onClick={() => {
+                                //проверяем выбран ли хотя бы один сотрудник
+                                if(selectedEmployesList.length > 0){
+
+                                const url = apiUrl + '/api/report/GetMainReportForPeriodAsXlsWithBanks?startDate=' 
+                                    + startDate.toISOString() 
+                                    + '&endDate=' + endDate.toISOString() + '&employees=' + selectedEmployesList.join(",");
+
+                                DownloadFileWithAuth(url, "Отчет с разбивкой по банкам.xlsx");
+                                }
+                                else{
+                                    alert("Выберите хотя бы одного сотрудника");
+                                }
+                        }}>
+                        Скачать отчет
+                        </Button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                Скачать отчет с разбивкой по банкам 
+                                и заполнить данные о выплатах <br/>
+                                <small>Дальнейшие отметки о выдаче зарплаты на странице "Зарплата"</small>
+                                <br/>
+                                <Button variant="link"  >Перейти к заполнению отметок об оплате</Button>
+                            </td>
+                            <td>
+                                    <Button variant="primary">Создать отчет с отметками
+                                </Button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </Table>
                 {
                     /*
                 <FormGroup className="m-3" style={{textAlign:"right"}}>

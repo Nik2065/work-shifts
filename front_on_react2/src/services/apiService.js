@@ -281,6 +281,34 @@ export async function GetMainReportForPeriodAsTableWithBanks(params) {
 
 }
 
+//сохранить отметки об оплате для отчета
+export async function SavePayoutMarks(params) {
+    const url = apiUrl + '/api/report/SavePayoutMarks';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+            startDate: params.startDate,
+            endDate: params.endDate,
+            employees: params.employees
+        }),
+    });
+    return parseJSON(response);
+}
+
+//восстановить отчет по сохраненным отметкам об оплате (по report_number)
+export async function GetMainReportFromPayoutMarks(reportNumber) {
+    const url = apiUrl + '/api/report/GetMainReportFromPayoutMarks?reportNumber=' + reportNumber;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
+//список сохраненных отчетов (MainReportNumbers)
+export async function GetMainReportNumbersList() {
+    const url = apiUrl + '/api/report/GetMainReportNumbersList';
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
 
  export async function DownloadFileWithAuth(url, filename = 'file') {
         
