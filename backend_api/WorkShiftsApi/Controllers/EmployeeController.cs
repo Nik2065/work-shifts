@@ -53,7 +53,8 @@ namespace WorkShiftsApi.Controllers
                         ObjectName = o?.Name ?? "",
                         ObjectId = one.ObjectId,
                         EmplOptions = one.EmplOptions,
-                        Dismissed = one.Dismissed
+                        Dismissed = one.Dismissed,
+                        Payout = one.Payout
                     };
 
                     var ws = _context.WorkShifts
@@ -104,6 +105,33 @@ namespace WorkShiftsApi.Controllers
         //    return Ok(result);
         //}
 
+        /// <summary>
+        /// Установить признак «на выплаты» у сотрудника
+        /// </summary>
+        [HttpPost("SetEmployeePayout")]
+        public async Task<IActionResult> SetEmployeePayout([FromBody] SetEmployeePayoutRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Признак обновлен" };
+            try
+            {
+                var emp = _context.Employees.FirstOrDefault(x => x.Id == request.EmployeeId);
+                if (emp == null)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Сотрудник не найден";
+                    return Ok(result);
+                }
+                emp.Payout = request.Payout;
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+            return Ok(result);
+        }
 
         [HttpGet("GetEmployeeList")]
         public IActionResult GetEmployeeList([FromQuery]int? objectId)
@@ -132,6 +160,7 @@ namespace WorkShiftsApi.Controllers
                                             ObjectId = emp.ObjectId,
                                             EmplOptions = emp.EmplOptions,
                                             Dismissed = emp.Dismissed,
+                                            Payout = emp.Payout,
                                             WorkShiftList = _context.WorkShifts.Where(x=>x.EmployeeId == emp.Id).Select(x=> 
                                             new WorkShiftDto 
                                             { Created=x.Created, Id=x.Id, End=x.End, Start=x.Start}).ToList()
@@ -191,6 +220,7 @@ namespace WorkShiftsApi.Controllers
                                             ChopCertificate = emp.ChopCertificate,
                                             EmplOptions = emp.EmplOptions,
                                             Dismissed = emp.Dismissed,
+                                            Payout = emp.Payout,
                                             ObjectId = emp.ObjectId,
                                             ObjectName = emp.Object.Name,
 
@@ -787,6 +817,12 @@ namespace WorkShiftsApi.Controllers
     public class DeleteFinOperationRequest
     {
         public int OperationId { get; set; }
+    }
+
+    public class SetEmployeePayoutRequest
+    {
+        public int EmployeeId { get; set; }
+        public bool Payout { get; set; }
     }
 
     public class CheckWorkShiftsDto

@@ -202,7 +202,14 @@ export async function GetEmployeeWithFinOpListFromApi(params) {
     return parseJSON(response);
 }
 
-
+export async function SetEmployeePayout(employeeId, payout) {
+    const url = apiUrl + '/api/employee/SetEmployeePayout';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify({ employeeId, payout }),
+    });
+    return parseJSON(response);
+}
 
 export async function CreateEmployee(params) {
     console.log(params);

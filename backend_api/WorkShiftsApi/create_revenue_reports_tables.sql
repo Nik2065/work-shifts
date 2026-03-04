@@ -41,3 +41,6 @@ CREATE TABLE IF NOT EXISTS `main_report_numbers` (
   INDEX `idx_report_number` (`report_number`),
   INDEX `idx_created` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Колонка «на выплаты» в таблице employees (если ещё не добавлена)
+-- ALTER TABLE employees ADD COLUMN payout TINYINT(1) NOT NULL DEFAULT 0;

@@ -129,6 +129,9 @@ namespace WorkShiftsApi
 
         [Column("dismissed")]
         public bool Dismissed { get; set; }
+
+        [Column("payout")]
+        public bool Payout { get; set; }
     }
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Container, Row, Col, Toast, Table, ToastContainer,
   Card, Button,
@@ -24,6 +24,7 @@ export function PayoutReportPage() {
   const [savingMarks, setSavingMarks] = useState(false);
   const [reportNumbersList, setReportNumbersList] = useState([]);
   const [loadingReportNumbers, setLoadingReportNumbers] = useState(false);
+  const [payoutFilter, setPayoutFilter] = useState(-1); // -1 все, 1 да, 0 нет
 
   function loadReportNumbers() {
     setLoadingReportNumbers(true);
@@ -76,6 +77,12 @@ export function PayoutReportPage() {
     setSelectedObject(objId);
     updateEmployeeList(objId);
   }
+
+  // Список сотрудников с учётом фильтра «на выплаты»
+  const displayedEmployeeList = useMemo(() => {
+    if (payoutFilter === -1) return employeeList || [];
+    return (employeeList || []).filter(emp => Boolean(emp.payout) === (payoutFilter === 1));
+  }, [employeeList, payoutFilter]);
 
   function updateReport() {
     if (selectedEmployesList.length == 0) {
@@ -211,7 +218,7 @@ export function PayoutReportPage() {
             <Table>
               <tbody>
                 <tr>
-                  <td width="25%">
+                  <td width="20%">
                     <Form.Label>Объект</Form.Label>
                     <Form.Select value={selectedObject} onChange={(e) => onSelectObject(e)}>
                       <option value={-1}>Все объекты</option>
@@ -220,10 +227,18 @@ export function PayoutReportPage() {
                       ))}
                     </Form.Select>
                   </td>
-                  <td width="15%" style={{ textAlign: "right" }}>
+                  <td width="15%">
+                    <Form.Label>На выплаты</Form.Label>
+                    <Form.Select value={payoutFilter} onChange={(e) => setPayoutFilter(Number(e.target.value))}>
+                      <option value={-1}>Все</option>
+                      <option value={1}>Да</option>
+                      <option value={0}>Нет</option>
+                    </Form.Select>
+                  </td>
+                  <td width="12%" style={{ textAlign: "right" }}>
                     <Form.Label>Дата начала</Form.Label>
                   </td>
-                  <td width="20%">
+                  <td width="18%">
                     <DatePicker
                       locale="ru"
                       selected={startDate}
@@ -231,10 +246,10 @@ export function PayoutReportPage() {
                       className="form-control"
                     />
                   </td>
-                  <td width="15%" style={{ textAlign: "right" }}>
+                  <td width="12%" style={{ textAlign: "right" }}>
                     <Form.Label>Дата конца</Form.Label>
                   </td>
-                  <td width="20%">
+                  <td width="18%">
                     <DatePicker
                       locale="ru"
                       selected={endDate}
@@ -268,18 +283,20 @@ export function PayoutReportPage() {
                 <thead>
                   <tr>
                     <th width="5%">Id</th>
-                    <th width="40%">ФИО</th>
-                    <th width="30%">Объект</th>
+                    <th width="35%">ФИО</th>
+                    <th width="25%">Объект</th>
+                    <th width="10%">На выплаты</th>
                     <th width="10%">В отчет</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {employeeList && employeeList.length > 0 ? (
-                    employeeList.map((item) => (
+                  {displayedEmployeeList && displayedEmployeeList.length > 0 ? (
+                    displayedEmployeeList.map((item) => (
                       <tr key={item.id}>
                         <td>{item.id}</td>
                         <td>{item.fio}</td>
                         <td>{item.objectName || '—'}</td>
+                        <td>{item.payout ? 'Да' : 'Нет'}</td>
                         <td>
                           <Form.Check
                             key={item.id}
@@ -298,7 +315,7 @@ export function PayoutReportPage() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="text-center text-muted py-4">
+                      <td colSpan={5} className="text-center text-muted py-4">
                         Нет данных о сотрудниках
                       </td>
                     </tr>

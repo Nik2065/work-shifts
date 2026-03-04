@@ -15,6 +15,8 @@ namespace WorkShiftsApi.DTO
         public string? EmplOptions { get; set; }
         public bool Dismissed { get; set; }
 
+        public bool Payout { get; set; }
+
         public List<WorkShiftDto> WorkShiftList { get; set; }
 
         public List<FinOpDto>? FinOperations { get; set; }

@@ -1,10 +1,12 @@
-import React ,{ useState, useEffect} from 'react';
+import React ,{ useState, useEffect, useMemo } from 'react';
 import { 
   Container, Row, Col, Toast, Table, ToastContainer ,
    Card, Button, 
-  Form, Spinner
+  Form, Spinner,
+  FormControl
 } from 'react-bootstrap';
-import { SaveIcon, Trash2 } from 'lucide-react';
+import { SaveIcon, Trash2, RussianRuble, Check, FormInput  } from 'lucide-react';
+
 import '../dashboard.css';
 import '../calendar.css';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
@@ -13,7 +15,8 @@ import { ModalForAddOperation } from '../components/modal/ModalForAddOperation';
 import {GetWorkHoursList, 
   SaveWorkHoursItemOnServer, GetAllObjects,
   GetEmployeeWithFinOpListFromApi,
-  DeleteFinOperationFromApi
+  DeleteFinOperationFromApi,
+  SetEmployeePayout
 } from '../services/apiService';
 import {getDateFormat1} from '../services/commonService';
 import DatePicker from "react-datepicker";
@@ -51,12 +54,11 @@ export function DashboardPage () {
     //фильтр для таблицы //на вахте
     const [isInWorkShift, setIsInWorkShift] = useState(-1);
 
+    // Обновление таблицы при изменении фильтров: дата, на вахте, объект (поиск по имени — только фильтрация без запроса)
     useEffect(() => {
-        //сначала получаем данные для сегодняшней даты
-        const d = new Date();
-        updateEmployeeListAndFinOperations(d);
-        }
-    , []);
+        setCurrentDate(tempDate);
+        updateEmployeeListAndFinOperations(tempDate);
+    }, [tempDate, isInWorkShift, selectedObject]);
 
     useEffect(() => {
         updateObjects();
@@ -176,13 +178,13 @@ export function DashboardPage () {
     //обновляем таблицу с сотрудниками и фин операциями
     //финансовые операции загружаются только на выбранную дату
     function updateEmployeeListAndFinOperations(dateToCalc) {
-      
+      const date = dateToCalc ?? currentDate;
       setLoadingMainTable(true);
 
       const params = {
-        date: currentDate,
-        objectId: selectedObject,
-        isInWorkShift: isInWorkShift,
+        date: date,
+        objectId: Number(selectedObject),
+        isInWorkShift: Number(isInWorkShift),
       }
 
       GetEmployeeWithFinOpListFromApi(params)
@@ -191,18 +193,10 @@ export function DashboardPage () {
             setLoadingMainTable(false);
 
             if(data.isSuccess){
-              let empList = data.employeesList;
-
-                //if(selectedObject && selectedObject != -1){
-                //  empList = empList.filter(item => item.objectId == selectedObject);
-                //}
-                if(fioToSearch && fioToSearch.length > 0){
-                  empList = empList.filter(item => item.fio.toLowerCase().includes(fioToSearch.toLowerCase()));
-                }
-
+              let empList = data.employeesList || [];
                 setEmployeeList(empList);
                 //теперь скачиваем отработанные часы
-                updateWorkHours(dateToCalc);
+                updateWorkHours(date);
             }
         })
         .catch((error) => {
@@ -287,9 +281,7 @@ export function DashboardPage () {
     }
 
     function onObjectChange(objId){
-      setSelectedObject(objId);
-      //фильтруем список сотрудников
-      //updateEmployeeList();
+      setSelectedObject(Number(objId));
     }
     
     function handleEmployeeClick(id) {
@@ -323,7 +315,12 @@ export function DashboardPage () {
       e.target.select();
     };
 
-
+    // Фильтрация по ФИО без повторного запроса к API
+    const displayedEmployeeList = useMemo(() => {
+      if (!fioToSearch || !fioToSearch.trim()) return employeeList || [];
+      const q = fioToSearch.trim().toLowerCase();
+      return (employeeList || []).filter(item => (item.fio || '').toLowerCase().includes(q));
+    }, [employeeList, fioToSearch]);
 
     return (
         <Container expand="lg">
@@ -435,6 +432,10 @@ export function DashboardPage () {
                           <tr>
                             <th rowSpan={2} width="5%"><strong>Id</strong></th>
                             <th rowSpan={2} width="30%"><strong>Фамилия Имя Отчество</strong></th>
+                            <th rowSpan={2} width="5%"> На выплаты
+                            <i title='На выплаты'>  <RussianRuble /></i>
+                            
+                            </th>
                             <th rowSpan={2} width="10%"><strong>Объект</strong></th>
                             <th colSpan={3} width="30%" className='text-center' style={{fontSize:"1.2rem"}}>{getDateFormat1(currentDate)}</th>
                             <th colSpan={2} rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
@@ -448,7 +449,7 @@ export function DashboardPage () {
                         </thead>
                         <tbody>
                             {
-                                employeeList.map((employee) => {
+                                displayedEmployeeList.map((employee) => {
                                     return (
                                       <>
                                          <tr key={employee.id.toString() + 'a'}>
@@ -473,6 +474,27 @@ export function DashboardPage () {
                                               </>
                                               : null
                                             }
+                                          </td>
+                                          <td>
+                                            <Form.Check
+                                              title='На выплату'
+                                              checked={!!employee.payout}
+                                              onChange={(e) => {
+                                                const checked = e.target.checked;
+                                                SetEmployeePayout(employee.id, checked)
+                                                  .then((data) => {
+                                                    if (data.isSuccess) {
+                                                      setEmployeeList(prev => prev.map(emp =>
+                                                        emp.id === employee.id ? { ...emp, payout: checked } : emp
+                                                      ));
+                                                      ToastShowAndHide({ show: true, msg: data.message || 'Сохранено', variant: 'success' });
+                                                    } else {
+                                                      ToastShowAndHide({ show: true, msg: data.message || 'Ошибка', variant: 'danger' });
+                                                    }
+                                                  })
+                                                  .catch(() => ToastShowAndHide({ show: true, msg: 'Ошибка при сохранении', variant: 'danger' }));
+                                              }}
+                                            />
                                           </td>
                                         <td>{employee.objectName}</td>
                                         <td>
@@ -556,7 +578,7 @@ export function DashboardPage () {
                                     {
                                       employee.finOperations ?
                                       <tr key={employee.id.toString() + "b"}>
-                                              <td  colSpan="8">
+                                              <td  colSpan="9">
                                                 <FinTable operations={employee.finOperations} deleteFinOperation={deleteFinOperation} />
                                                 </td>
                                       </tr>
@@ -568,8 +590,13 @@ export function DashboardPage () {
                                     );
                                 })
                             }
-                        
-                        
+                            {displayedEmployeeList.length === 0 && (
+                              <tr>
+                                <td colSpan={9} className="text-center text-muted py-4">
+                                  {employeeList.length === 0 ? 'Сотрудников не найдено' : 'По заданным фильтрам сотрудников не найдено'}
+                                </td>
+                              </tr>
+                            )}
                         </tbody>
                       </table>
                       : 
