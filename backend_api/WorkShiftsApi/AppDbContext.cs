@@ -43,6 +43,8 @@ namespace WorkShiftsApi
 
         public DbSet<WorkHoursDb> WorkHours { get; set; }
 
+        public DbSet<WorkDaysDb> WorkDays { get; set; }
+
         public DbSet<ObjectDb> Objects { get; set; }
 
         public DbSet<UserToObjectDb> UserToObject { get; set; }
@@ -135,6 +137,8 @@ namespace WorkShiftsApi
     }
 
 
+
+    //Вахты сотрудников-охранников
     [Table("work_shifts")]
     public class WorkShiftsDb
     {
@@ -158,6 +162,7 @@ namespace WorkShiftsApi
     }
 
 
+    //Рабочие часы за выбранный день
     [Table("work_hours")]
     public class WorkHoursDb
     {
@@ -179,6 +184,28 @@ namespace WorkShiftsApi
 
         [Column("work_date")]
         public DateTime WorkDate { get; set; }
+    }
+
+
+    //Рабочая смена за выбранный день. Если не захотли ввести часы, можно просто проставить смену
+    [Table("work_days")]
+    public class WorkDaysDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Required]
+        [Column("employee_id")]
+        public int EmployeeId { get; set; }
+
+        [Column("work_date")]
+        public DateTime WorkDate { get; set; }
+
+        [Column("created")]
+        public DateTime Created { get; set; } = DateTime.Now;
+
+        [Column("rate")]
+        public int Rate { get; set; }
     }
 
     //рабочие объекты

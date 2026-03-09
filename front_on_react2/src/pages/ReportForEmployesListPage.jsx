@@ -195,13 +195,23 @@ export function ReportForEmployesListPage() {
                                 Выгрузка расчетов с даты 
                             </td>
                             <td>
-                               <DatePicker locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                               <DatePicker
+                                 locale="ru"
+                                 selected={startDate}
+                                 onChange={(date) => setStartDate(date)}
+                                 dateFormat="dd/MM/yyyy"
+                               />
                             </td>
                             <td  style={{textAlign:"right"}}>
                             по дату
                             </td>
                             <td>
-                                <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                                <DatePicker
+                                  locale="ru"
+                                  selected={endDate}
+                                  onChange={(date) => setEndDate(date)}
+                                  dateFormat="dd/MM/yyyy"
+                                />
                             </td>
                             <td>
                                 <Button onClick={updateReport2} sm={1} 

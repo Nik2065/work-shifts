@@ -14,7 +14,9 @@ import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
 registerLocale('ru', ru)
 
-import {GetEmployeeList
+import {
+  GetEmployeeList,
+  GetEmployeeFinancialReportApi
 } from '../services/apiService';
 
 
@@ -24,6 +26,8 @@ export function ReportForOneEmployeePage(){
 
     const [employeeList, setEmployeeList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(null);
+    const [reportItems, setReportItems] = useState([]);
     
     const [startDate, setStartDate] = useState(new Date());
     const [endDate, setEndDate] = useState(new Date());
@@ -46,6 +50,9 @@ export function ReportForOneEmployeePage(){
 
             if(data.isSuccess){
                 setEmployeeList(data.employeesList);
+                if (data.employeesList && data.employeesList.length > 0) {
+                  setSelectedEmployeeId(data.employeesList[0].id);
+                }
             }
         })
         .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
@@ -53,8 +60,42 @@ export function ReportForOneEmployeePage(){
 
 
 
-    function updateReport(){
+    function onSelectObject(e){
+      const value = e.target.value;
+      if (value === "" || value === null) {
+        setSelectedEmployeeId(null);
+      } else {
+        setSelectedEmployeeId(parseInt(value));
+      }
+    }
 
+
+    async function updateReport(){
+      if (!selectedEmployeeId) {
+        return;
+      }
+
+      setUpdateReportAnimation(true);
+      setReportItems([]);
+
+      const params = {
+        startDate: startDate.toISOString().substring(0, 10),
+        endDate: endDate.toISOString().substring(0, 10),
+        employeeId: selectedEmployeeId
+      };
+
+      try {
+        const data = await GetEmployeeFinancialReportApi(params);
+        if (data.isSuccess) {
+          setReportItems(data.items || []);
+        } else {
+          console.error('Ошибка при построении отчета:', data.message);
+        }
+      } catch (error) {
+        console.error('Ошибка при запросе отчета:', error);
+      } finally {
+        setUpdateReportAnimation(false);
+      }
     }
 
 
@@ -75,7 +116,12 @@ export function ReportForOneEmployeePage(){
                         <tbody>
                         <tr>
                             <td width="35%">
-                            <Form.Select onChange={(e) => onSelectObject(e)} >
+                            <Form.Select value={selectedEmployeeId || ""} onChange={(e) => onSelectObject(e)} >
+                            {
+                              employeeList.length === 0 && (
+                                <option value="">Сотрудники не найдены</option>
+                              )
+                            }
                             {
                             employeeList.map((emp) => (
                                 <option key={emp.id} value={emp.id}>{emp.fio}</option>
@@ -87,13 +133,23 @@ export function ReportForOneEmployeePage(){
                                 Выгрузка расчетов с даты 
                             </td>
                             <td>
-                               <DatePicker locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                               <DatePicker
+                                 locale="ru"
+                                 selected={startDate}
+                                 onChange={(date) => setStartDate(date)}
+                                 dateFormat="dd/MM/yyyy"
+                               />
                             </td>
                             <td  style={{textAlign:"right"}}>
                             по дату
                             </td>
                             <td>
-                                <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                                <DatePicker
+                                  locale="ru"
+                                  selected={endDate}
+                                  onChange={(date) => setEndDate(date)}
+                                  dateFormat="dd/MM/yyyy"
+                                />
                             </td>
                             <td>
                                 <Button onClick={updateReport} sm={1} 
@@ -127,39 +183,31 @@ export function ReportForOneEmployeePage(){
                 <thead>
                     <tr>
                         <th>Дата</th>
-                        <th></th>
+                        <th>Описание</th>
                         <th>Сумма</th>
                         <th>Учет</th>
                     </tr>
                 </thead>
                 
                 <tbody>
-                <tr>
-                    <td>1 марта</td>
-                    <td>
-                        Объект: Объект Ц. Рабочие часы: 8. Ставка в час: 300 руб.
-                    </td>
-                    <td>
-                        2400 руб.
-                    </td>
-                    <td>Учтен в отчете #8</td>
-                </tr>
-                <tr>
-                    <td>1 марта</td>
-                    <td>
-                        Начисление. Другое. 400 руб. 
-                    </td>
-                    <td>
-                        400 руб.
-                    </td>
-                    <td>Учтен в отчете #8</td>
-                </tr>
-                <tr>
-                    <td>2 марта</td>
-                    <td>Списание. Штраф. 500. Комментарий:gkjhdfg </td>
-                    <td>- 500 руб.</td>
-                    <td>--</td>
-                </tr>
+                {
+                  reportItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: "center" }}>
+                        Нет данных за выбранный период
+                      </td>
+                    </tr>
+                  ) : (
+                    reportItems.map((item, index) => (
+                      <tr key={index}>
+                        <td>{new Date(item.date).toLocaleDateString('ru-RU')}</td>
+                        <td>{item.description}</td>
+                        <td>{item.amount} руб.</td>
+                        <td>{item.accountingInfo}</td>
+                      </tr>
+                    ))
+                  )
+                }
                 </tbody>
                 </Table>
                 </div>
