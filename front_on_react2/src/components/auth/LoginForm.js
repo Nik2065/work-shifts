@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Container, Form, Button, Alert, Card, Spinner } from 'react-bootstrap';
+import { Container, Form, Button, Alert, Card, Spinner, Table } from 'react-bootstrap';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -88,7 +88,26 @@ const LoginForm = () => {
           
           <div className="text-center mt-3">
             <small className="text-muted">
-              Для демо используйте: admin@company.com / password123
+              Для демо используйте: 
+              <Table  bordered>
+                <tbody>
+                <tr>
+                  <td>Администратор</td>
+                  <td>admin@company.com</td>
+                  <td>password123</td>
+                </tr>
+                <tr>
+                  <td>Начальник объекта</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                <tr>
+                  <td>Бухгалтерия</td>
+                  <td></td>
+                  <td></td>
+                </tr>
+                </tbody>
+              </Table>
             </small>
           </div>
         </Card.Body>

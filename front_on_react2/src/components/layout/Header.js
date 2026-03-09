@@ -44,6 +44,8 @@ const Header = () => {
                   //<NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForEmployee">По одному сотруднику</NavDropdown.Item>
                   }
                   <NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForEmployesList">По списку сотрудников</NavDropdown.Item>
+                  <NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForOneEmployee">Для одного сотрудника</NavDropdown.Item>
+                  
                   <NavDropdown.Item style={{ color:"#fff"}} as={Link} to="/reportForPayout">Выплаты</NavDropdown.Item>
                 </NavDropdown>
                 

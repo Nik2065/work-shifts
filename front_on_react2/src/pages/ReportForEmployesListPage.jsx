@@ -28,7 +28,6 @@ export function ReportForEmployesListPage() {
     const [selectedEmployesList, setSelectedEmployesList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
     const [resultTable, setResultTable] = useState([]);
-    const [resultTable2, setResultTable2] = useState([]);
 
     useEffect(() => {
         updateObjects();
