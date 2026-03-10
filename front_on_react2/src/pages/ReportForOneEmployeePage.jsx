@@ -198,14 +198,18 @@ export function ReportForOneEmployeePage(){
                       </td>
                     </tr>
                   ) : (
-                    reportItems.map((item, index) => (
-                      <tr key={index}>
-                        <td>{new Date(item.date).toLocaleDateString('ru-RU')}</td>
-                        <td>{item.description}</td>
-                        <td>{item.amount} руб.</td>
-                        <td>{item.accountingInfo}</td>
-                      </tr>
-                    ))
+                    reportItems.map((item, index) => {
+                      const accountingText = item.accountingInfo || '--';
+                      const payOffText = item.payOff === true ? ' Выплата: да' : item.payOff === false ? ' Выплата: нет' : '';
+                      return (
+                        <tr key={index}>
+                          <td>{new Date(item.date).toLocaleDateString('ru-RU')}</td>
+                          <td>{item.description}</td>
+                          <td>{item.amount} руб.</td>
+                          <td>{accountingText}{payOffText}</td>
+                        </tr>
+                      );
+                    })
                   )
                 }
                 </tbody>

@@ -1,30 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Container, Row, Col, Toast, Table, ToastContainer,
-  Card, Button,
-  Form, Spinner
+  Container, Row, Col, Table,
+  Card,
+  Spinner
 } from 'react-bootstrap';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { registerLocale, setDefaultLocale } from "react-datepicker";
-import { ru } from 'date-fns/locale/ru';
-import { GetEmployeeList, GetAllObjects, GetMainReportForPeriodAsTableWithBanks, SavePayoutMarks, GetMainReportNumbersList } from '../services/apiService';
-
-registerLocale('ru', ru)
+import {
+  GetMainReportNumbersList,
+  GetMainReportFromPayoutMarks,
+  GetPayOffStatusesForReport,
+  SetPayOffForEmployeeInReport
+} from '../services/apiService';
 
 export function PayoutReportPage() {
-  const [employeeList, setEmployeeList] = useState([]);
-  const [startDate, setStartDate] = useState(new Date());
-  const [endDate, setEndDate] = useState(new Date());
   const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
-  const [selectedEmployesList, setSelectedEmployesList] = useState([]);
-  const [objectsList, setObjectsList] = useState([]);
-  const [selectedObject, setSelectedObject] = useState(-1);
   const [resultTable, setResultTable] = useState([]);
-  const [savingMarks, setSavingMarks] = useState(false);
   const [reportNumbersList, setReportNumbersList] = useState([]);
   const [loadingReportNumbers, setLoadingReportNumbers] = useState(false);
-  const [payoutFilter, setPayoutFilter] = useState(-1); // -1 все, 1 да, 0 нет
+  const [selectedReportNumber, setSelectedReportNumber] = useState(null);
+  const [payOffMap, setPayOffMap] = useState({});
 
   function loadReportNumbers() {
     setLoadingReportNumbers(true);
@@ -39,118 +32,73 @@ export function PayoutReportPage() {
   }
 
   useEffect(() => {
-    updateObjects();
     loadReportNumbers();
   }, []);
 
-  //загружаем сотрудников для выделенного объекта
-  function updateEmployeeList(objectId) {
-    console.log("updateEmployeeList");
-    GetEmployeeList(objectId === -1 ? null : objectId)
-      .then((data) => {
-        if (data.isSuccess) {
-          setEmployeeList(data.employeesList || []);
-          // Сбрасываем выбранных сотрудников при смене объекта
-          setSelectedEmployesList([]);
-        }
-      })
-      .catch((error) => console.error('Ошибка при получении данных сотрудников:', error));
-  }
-
-  //Обновляем список объектов
-  function updateObjects() {
-    console.log("updateObjects");
-    GetAllObjects()
-      .then(data => {
-        console.log(data);
-        if (data.isSuccess) {
-          setObjectsList(data.objects || []);
-          // Загружаем всех сотрудников при первой загрузке
-          updateEmployeeList(-1);
-        }
-      })
-      .catch(error => console.log(error));
-  }
-
-  function onSelectObject(e) {
-    const objId = parseInt(e.target.value);
-    setSelectedObject(objId);
-    updateEmployeeList(objId);
-  }
-
-  // Список сотрудников с учётом фильтра «на выплаты»
-  const displayedEmployeeList = useMemo(() => {
-    if (payoutFilter === -1) return employeeList || [];
-    return (employeeList || []).filter(emp => Boolean(emp.payout) === (payoutFilter === 1));
-  }, [employeeList, payoutFilter]);
-
-  function updateReport() {
-    if (selectedEmployesList.length == 0) {
-      alert("Выберите хотя бы одного сотрудника");
+  async function handleSelectSavedReport(row) {
+    if (!row || !row.reportNumber) {
       return;
     }
 
-    const list = selectedEmployesList.join(",");
-
-    const params = {
-      employees: list,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    };
-
+    setSelectedReportNumber(row.reportNumber);
     setUpdateReportAnimation(true);
-    GetMainReportForPeriodAsTableWithBanks(params)
-      .then((data) => {
-        setUpdateReportAnimation(false);
-        console.log(data);
-        if (data.isSuccess) {
-          setResultTable(data.mainReportTable?.items || []);
-        } else {
-          alert(data.message || 'Ошибка при получении отчета');
-        }
-      })
-      .catch((error) => {
-        setUpdateReportAnimation(false);
-        console.error('Ошибка при получении данных отчета:', error);
-        alert('Ошибка при получении отчета');
-      });
+    setResultTable([]);
+    setPayOffMap({});
+
+    try {
+      const [reportData, payOffData] = await Promise.all([
+        GetMainReportFromPayoutMarks(row.reportNumber),
+        GetPayOffStatusesForReport(row.reportNumber),
+      ]);
+
+      if (reportData.isSuccess) {
+        setResultTable(reportData.mainReportTable?.items || []);
+      } else {
+        alert(reportData.message || 'Ошибка при загрузке сохраненного отчета');
+      }
+
+      if (payOffData.isSuccess && payOffData.items) {
+        const map = {};
+        payOffData.items.forEach((item) => {
+          if (item.fio) {
+            map[item.fio] = item.payOff;
+          }
+        });
+        setPayOffMap(map);
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке сохраненного отчета или статусов PayOff:', error);
+      alert('Ошибка при загрузке сохраненного отчета');
+    } finally {
+      setUpdateReportAnimation(false);
+    }
   }
 
-  function handleSavePayoutMarks() {
-    if (selectedEmployesList.length == 0) {
-      alert("Выберите хотя бы одного сотрудника");
+  function handleTogglePayOff(fio, currentValue) {
+    if (!selectedReportNumber || !fio) {
       return;
     }
 
-    if (resultTable.length == 0) {
-      alert("Сначала постройте отчет");
-      return;
-    }
+    const newValue = !currentValue;
 
-    const list = selectedEmployesList.join(",");
+    setPayOffMap((prev) => ({
+      ...prev,
+      [fio]: newValue,
+    }));
 
-    const params = {
-      employees: list,
-      startDate: startDate.toISOString(),
-      endDate: endDate.toISOString()
-    };
-
-    setSavingMarks(true);
-    SavePayoutMarks(params)
+    SetPayOffForEmployeeInReport({
+      reportNumber: selectedReportNumber,
+      fio: fio,
+      payOff: newValue,
+    })
       .then((data) => {
-        setSavingMarks(false);
-        console.log(data);
-        if (data.isSuccess) {
-          alert(data.message || 'Отметки об оплате успешно сохранены');
-          loadReportNumbers();
-        } else {
-          alert(data.message || 'Ошибка при сохранении отметок');
+        if (!data.isSuccess) {
+          alert(data.message || 'Ошибка при сохранении статуса выплаты');
         }
       })
       .catch((error) => {
-        setSavingMarks(false);
-        console.error('Ошибка при сохранении отметок:', error);
-        alert('Ошибка при сохранении отметок');
+        console.error('Ошибка при сохранении статуса выплаты:', error);
+        alert('Ошибка при сохранении статуса выплаты');
       });
   }
 
@@ -166,11 +114,15 @@ export function PayoutReportPage() {
       </div>
 
       <Row>
-        <Col lg={4} className="mb-4">
-          <Card>
-            <Card.Header>Сохраненные отчеты</Card.Header>
-            <Card.Body className="p-0">
-              {loadingReportNumbers ? (
+      <Col lg={12} className="mb-4">
+      <Card className="h-100">
+        <Card.Body>
+        <Card.Header>
+          Сохраненные отчеты<br/>
+            <small>Нажмите на строку для отображения отчета</small>
+        </Card.Header>
+        <div className="table-responsive" style={{maxHeight:"200px"}}>
+         {loadingReportNumbers ? (
                 <div className="text-center py-4">
                   <Spinner animation="border" size="sm" />
                 </div>
@@ -193,7 +145,12 @@ export function PayoutReportPage() {
                       </tr>
                     ) : (
                       reportNumbersList.map((row) => (
-                        <tr key={row.id}>
+                      <tr
+                        key={row.id}
+                        onClick={() => handleSelectSavedReport(row)}
+                        style={{ cursor: 'pointer' }}
+                        className={row.reportNumber === selectedReportNumber ? 'table-active' : ''}
+                      >
                           <td>{row.reportNumber}</td>
                           <td>
                             {row.startDate ? new Date(row.startDate).toLocaleDateString('ru-RU') : '—'}
@@ -208,122 +165,12 @@ export function PayoutReportPage() {
                   </tbody>
                 </Table>
               )}
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col lg={8} className="mb-4">
-      <Card className="h-100">
-        <Card.Body>
-          <Card.Header className="bg-white border-0">
-            <Table>
-              <tbody>
-                <tr>
-                  <td width="20%">
-                    <Form.Label>Объект</Form.Label>
-                    <Form.Select value={selectedObject} onChange={(e) => onSelectObject(e)}>
-                      <option value={-1}>Все объекты</option>
-                      {objectsList.map((obj) => (
-                        <option key={obj.id} value={obj.id}>{obj.name}</option>
-                      ))}
-                    </Form.Select>
-                  </td>
-                  <td width="15%">
-                    <Form.Label>На выплаты</Form.Label>
-                    <Form.Select value={payoutFilter} onChange={(e) => setPayoutFilter(Number(e.target.value))}>
-                      <option value={-1}>Все</option>
-                      <option value={1}>Да</option>
-                      <option value={0}>Нет</option>
-                    </Form.Select>
-                  </td>
-                  <td width="12%" style={{ textAlign: "right" }}>
-                    <Form.Label>Дата начала</Form.Label>
-                  </td>
-                  <td width="18%">
-                    <DatePicker
-                      locale="ru"
-                      selected={startDate}
-                      onChange={(date) => setStartDate(date)}
-                      className="form-control"
-                    />
-                  </td>
-                  <td width="12%" style={{ textAlign: "right" }}>
-                    <Form.Label>Дата конца</Form.Label>
-                  </td>
-                  <td width="18%">
-                    <DatePicker
-                      locale="ru"
-                      selected={endDate}
-                      onChange={(date) => setEndDate(date)}
-                      className="form-control"
-                    />
-                  </td>
-                  <td width="5%">
-                    <Button
-                      onClick={updateReport}
-                      variant="primary"
-                      className="d-flex align-items-center"
-                      disabled={updateReportAnimation}
-                    >
-                      {updateReportAnimation ? (
-                        <>
-                          <Spinner animation="border" size="sm" className="me-2" />
-                          Загрузка...
-                        </>
-                      ) : (
-                        'Построить отчет'
-                      )}
-                    </Button>
-                  </td>
-                </tr>
-              </tbody>
-            </Table>
 
-            <div className="table-responsive" style={{ maxHeight: "400px", marginTop: "20px" }}>
-              <Table bordered hover>
-                <thead>
-                  <tr>
-                    <th width="5%">Id</th>
-                    <th width="35%">ФИО</th>
-                    <th width="25%">Объект</th>
-                    <th width="10%">На выплаты</th>
-                    <th width="10%">В отчет</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {displayedEmployeeList && displayedEmployeeList.length > 0 ? (
-                    displayedEmployeeList.map((item) => (
-                      <tr key={item.id}>
-                        <td>{item.id}</td>
-                        <td>{item.fio}</td>
-                        <td>{item.objectName || '—'}</td>
-                        <td>{item.payout ? 'Да' : 'Нет'}</td>
-                        <td>
-                          <Form.Check
-                            key={item.id}
-                            checked={selectedEmployesList.includes(item.id)}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedEmployesList([...selectedEmployesList, item.id]);
-                              } else {
-                                setSelectedEmployesList(selectedEmployesList.filter(id => id !== item.id));
-                              }
-                            }}
-                            type="checkbox"
-                          />
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="text-center text-muted py-4">
-                        Нет данных о сотрудниках
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </Table>
-            </div>
-          </Card.Header>
+          </div>
+
+
+          <br/>
+          <div className="h3 mb-3">Отчет о зарплате</div>
 
             {updateReportAnimation ? (
             <div style={{ textAlign: "center", padding: "40px" }}>
@@ -333,33 +180,34 @@ export function PayoutReportPage() {
           ) : (
             resultTable && resultTable.length > 0 && (
               <div className="table-responsive" style={{ minHeight: "400px", marginTop: "20px" }}>
-                <br />
-                <div className="d-flex justify-content-between align-items-center mb-3">
-                  <div className="h3">Отчет о зарплате</div>
-                  <Button
-                    onClick={handleSavePayoutMarks}
-                    variant="success"
-                    disabled={savingMarks || selectedEmployesList.length === 0}
-                  >
-                    {savingMarks ? (
-                      <>
-                        <Spinner animation="border" size="sm" className="me-2" />
-                        Сохранение...
-                      </>
-                    ) : (
-                      'Сохранить с отметками об оплате'
-                    )}
-                  </Button>
-                </div>
                 <Table bordered hover>
                   <tbody>
-                    {resultTable.map((item, index) => (
-                      <tr key={index}>
-                        {item.map((cell, cellIndex) => (
-                          <td key={cellIndex}>{cell}</td>
-                        ))}
-                      </tr>
-                    ))}
+                    {resultTable.map((row, rowIndex) => {
+                      const fio = row[0];
+                      const isEmployeeRow =
+                        fio &&
+                        fio !== "ФИО" &&
+                        fio !== "Общий итог:" &&
+                        !fio.startsWith("Расчет ");
+                      const checked = !!payOffMap[fio];
+
+                      return (
+                        <tr key={rowIndex}>
+                          {row.map((cell, cellIndex) => (
+                            <td key={cellIndex}>{cell}</td>
+                          ))}
+                          <td style={{ textAlign: "center" }}>
+                            {isEmployeeRow ? (
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                onChange={() => handleTogglePayOff(fio, checked)}
+                              />
+                            ) : null}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </Table>
                 <br />

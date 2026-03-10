@@ -318,6 +318,9 @@ namespace WorkShiftsApi
         
         [Column("report_number")]
         public int ReportNumber { get; set; }
+
+        [Column("pay_off")]
+        public int PayOff { get; set; }//Выплата произведена
     }
 
     /// <summary>
@@ -346,6 +349,10 @@ namespace WorkShiftsApi
 
         [Column("report_number")]
         public int ReportNumber { get; set; }
+
+        [Column("pay_off")]
+        public int PayOff { get; set; }//Выплата произведена
+
     }
 
     /// <summary>

@@ -146,10 +146,10 @@ namespace WorkShiftsApi.Controllers
                                  }).ToList();
 
                 var workHourIds = workHours.Select(x => x.Id).ToList();
-                var whMarks = _context.RevenueReportsWh
+                var whReportRecords = _context.RevenueReportsWh
                     .Where(x => workHourIds.Contains(x.WorkHoursId))
                     .GroupBy(x => x.WorkHoursId)
-                    .ToDictionary(g => g.Key, g => g.Max(v => v.ReportNumber));
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ReportNumber).First());
 
                 // Рабочие дни
                 var workDays = (from wd in _context.WorkDays
@@ -185,10 +185,10 @@ namespace WorkShiftsApi.Controllers
                               }).ToList();
 
                 var finOpIds = finOps.Select(x => x.Id).ToList();
-                var finMarks = _context.RevenueReportsFin
+                var finReportRecords = _context.RevenueReportsFin
                     .Where(x => finOpIds.Contains(x.FinOperationId))
                     .GroupBy(x => x.FinOperationId)
-                    .ToDictionary(g => g.Key, g => g.Max(v => v.ReportNumber));
+                    .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ReportNumber).First());
 
                 var items = new List<EmployeeFinancialReportRowDto>();
 
@@ -200,9 +200,11 @@ namespace WorkShiftsApi.Controllers
                         $"Объект: {wh.ObjectName}. Рабочие часы: {wh.Hours}. Ставка в час: {wh.Rate} руб.";
 
                     var accountingInfo = "--";
-                    if (whMarks.TryGetValue(wh.Id, out var reportNumberWh))
+                    bool? payOff = null;
+                    if (whReportRecords.TryGetValue(wh.Id, out var rrWh))
                     {
-                        accountingInfo = $"Учтен в отчете #{reportNumberWh}";
+                        accountingInfo = $"Учтен в отчете #{rrWh.ReportNumber}";
+                        payOff = rrWh.PayOff != 0;
                     }
 
                     items.Add(new EmployeeFinancialReportRowDto
@@ -210,7 +212,8 @@ namespace WorkShiftsApi.Controllers
                         Date = wh.Date,
                         Description = description,
                         Amount = amount,
-                        AccountingInfo = accountingInfo
+                        AccountingInfo = accountingInfo,
+                        PayOff = payOff
                     });
 
                     result.TotalHours += wh.Hours;
@@ -232,7 +235,8 @@ namespace WorkShiftsApi.Controllers
                         Date = wd.Date,
                         Description = description,
                         Amount = amount,
-                        AccountingInfo = accountingInfo
+                        AccountingInfo = accountingInfo,
+                        PayOff = null
                     });
 
                     result.TotalWorkDays += 1;
@@ -258,9 +262,11 @@ namespace WorkShiftsApi.Controllers
                     }
 
                     var accountingInfo = "--";
-                    if (finMarks.TryGetValue(fo.Id, out var reportNumberFo))
+                    bool? payOff = null;
+                    if (finReportRecords.TryGetValue(fo.Id, out var rrFin))
                     {
-                        accountingInfo = $"Учтен в отчете #{reportNumberFo}";
+                        accountingInfo = $"Учтен в отчете #{rrFin.ReportNumber}";
+                        payOff = rrFin.PayOff != 0;
                     }
 
                     items.Add(new EmployeeFinancialReportRowDto
@@ -268,7 +274,8 @@ namespace WorkShiftsApi.Controllers
                         Date = fo.Date,
                         Description = description,
                         Amount = amount,
-                        AccountingInfo = accountingInfo
+                        AccountingInfo = accountingInfo,
+                        PayOff = payOff
                     });
 
                     if (isPenalty)
@@ -648,15 +655,11 @@ namespace WorkShiftsApi.Controllers
                     return Ok(result);
                 }
 
-                // Получаем следующий номер отчета
+                // Получаем следующий номер отчета: макс. report_number из main_report_numbers + 1
                 int reportNumber = 1;
-                if (_context.RevenueReportsFin.Any())
+                if (_context.MainReportNumbers.Any())
                 {
-                    var maxReportNumber = _context.RevenueReportsFin
-                        .Select(x => x.ReportNumber)
-                        .Max();
-                    
-                    reportNumber = (int)(maxReportNumber + 1);
+                    reportNumber = _context.MainReportNumbers.Max(x => x.ReportNumber) + 1;
                 }
 
                 // Сохраняем запись в MainReportNumbers
@@ -741,9 +744,8 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
-                // Проверяем, существует ли отчет с таким номером
-                if (!_context.RevenueReportsFin.Any(x => x.ReportNumber == reportNumber) &&
-                    !_context.RevenueReportsWh.Any(x => x.ReportNumber == reportNumber))
+                // Проверяем наличие отчета по таблице main_report_numbers
+                if (!_context.MainReportNumbers.Any(x => x.ReportNumber == reportNumber))
                 {
                     result.IsSuccess = false;
                     result.Message = $"Отчет с номером {reportNumber} не найден";
@@ -833,6 +835,150 @@ namespace WorkShiftsApi.Controllers
                 result.IsSuccess = false;
                 result.Message = ex.Message;
                 return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Получить статусы выплат (PayOff) по сотрудникам для сохраненного отчета
+        /// </summary>
+        [HttpGet("GetPayOffStatusesForReport")]
+        [Authorize]
+        public ActionResult GetPayOffStatusesForReport([FromQuery] int reportNumber)
+        {
+            var result = new GetPayOffStatusesForReportResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                // Проверяем наличие отчета по таблице main_report_numbers
+                if (!_context.MainReportNumbers.Any(x => x.ReportNumber == reportNumber))
+                {
+                    result.IsSuccess = false;
+                    result.Message = $"Отчет с номером {reportNumber} не найден";
+                    return Ok(result);
+                }
+
+                // Собираем данные по PayOff из обеих таблиц, сгруппированные по сотруднику
+                var whQuery = from rr in _context.RevenueReportsWh
+                              join wh in _context.WorkHours on rr.WorkHoursId equals wh.Id
+                              where rr.ReportNumber == reportNumber
+                              select new { wh.EmployeeId, rr.PayOff };
+
+                var finQuery = from rf in _context.RevenueReportsFin
+                               join fo in _context.FinOperations on rf.FinOperationId equals fo.Id
+                               where rf.ReportNumber == reportNumber
+                               select new { fo.EmployeeId, rf.PayOff };
+
+                var grouped = whQuery
+                    .Concat(finQuery)
+                    .GroupBy(x => x.EmployeeId)
+                    .Select(g => new
+                    {
+                        EmployeeId = g.Key,
+                        PayOff = g.Max(v => v.PayOff) > 0
+                    })
+                    .ToList();
+
+                if (grouped.Count == 0)
+                {
+                    result.Items = new List<EmployeePayOffStatusDto>();
+                    return Ok(result);
+                }
+
+                var empIds = grouped.Select(x => x.EmployeeId).ToList();
+                var employees = _context.Employees
+                    .Where(e => empIds.Contains(e.Id))
+                    .ToList();
+
+                result.Items = grouped
+                    .Join(
+                        employees,
+                        g => g.EmployeeId,
+                        e => e.Id,
+                        (g, e) => new EmployeePayOffStatusDto
+                        {
+                            EmployeeId = g.EmployeeId,
+                            Fio = e.Fio,
+                            PayOff = g.PayOff
+                        })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Установить/снять отметку выплаты (PayOff) для сотрудника в сохраненном отчете
+        /// </summary>
+        [HttpPost("SetPayOffForEmployeeInReport")]
+        [Authorize]
+        public async Task<IActionResult> SetPayOffForEmployeeInReport([FromBody] SetPayOffForEmployeeInReportRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Статус выплаты обновлен" };
+
+            try
+            {
+                if (string.IsNullOrWhiteSpace(request.Fio))
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Не указано ФИО сотрудника";
+                    return Ok(result);
+                }
+
+                // Находим сотрудников по ФИО
+                var employeeIds = _context.Employees
+                    .Where(e => e.Fio == request.Fio)
+                    .Select(e => e.Id)
+                    .ToList();
+
+                if (employeeIds.Count == 0)
+                {
+                    result.IsSuccess = false;
+                    result.Message = $"Сотрудник с ФИО '{request.Fio}' не найден";
+                    return Ok(result);
+                }
+
+                var payOffValue = request.PayOff ? 1 : 0;
+
+                // Обновляем PayOff для записей revenue_reports_wh
+                var whToUpdate = from rr in _context.RevenueReportsWh
+                                 join wh in _context.WorkHours on rr.WorkHoursId equals wh.Id
+                                 where rr.ReportNumber == request.ReportNumber
+                                       && employeeIds.Contains(wh.EmployeeId)
+                                 select rr;
+
+                foreach (var rr in whToUpdate)
+                {
+                    rr.PayOff = payOffValue;
+                }
+
+                // Обновляем PayOff для записей revenue_reports_fin
+                var finToUpdate = from rf in _context.RevenueReportsFin
+                                  join fo in _context.FinOperations on rf.FinOperationId equals fo.Id
+                                  where rf.ReportNumber == request.ReportNumber
+                                        && employeeIds.Contains(fo.EmployeeId)
+                                  select rf;
+
+                foreach (var rf in finToUpdate)
+                {
+                    rf.PayOff = payOffValue;
+                }
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
             }
 
             return Ok(result);
@@ -953,6 +1099,8 @@ namespace WorkShiftsApi.Controllers
         public string Description { get; set; } = "";
         public int Amount { get; set; }
         public string AccountingInfo { get; set; } = "";
+        /// <summary>Признак выплаты (из revenue_reports_wh / revenue_reports_fin). null — не в отчете.</summary>
+        public bool? PayOff { get; set; }
     }
 
     public class EmployeeFinancialReportResponse : ResponseBase
@@ -978,6 +1126,25 @@ namespace WorkShiftsApi.Controllers
         public string StartDate { get; set; }
         public string EndDate { get; set; }
         public string Employees { get; set; }
+    }
+
+    public class SetPayOffForEmployeeInReportRequest
+    {
+        public int ReportNumber { get; set; }
+        public string Fio { get; set; } = "";
+        public bool PayOff { get; set; }
+    }
+
+    public class EmployeePayOffStatusDto
+    {
+        public int EmployeeId { get; set; }
+        public string Fio { get; set; } = "";
+        public bool PayOff { get; set; }
+    }
+
+    public class GetPayOffStatusesForReportResponse : ResponseBase
+    {
+        public List<EmployeePayOffStatusDto> Items { get; set; } = new List<EmployeePayOffStatusDto>();
     }
 
     public class EmplOptionEnums

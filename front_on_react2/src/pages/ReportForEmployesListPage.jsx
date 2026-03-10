@@ -13,7 +13,8 @@ import {GetEmployeeList,
     GetMainReportForPeriodAsTable,
     GetMainReportForPeriodAsTableWithBanks,
     GetAllObjects, 
-    DownloadFileWithAuth} from '../services/apiService';
+    DownloadFileWithAuth,
+    SavePayoutMarks} from '../services/apiService';
 
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
@@ -28,6 +29,7 @@ export function ReportForEmployesListPage() {
     const [selectedEmployesList, setSelectedEmployesList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
     const [resultTable, setResultTable] = useState([]);
+    const [savingMarks, setSavingMarks] = useState(false);
 
     useEffect(() => {
         updateObjects();
@@ -162,6 +164,34 @@ export function ReportForEmployesListPage() {
         updateEmployeeList(objId);
     }
 
+    function handleCreateReportWithMarks() {
+        if (selectedEmployesList.length === 0) {
+            alert("Выберите хотя бы одного сотрудника");
+            return;
+        }
+
+        const params = {
+            employees: selectedEmployesList.join(","),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        };
+
+        setSavingMarks(true);
+        SavePayoutMarks(params)
+            .then((data) => {
+                setSavingMarks(false);
+                if (data.isSuccess) {
+                    alert(data.message || "Отчет с отметками создан. Дальнейшие отметки о выдаче зарплаты — на странице «Зарплата».");
+                } else {
+                    alert(data.message || "Ошибка при создании отчета");
+                }
+            })
+            .catch((error) => {
+                setSavingMarks(false);
+                console.error("Ошибка при создании отчета с отметками:", error);
+                alert("Ошибка при создании отчета с отметками");
+            });
+    }
 
     return (
     
@@ -381,8 +411,20 @@ export function ReportForEmployesListPage() {
                                 <Button variant="link"  >Перейти к заполнению отметок об оплате</Button>
                             </td>
                             <td>
-                                    <Button variant="primary">Создать отчет с отметками
-                                </Button>
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleCreateReportWithMarks}
+                                        disabled={savingMarks || selectedEmployesList.length === 0}
+                                    >
+                                        {savingMarks ? (
+                                            <>
+                                                <Spinner animation="border" size="sm" className="me-2" />
+                                                Создание...
+                                            </>
+                                        ) : (
+                                            "Создать отчет с отметками"
+                                        )}
+                                    </Button>
                             </td>
                         </tr>
                     </tbody>

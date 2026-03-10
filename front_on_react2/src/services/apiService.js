@@ -320,10 +320,27 @@ export async function GetMainReportFromPayoutMarks(reportNumber) {
     return parseJSON(response);
 }
 
-//список сохраненных отчетов (MainReportNumbers)
+// статусы PayOff по сотрудникам для сохраненного отчета
+export async function GetPayOffStatusesForReport(reportNumber) {
+    const url = apiUrl + '/api/report/GetPayOffStatusesForReport?reportNumber=' + reportNumber;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
+// список сохраненных отчетов (MainReportNumbers)
 export async function GetMainReportNumbersList() {
     const url = apiUrl + '/api/report/GetMainReportNumbersList';
     const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
+// установить/снять PayOff для сотрудника в отчете
+export async function SetPayOffForEmployeeInReport(params) {
+    const url = apiUrl + '/api/report/SetPayOffForEmployeeInReport';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify(params),
+    });
     return parseJSON(response);
 }
 
