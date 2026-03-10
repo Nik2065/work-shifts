@@ -50,6 +50,7 @@ export function DashboardPage () {
     const [fioToSearch, setFioToSearch] = useState("");
     const [showOperationsModal, setShowOperationsModal] = useState(false);
     const [savingWorkHoursEmplId, setSavingWorkHoursEmplId] = useState(null);
+    const [savingAllWorkHours, setSavingAllWorkHours] = useState(false);
     const [loadingMainTable, setLoadingMainTable] = useState(false);
     //фильтр для таблицы //на вахте
     const [isInWorkShift, setIsInWorkShift] = useState(-1);
@@ -257,6 +258,34 @@ export function DashboardPage () {
 
     }
 
+    function SaveAllWorkHoursItems() {
+      const list = displayedEmployeeList || [];
+      if (list.length === 0) {
+        ToastShowAndHide({ show: true, msg: "Нет сотрудников для сохранения", variant: "warning" });
+        return;
+      }
+      setSavingAllWorkHours(true);
+      const promises = list.map((emp) =>
+        SaveWorkHoursItemOnServer({
+          employeeId: emp.id,
+          hours: GetHours(emp.id),
+          rate: GetRate(emp.id),
+          date: currentDate,
+        }).then((r) => r.json()).then((data) => ({ id: emp.id, ok: data.isSuccess, msg: data.message }))
+          .catch(() => ({ id: emp.id, ok: false, msg: "Ошибка сети" }))
+      );
+      Promise.all(promises).then((results) => {
+        setSavingAllWorkHours(false);
+        const okCount = results.filter((r) => r.ok).length;
+        const failCount = results.filter((r) => !r.ok).length;
+        if (failCount === 0) {
+          ToastShowAndHide({ show: true, msg: `Сохранено для ${okCount} сотрудников`, variant: "success" });
+        } else {
+          ToastShowAndHide({ show: true, msg: `Сохранено: ${okCount}, ошибок: ${failCount}`, variant: "danger" });
+        }
+      });
+    }
+
     function ToastShowAndHide(data){
       setShowToastMsg(data);
 
@@ -390,7 +419,7 @@ export function DashboardPage () {
                       
 
 
-                      <Form.Group as={Col} sm={4}>
+                      <Form.Group as={Col} sm={2}>
                       <Form.Label>Поиск по имени &nbsp;</Form.Label>
                       <Form.Control 
                       value={fioToSearch}
@@ -409,6 +438,16 @@ export function DashboardPage () {
                       }}
                       variant="primary" 
                       className="">Показать</Button>
+                      </Form.Group>
+
+                      <Form.Group as={Col} sm={2} style={{textAlign:"right"}}>
+                      <Button 
+                      disabled={savingAllWorkHours || (displayedEmployeeList && displayedEmployeeList.length === 0)}
+                      onClick={SaveAllWorkHoursItems}
+                      variant="outline-success"
+                      title="Сохранить часы и ставки для всех отображаемых сотрудников">
+                      {savingAllWorkHours ? <><Spinner animation="border" size="sm" className="me-1"/> Сохранение...</> : <>Сохранить все</>}
+                      </Button>
                       </Form.Group>
 
                     </Row>
