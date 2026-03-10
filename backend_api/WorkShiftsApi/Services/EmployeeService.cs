@@ -202,7 +202,7 @@ namespace WorkShiftsApi.Services
         {
             var result = new DataTable();
 
-            var columnsCount = 10;
+            var columnsCount = 11;
 
             var allTablesSum = 0;
             //int rowNumber = 0;
@@ -213,7 +213,7 @@ namespace WorkShiftsApi.Services
             foreach (var tData in tables)
             {
                 var row = result.NewRow();
-                row.ItemArray = new string[] { tData.Title, "", "", "", "", "", "", "", "", "" };
+                row.ItemArray = new string[] { tData.Title, "", "", "", "", "", "", "", "", "", "" };
                 result.Rows.Add(row);
                 
                 // Заголовки столбцов
@@ -259,6 +259,7 @@ namespace WorkShiftsApi.Services
             //table.Columns.Add("Начисления: Другое", typeof(int));
             table.Columns.Add("Начисления: Другое", typeof(int));
             table.Columns.Add("Итого", typeof(int));
+            table.Columns.Add("Подпись сотрудника", typeof(string));
 
 
 
@@ -409,6 +410,7 @@ namespace WorkShiftsApi.Services
             table.Columns.Add("Списания: Другое", typeof(string));
             table.Columns.Add("Начисления: Другое", typeof(int));
             table.Columns.Add("Итого", typeof(int));
+            table.Columns.Add("Подпись сотрудника", typeof(string));
 
             // Получаем все work_hours_id для данного report_number
             var whIds = _context.RevenueReportsWh
@@ -567,6 +569,7 @@ namespace WorkShiftsApi.Services
             table.Columns.Add("Списания: Другое", typeof(string));
             table.Columns.Add("Начисления: Другое", typeof(int));
             table.Columns.Add("Итого", typeof(int));
+            table.Columns.Add("Подпись сотрудника", typeof(string));
 
             if (employeeIds.Count == 0)
             {
