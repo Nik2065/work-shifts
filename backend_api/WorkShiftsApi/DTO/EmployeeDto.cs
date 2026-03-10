@@ -10,6 +10,7 @@ namespace WorkShiftsApi.DTO
         public string? BankName { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
+        public DateTime? UlchoDate { get; set; }
         public string ObjectName { get; set; }
         public int ObjectId { get; set; }
         public string? EmplOptions { get; set; }

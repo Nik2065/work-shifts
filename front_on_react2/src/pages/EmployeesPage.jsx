@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container, Table, Card, Spinner, Pagination, Form, Row, Col
+  Container, Table, Card, Spinner, Pagination, Form, Row, Col, Button
 } from 'react-bootstrap';
 import { GetEmployeeList, GetAllObjects } from '../services/apiService';
+import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 
 const PAGE_SIZE = 50;
 
@@ -13,6 +14,8 @@ export function EmployeesPage() {
   const [objectsList, setObjectsList] = useState([]);
   const [selectedObject, setSelectedObject] = useState(-1);
   const [dismissedFilter, setDismissedFilter] = useState(-1); // -1 все, 0 нет, 1 да
+  const [showEmpModal, setShowEmpModal] = useState(false);
+  const [employeeId, setEmployeeId] = useState(null);
 
   useEffect(() => {
     GetAllObjects()
@@ -60,6 +63,17 @@ export function EmployeesPage() {
             {dismissedFilter !== -1 && ` (из ${employeeList.length})`}
           </p>
         </div>
+        <Button
+          variant="primary"
+          className="d-flex align-items-center"
+          onClick={() => {
+            setEmployeeId(null);
+            setShowEmpModal(true);
+          }}
+        >
+          <i className="bi bi-plus-circle me-2"></i>
+          Добавить сотрудника
+        </Button>
       </div>
 
       <Card className="mb-3">
@@ -120,7 +134,14 @@ export function EmployeesPage() {
                   <tbody>
                     {paginatedList && paginatedList.length > 0 ? (
                       paginatedList.map((item) => (
-                        <tr key={item.id}>
+                        <tr
+                          key={item.id}
+                          onClick={() => {
+                            setEmployeeId(item.id);
+                            setShowEmpModal(true);
+                          }}
+                          style={{ cursor: 'pointer' }}
+                        >
                           <td>{item.id}</td>
                           <td>{item.fio}</td>
                           <td>{item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString('ru-RU') : '—'}</td>
@@ -189,6 +210,13 @@ export function EmployeesPage() {
           )}
         </Card.Body>
       </Card>
+
+      <ModalForEmployee
+        showEmpModal={showEmpModal}
+        setShowEmpModal={setShowEmpModal}
+        employeeId={employeeId}
+        updateEmployees={loadEmployees}
+      />
     </Container>
   );
 }

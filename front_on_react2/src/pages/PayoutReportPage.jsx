@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import {
   Container, Row, Col, Table,
   Card,
-  Spinner
+  Spinner,
+  Toast,
+  ToastContainer
 } from 'react-bootstrap';
 import {
   GetMainReportNumbersList,
@@ -18,6 +20,7 @@ export function PayoutReportPage() {
   const [loadingReportNumbers, setLoadingReportNumbers] = useState(false);
   const [selectedReportNumber, setSelectedReportNumber] = useState(null);
   const [payOffMap, setPayOffMap] = useState({});
+  const [showSavedToast, setShowSavedToast] = useState(false);
 
   function loadReportNumbers() {
     setLoadingReportNumbers(true);
@@ -92,7 +95,9 @@ export function PayoutReportPage() {
       payOff: newValue,
     })
       .then((data) => {
-        if (!data.isSuccess) {
+        if (data.isSuccess) {
+          setShowSavedToast(true);
+        } else {
           alert(data.message || 'Ошибка при сохранении статуса выплаты');
         }
       })
@@ -104,6 +109,20 @@ export function PayoutReportPage() {
 
   return (
     <Container expand="lg">
+      <ToastContainer position="top-end" className="p-3">
+        <Toast
+          show={showSavedToast}
+          onClose={() => setShowSavedToast(false)}
+          delay={3000}
+          autohide
+          bg="success"
+        >
+          <Toast.Header closeButton>
+            <strong className="me-auto">Сохранено</strong>
+          </Toast.Header>
+          <Toast.Body>Изменения сохранены</Toast.Body>
+        </Toast>
+      </ToastContainer>
       <br />
       {/* Заголовок страницы */}
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -191,6 +210,8 @@ export function PayoutReportPage() {
                         !fio.startsWith("Расчет ");
                       const checked = !!payOffMap[fio];
 
+                      const isHead = fio &&  fio === "ФИО";
+
                       return (
                         <tr key={rowIndex}>
                           {row.map((cell, cellIndex) => (
@@ -204,6 +225,11 @@ export function PayoutReportPage() {
                                 onChange={() => handleTogglePayOff(fio, checked)}
                               />
                             ) : null}
+                            { isHead ? "Подпись сотрудника"
+                            : null
+                            }
+
+
                           </td>
                         </tr>
                       );

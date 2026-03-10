@@ -59,6 +59,8 @@ namespace WorkShiftsApi
 
         public DbSet<MainReportNumbersDb> MainReportNumbers { get; set; }
 
+        public DbSet<BankDb> Banks { get; set; }
+
     }
 
 
@@ -133,7 +135,10 @@ namespace WorkShiftsApi
         public bool Dismissed { get; set; }
 
         [Column("payout")]
-        public bool Payout { get; set; }
+        public bool Payout { get; set; }//Признак "на выплату" для сотрудника
+
+        [Column("ulcho_date")]
+        public DateTime? UlchoDate { get; set; }
     }
 
 
@@ -378,5 +383,16 @@ namespace WorkShiftsApi
 
         [Column("end_date")]
         public DateTime EndDate { get; set; }
+    }
+
+    [Table("banks")]
+    public class BankDb
+    {
+        [Column("id")]
+        public int Id { get; set; }
+
+        [Column("bank_name")]
+        public string BankName { get; set; } = string.Empty;
+
     }
 }

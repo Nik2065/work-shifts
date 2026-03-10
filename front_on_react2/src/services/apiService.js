@@ -434,3 +434,9 @@ export async function GetFinOperationTypesFromApi() {
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
+
+export async function GetBanksList() {
+    const url = apiUrl + '/api/employee/GetBanksList';
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}

@@ -331,10 +331,6 @@ export function DashboardPage () {
                 <h2 className="mb-1">Учет времени</h2>
                 <p className="text-muted mb-0"></p>
               </div>
-              <Button onClick={()=> {setEmployeeId(null); setShowEmpModal(true);}} variant="primary" className="d-flex align-items-center">
-                <i className="bi bi-plus-circle me-2"></i>
-                Добавить сотрудника
-              </Button>
             </div>
 
             

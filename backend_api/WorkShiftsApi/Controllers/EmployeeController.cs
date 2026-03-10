@@ -50,6 +50,7 @@ namespace WorkShiftsApi.Controllers
                         DateOfBirth = one.DateOfBirth,
                         BankName = one.BankName,
                         ChopCertificate = one.ChopCertificate,
+                        UlchoDate = one.UlchoDate,
                         ObjectName = o?.Name ?? "",
                         ObjectId = one.ObjectId,
                         EmplOptions = one.EmplOptions,
@@ -156,6 +157,7 @@ namespace WorkShiftsApi.Controllers
                                             DateOfBirth = emp.DateOfBirth,
                                             BankName = emp.BankName,
                                             ChopCertificate = emp.ChopCertificate,
+                                            UlchoDate = emp.UlchoDate,
                                             ObjectName = o.Name,
                                             ObjectId = emp.ObjectId,
                                             EmplOptions = emp.EmplOptions,
@@ -218,6 +220,7 @@ namespace WorkShiftsApi.Controllers
                                             DateOfBirth = emp.DateOfBirth,
                                             BankName = emp.BankName,
                                             ChopCertificate = emp.ChopCertificate,
+                                            UlchoDate = emp.UlchoDate,
                                             EmplOptions = emp.EmplOptions,
                                             Dismissed = emp.Dismissed,
                                             Payout = emp.Payout,
@@ -450,6 +453,7 @@ namespace WorkShiftsApi.Controllers
                     DateOfBirth = request.DateOfBirth,
                     BankName = request.BankName,
                     ChopCertificate = request.ChopCertificate,
+                    UlchoDate = request.UlchoDate,
                     Created = DateTime.Now,
                     EmplOptions = request.EmplOptions,
                     Fio = request.Fio,
@@ -493,6 +497,7 @@ namespace WorkShiftsApi.Controllers
                 one.DateOfBirth = request.DateOfBirth;
                 one.BankName = request.BankName;
                 one.ChopCertificate = request.ChopCertificate;
+                one.UlchoDate = request.UlchoDate;
                 one.EmplOptions = request.EmplOptions;
                 one.Fio = request.Fio;
                 one.ObjectId = (int)request.ObjectId;
@@ -681,7 +686,40 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Список банков из таблицы banks
+        /// </summary>
+        [HttpGet("GetBanksList")]
+        public ActionResult GetBanksList()
+        {
+            var result = new GetBanksListResponse { IsSuccess = true, Message = "" };
+            try
+            {
+                result.Items = _context.Banks
+                    .OrderBy(x => x.BankName)
+                    .Select(x => new BankItemDto { Id = x.Id, BankName = x.BankName })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.Message.ToString();
+            }
+            return Ok(result);
+        }
 
+    }
+
+    public class BankItemDto
+    {
+        public int Id { get; set; }
+        public string BankName { get; set; } = "";
+    }
+
+    public class GetBanksListResponse : ResponseBase
+    {
+        public List<BankItemDto> Items { get; set; } = new List<BankItemDto>();
     }
 
     public class GetEmployeeResponse : ResponseBase 
@@ -729,6 +767,7 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
+        public DateTime? UlchoDate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
         public bool Dismissed { get; set; }
@@ -741,6 +780,7 @@ namespace WorkShiftsApi.Controllers
         public string? BankName { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
+        public DateTime? UlchoDate { get; set; }
         public int? ObjectId { get; set; }
         public string? EmplOptions { get; set; }
         public bool Dismissed { get; set; }

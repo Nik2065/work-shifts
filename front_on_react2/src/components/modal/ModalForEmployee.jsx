@@ -15,7 +15,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 import {GetEmployee, CreateEmployee, 
-  GetAllObjects, SaveEmployeeFromApi} from '../../services/apiService';
+  GetAllObjects, SaveEmployeeFromApi, GetBanksList} from '../../services/apiService';
 
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
@@ -31,6 +31,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
     const defaultEmpData = {fio:'', 
         dateOfBirth: null,
         chopCertificate: false,
+        ulchoDate: null,
         dismissed: false,
         objectId: 0,
         bankName: 'Альфа',
@@ -49,6 +50,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
 
       const [currentEmployee, setCurrentEmployee] = useState(defaultEmpData);
       const [objectsList, setObjectsList] = useState([]);
+      const [banksList, setBanksList] = useState([]);
       const [startDate, setStartDate] = useState(new Date());
       const [endDate, setEndDate] = useState(new Date());
       const [workShiftList, setWorkShiftList] = useState([]);
@@ -138,13 +140,23 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
           setObjectsList(data.objects);
           //устанавливаем айдишник для пользователя 
           if(data.objects.length>0)
-            setCurrentEmployee({ ...currentEmployee, objectId: data.objects[0].id })
+            setCurrentEmployee(prev => ({ ...prev, objectId: data.objects[0].id }))
         }
         else {
           // Обработка ошибки
         }
       })
       .catch(error => console.log(error));
+    }
+
+    function loadBanks() {
+      GetBanksList()
+        .then(data => {
+          if (data.isSuccess && data.items) {
+            setBanksList(data.items);
+          }
+        })
+        .catch(err => console.error('Ошибка загрузки списка банков:', err));
     }
 
 
@@ -303,6 +315,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         onHide={() => setShowEmpModal(false)} 
         onShow={() => {
                         updateObjects();
+                        loadBanks();
                         GetEmployeeOnShow();
                         }}>
             <Modal.Header closeButton>
@@ -331,7 +344,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
                 placeholder="Введите имя"
               />
             </Form.Group>
-            <Form.Group as={Col} md={6} className="mb-3">
+            <Form.Group as={Col} md={12} className="mb-3">
               <Form.Label>Дата рождения</Form.Label>
               <Form.Control
                 type="date"
@@ -350,14 +363,18 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               />
             </Form.Group>
             <Form.Group as={Col} md={6} className="mb-3">
-              <Form.Label>&nbsp;</Form.Label>
-              <Form.Check
-                label="Уволен"
-                type="checkbox"
-                checked={currentEmployee.dismissed}
-                onChange={(e) => setCurrentEmployee({ ...currentEmployee, dismissed: e.target.checked })}
+              <Form.Label>Дата получения УЧО</Form.Label>
+              <DatePicker
+                locale={ru}
+                className="form-control"
+                dateFormat="dd/MM/yyyy"
+                selected={currentEmployee.ulchoDate ? (typeof currentEmployee.ulchoDate === 'string' ? new Date(currentEmployee.ulchoDate) : currentEmployee.ulchoDate) : null}
+                onChange={(date) => setCurrentEmployee({ ...currentEmployee, ulchoDate: date || null })}
+                isClearable
+                placeholderText="Не указана"
               />
             </Form.Group>
+
             
             <Form.Group as={Col} md={12} className="mb-3">
               <Form.Label>Объект</Form.Label>
@@ -400,18 +417,26 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Label>Банк</Form.Label>
               <Form.Select
                 disabled={blokBankInput}
-                value={currentEmployee.bankName}
-                onChange={(e) => setCurrentEmployee({ ...currentEmployee, bankName: e.target.value })}
-                placeholder="Выберите Банк"
+                value={currentEmployee.bankName ?? ''}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, bankName: e.target.value || null })}
+                placeholder="Выберите банк"
               >
-                <option  value="Альфа">Альфа</option>
-                <option value="Сбер">Сбер</option>
-                <option value="ВТБ">ВТБ</option>
-                <option value="ПСБ">ПСБ</option>
-                <option value="Т-Банк">Т-Банк</option>
+                <option value="">—</option>
+                {banksList.map((bank) => (
+                  <option key={bank.id} value={bank.bankName}>{bank.bankName}</option>
+                ))}
               </Form.Select>
             </Form.Group>
-          
+            <Form.Group as={Col} md={12} className="mb-3">
+              <Form.Label>&nbsp;</Form.Label>
+              <Form.Check
+                label="Уволен"
+                type="checkbox"
+                checked={currentEmployee.dismissed}
+                onChange={(e) => setCurrentEmployee({ ...currentEmployee, dismissed: e.target.checked })}
+              />
+            </Form.Group>
+
           </Row>
         </Form>
         <br/>
