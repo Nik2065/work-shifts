@@ -33,6 +33,12 @@ namespace WorkShiftsApi
                .WithMany() // У объекта много сотрудников
                .HasForeignKey(e => e.ObjectId)
                .IsRequired(); // object_id NOT NULL
+
+            modelBuilder.Entity<EmployeesDb>()
+               .HasOne(e => e.Bank) // У сотрудника один банк
+               .WithMany() // У банка много сотрудников
+               .HasForeignKey(e => e.BankId)
+               .IsRequired(false); // bank_id может быть NULL
         }
 
         public DbSet<SiteUserDb> SiteUsers { get; set; }
@@ -106,9 +112,6 @@ namespace WorkShiftsApi
         [Column("created")]
         public DateTime Created { get; set; } = DateTime.Now;
 
-        [Column("bank_name")]
-        public string? BankName { get; set; }
-
         [Column("date_of_birth")]
         public DateTime? DateOfBirth { get; set; }
 
@@ -117,6 +120,9 @@ namespace WorkShiftsApi
 
         [Column("object_id")]
         public int ObjectId { get; set; }
+
+        [Column("bank_id")]
+        public int? BankId { get; set; }
 
 
         //варианты трудоустройства
@@ -129,6 +135,8 @@ namespace WorkShiftsApi
         public virtual ICollection<WorkShiftsDb> WorkShifts { get; set; }
 
         public virtual ObjectDb Object { get; set; }
+
+        public virtual BankDb? Bank { get; set; }
 
 
         [Column("dismissed")]

@@ -7,6 +7,7 @@ namespace WorkShiftsApi.DTO
         public int Id { get; set; }
         public string Fio { get; set; }
         public DateTime Created { get; set; }
+        public int? BankId { get; set; }
         public string? BankName { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }

@@ -34,7 +34,7 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
         ulchoDate: null,
         dismissed: false,
         objectId: 0,
-        bankName: 'Альфа',
+        bankId: null,
         emplOptions: 'Карта',
       };
 
@@ -417,13 +417,16 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Form.Label>Банк</Form.Label>
               <Form.Select
                 disabled={blokBankInput}
-                value={currentEmployee.bankName ?? ''}
-                onChange={(e) => setCurrentEmployee({ ...currentEmployee, bankName: e.target.value || null })}
+                value={currentEmployee.bankId ?? ''}
+                onChange={(e) => setCurrentEmployee({ 
+                  ...currentEmployee, 
+                  bankId: e.target.value ? Number(e.target.value) : null 
+                })}
                 placeholder="Выберите банк"
               >
                 <option value="">—</option>
                 {banksList.map((bank) => (
-                  <option key={bank.id} value={bank.bankName}>{bank.bankName}</option>
+                  <option key={bank.id} value={bank.id}>{bank.bankName}</option>
                 ))}
               </Form.Select>
             </Form.Group>

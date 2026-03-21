@@ -1,18 +1,16 @@
-using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
-using System.Linq;
 using System.Net;
 using System.Text.Json.Serialization;
 using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
+
 
 namespace WorkShiftsApi.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/report")]
     [Authorize]
     public class ReportController : ControllerBase
     {
@@ -35,6 +33,7 @@ namespace WorkShiftsApi.Controllers
         /// <param name="request"></param>
         /// <returns></returns>
         [HttpPost("GetWorkHoursForPeriod")]
+        [Authorize]
         public ActionResult GetWorkHoursForPeriod([FromBody] GetReportRequest request)
         {
             var result = new GetReportResponse { IsSuccess = true, Message = "Отчет сформирован" };
@@ -109,6 +108,7 @@ namespace WorkShiftsApi.Controllers
         /// (объединяет work_hours, work_days и fin_operations)
         /// </summary>
         [HttpPost("GetEmployeeFinancialReport")]
+        [Authorize]
         public ActionResult GetEmployeeFinancialReport([FromBody] GetReportRequest request)
         {
             var result = new EmployeeFinancialReportResponse
@@ -782,10 +782,12 @@ namespace WorkShiftsApi.Controllers
                     }
                 }
 
+                var banks = _context.Banks.ToList();
+
                 // Разные типы карт
-                foreach (var b in Banks.BanksList)
+                foreach (var b in banks)
                 {
-                    var empListN = otherEmplList.Where(x => x.BankName?.Trim().ToLower() == b.Trim().ToLower());
+                    var empListN = otherEmplList.Where(x => x.Id == b.Id);
                     if (empListN.Count() == 0)
                         continue;
 
@@ -1153,10 +1155,10 @@ namespace WorkShiftsApi.Controllers
         public static readonly string Card = "Карта";
     }
 
-    public class Banks
+    /*public class Banks
     {
         public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер", "ПСБ" };
-    }
+    }*/
 
 
 }

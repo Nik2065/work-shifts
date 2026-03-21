@@ -41,6 +41,7 @@ namespace WorkShiftsApi.Controllers
                 if (one != null)
                 {
                     var o = _context.Objects.FirstOrDefault(y => y.Id == one.ObjectId);
+                    var bank = _context.Banks.FirstOrDefault(b => b.Id == one.BankId);
 
                     result.Employee = new EmployeeDto
                     {
@@ -48,7 +49,8 @@ namespace WorkShiftsApi.Controllers
                         Fio = one.Fio,
                         Id = one.Id,
                         DateOfBirth = one.DateOfBirth,
-                        BankName = one.BankName,
+                        BankId = one.BankId,
+                        BankName = bank?.BankName,
                         ChopCertificate = one.ChopCertificate,
                         UlchoDate = one.UlchoDate,
                         ObjectName = o?.Name ?? "",
@@ -142,32 +144,33 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
-                
-
-                result.EmployeesList = (from emp in _context.Employees 
-                                       join o in _context.Objects on emp.ObjectId equals o.Id
+                var query = from emp in _context.Employees
+                            join o in _context.Objects on emp.ObjectId equals o.Id
+                            join b in _context.Banks on emp.BankId equals b.Id into empBanks
+                            from bank in empBanks.DefaultIfEmpty()
                                        //join ws in _context.WorkShifts on emp.Id equals ws.EmployeeId into empWorkshifts
                                        //from workShift in empWorkshifts.DefaultIfEmpty()
-                                        select 
-                                     new EmployeeDto
-                                        {
-                                            Created = emp.Created,
-                                            Fio = emp.Fio,
-                                            Id = emp.Id,
-                                            DateOfBirth = emp.DateOfBirth,
-                                            BankName = emp.BankName,
-                                            ChopCertificate = emp.ChopCertificate,
-                                            UlchoDate = emp.UlchoDate,
-                                            ObjectName = o.Name,
-                                            ObjectId = emp.ObjectId,
-                                            EmplOptions = emp.EmplOptions,
-                                            Dismissed = emp.Dismissed,
-                                            Payout = emp.Payout,
-                                            WorkShiftList = _context.WorkShifts.Where(x=>x.EmployeeId == emp.Id).Select(x=> 
-                                            new WorkShiftDto 
-                                            { Created=x.Created, Id=x.Id, End=x.End, Start=x.Start}).ToList()
-                                     })
-                                    .ToList();
+                            select new EmployeeDto
+                            {
+                                Created = emp.Created,
+                                Fio = emp.Fio,
+                                Id = emp.Id,
+                                DateOfBirth = emp.DateOfBirth,
+                                BankId = emp.BankId,
+                                BankName = bank != null ? bank.BankName : null,
+                                ChopCertificate = emp.ChopCertificate,
+                                UlchoDate = emp.UlchoDate,
+                                ObjectName = o.Name,
+                                ObjectId = emp.ObjectId,
+                                EmplOptions = emp.EmplOptions,
+                                Dismissed = emp.Dismissed,
+                                Payout = emp.Payout,
+                                WorkShiftList = _context.WorkShifts.Where(x => x.EmployeeId == emp.Id).Select(x =>
+                                    new WorkShiftDto
+                                    { Created = x.Created, Id = x.Id, End = x.End, Start = x.Start }).ToList()
+                            };
+
+                result.EmployeesList = query.ToList();
                 if (objectId != null)
                 {
                     result.EmployeesList = result.EmployeesList.Where(x => x.ObjectId == (int)objectId).ToList();
@@ -204,7 +207,10 @@ namespace WorkShiftsApi.Controllers
                 if (!canParseDate)
                     throw new Exception("Передана ошибочная дата");
 
-                var employees = _context.Employees.AsQueryable();
+                var employees = _context.Employees
+                    .Include(e => e.Object)
+                    .Include(e => e.Bank)
+                    .AsQueryable();
 
                 if (objectId!=-1)
                 {
@@ -218,7 +224,8 @@ namespace WorkShiftsApi.Controllers
                                             Fio = emp.Fio,
                                             Id = emp.Id,
                                             DateOfBirth = emp.DateOfBirth,
-                                            BankName = emp.BankName,
+                                            BankId = emp.BankId,
+                                            BankName = emp.Bank != null ? emp.Bank.BankName : null,
                                             ChopCertificate = emp.ChopCertificate,
                                             UlchoDate = emp.UlchoDate,
                                             EmplOptions = emp.EmplOptions,
@@ -451,7 +458,7 @@ namespace WorkShiftsApi.Controllers
                 var e = new EmployeesDb
                 {
                     DateOfBirth = request.DateOfBirth,
-                    BankName = request.BankName,
+                    BankId = request.BankId,
                     ChopCertificate = request.ChopCertificate,
                     UlchoDate = request.UlchoDate,
                     Created = DateTime.Now,
@@ -495,7 +502,7 @@ namespace WorkShiftsApi.Controllers
                     throw new Exception("Изменяемый сотрудник не найден");
 
                 one.DateOfBirth = request.DateOfBirth;
-                one.BankName = request.BankName;
+                one.BankId = request.BankId;
                 one.ChopCertificate = request.ChopCertificate;
                 one.UlchoDate = request.UlchoDate;
                 one.EmplOptions = request.EmplOptions;
@@ -764,7 +771,7 @@ namespace WorkShiftsApi.Controllers
     public class CreateEmployeeRequestDto
     {
         public string Fio { get; set; }
-        public string? BankName { get; set; }
+        public int? BankId { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
         public DateTime? UlchoDate { get; set; }
@@ -777,7 +784,7 @@ namespace WorkShiftsApi.Controllers
     {
         public int Id { get; set; }
         public string Fio { get; set; }
-        public string? BankName { get; set; }
+        public int? BankId { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public bool ChopCertificate { get; set; }
         public DateTime? UlchoDate { get; set; }

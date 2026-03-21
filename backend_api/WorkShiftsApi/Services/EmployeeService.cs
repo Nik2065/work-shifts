@@ -179,9 +179,10 @@ namespace WorkShiftsApi.Services
             tables.Add(new TableDataDto { Title = "Расчет по ведомости", DataTable = resultTable1, TotalSum = tableSum });
 
             //разные типы карт
-            foreach (var b in Banks.BanksList)
+            var banks = _context.Banks.ToList();
+            foreach (var b in banks)
             {
-                var empListN = emplList.Where(x => x.BankName.Trim().ToLower() == b.Trim().ToLower());
+                var empListN = emplList.Where(x => x.BankId == b.Id);
                 if (empListN.Count() == 0)
                     continue;
 
@@ -197,6 +198,13 @@ namespace WorkShiftsApi.Services
 
             return tables;
         }
+
+        //Подготавливаем список таблиц с данными отчета
+        //новая версия отчета с новым тимом данных
+        //public List<TableDataDto> CreateMainReportNew(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
+        //{
+
+        //}
 
         public DataTable SplitMainReportTablesList(List<TableDataDto> tables)
         {
