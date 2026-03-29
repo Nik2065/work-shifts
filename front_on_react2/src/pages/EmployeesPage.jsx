@@ -3,6 +3,7 @@ import {
   Container, Table, Card, Spinner, Pagination, Form, Row, Col, Button
 } from 'react-bootstrap';
 import { GetEmployeeList, GetAllObjects } from '../services/apiService';
+import { getDateFormat2 } from '../services/commonService';
 import { ModalForEmployee } from '../components/modal/ModalForEmployee';
 
 const PAGE_SIZE = 50;
@@ -144,7 +145,7 @@ export function EmployeesPage() {
                         >
                           <td>{item.id}</td>
                           <td>{item.fio}</td>
-                          <td>{item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString('ru-RU') : '—'}</td>
+                          <td>{item.dateOfBirth ? getDateFormat2(item.dateOfBirth) : '—'}</td>
                           <td>{item.objectName ?? item.object ?? '—'}</td>
                           <td>{item.emplOptions ?? '—'}</td>
                           <td>{item.bankName ?? '—'}</td>

@@ -456,10 +456,10 @@ export function ModalForEmployee({showEmpModal, setShowEmpModal, employeeId, upd
               <Card.Title>Вахты</Card.Title>
               <Row>
                 <Col md={4}>
-                  <DatePicker  locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                  <DatePicker locale="ru" dateFormat="dd/MM/yyyy" selected={startDate} onChange={(date) => setStartDate(date)} />
                 </Col>
                 <Col md={4}>
-                  <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                  <DatePicker locale="ru" dateFormat="dd/MM/yyyy" selected={endDate} onChange={(date) => setEndDate(date)} />
                 </Col>
                 <Col md={4} style={{textAlign:"right"}}>
                   <Button onClick={addWorkShiftHandler}

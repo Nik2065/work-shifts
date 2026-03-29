@@ -12,6 +12,7 @@ import {
   GetPayOffStatusesForReport,
   SetPayOffForEmployeeInReport
 } from '../services/apiService';
+import { getDateFormat2 } from '../services/commonService';
 
 export function PayoutReportPage() {
   const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
@@ -172,9 +173,9 @@ export function PayoutReportPage() {
                       >
                           <td>{row.reportNumber}</td>
                           <td>
-                            {row.startDate ? new Date(row.startDate).toLocaleDateString('ru-RU') : '—'}
+                            {row.startDate ? getDateFormat2(row.startDate) : '—'}
                             {' — '}
-                            {row.endDate ? new Date(row.endDate).toLocaleDateString('ru-RU') : '—'}
+                            {row.endDate ? getDateFormat2(row.endDate) : '—'}
                           </td>
                           <td>{row.createAuthor || '—'}</td>
                           <td>{row.created ? new Date(row.created).toLocaleString('ru-RU') : '—'}</td>

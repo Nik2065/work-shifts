@@ -35,7 +35,7 @@ export function getDateFormat2(date) {
         let year = date1.getFullYear();
         let month = date1.getMonth() + 1;
         let day = date1.getDate();
-        result = addZero(day) + "-" + addZero(month) + "-" + addZero(year);
+        result = addZero(day) + "/" + addZero(month) + "/" + addZero(year);
     } catch (e) {
         result = "";
     }
