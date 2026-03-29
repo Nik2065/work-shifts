@@ -54,12 +54,19 @@ namespace WorkShiftsApi.Tests
         {
             var empService = new EmployeeService(_dbContext);
 
-            var begin = new DateTime(2026, 1, 1);
+            var start = new DateTime(2026, 1, 1);
             var end = new DateTime(2026, 1, 20);
             var empList = new List<int> { 1 };
+            var employees = _dbContext.Employees.Where(x => empList.Contains(x.Id)).ToList();
 
-            empService.GetReportForEmplList2(begin, end, empList, out DataTable table, out int totalSum);
+            //empService.GetReportForEmplList2(begin, end, empList, out DataTable table, out int totalSum);
+            
+            //собираем данные для отчета
+            var mrData = empService.CreateMainReportVer3(start, end, employees);
 
+            //перекладываем данные отчета в таблицу 
+            empService.GenerateTableForMainReportVer3(mrData, out DataTable table);
+            //дальше можн из этой таблицы делать или эксель или таблицу сайта
 
 
 

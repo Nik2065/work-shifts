@@ -18,7 +18,7 @@ import {
   GetEmployeeList,
   GetEmployeeFinancialReportApi
 } from '../services/apiService';
-
+import { getDateFormat2 } from '../services/commonService';
 
 
 export function ReportForOneEmployeePage(){
@@ -203,7 +203,7 @@ export function ReportForOneEmployeePage(){
                       const payOffText = item.payOff === true ? ' Выплата: да' : item.payOff === false ? ' Выплата: нет' : '';
                       return (
                         <tr key={index}>
-                          <td>{new Date(item.date).toLocaleDateString('ru-RU')}</td>
+                          <td>{getDateFormat2(item.date)}</td>
                           <td>{item.description}</td>
                           <td>{item.amount} руб.</td>
                           <td>{accountingText}{payOffText}</td>

@@ -118,13 +118,13 @@ export function ReportForEmployeePage() {
                                 Выгрузка расчетов с даты 
                             </td>
                             <td>
-                               <DatePicker locale="ru" selected={startDate} onChange={(date) => setStartDate(date)} />
+                               <DatePicker locale="ru" dateFormat="dd/MM/yyyy" selected={startDate} onChange={(date) => setStartDate(date)} />
                             </td>
                             <td  style={{textAlign:"right"}}>
                             по дату
                             </td>
                             <td>
-                                <DatePicker locale="ru" selected={endDate} onChange={(date) => setEndDate(date)} />
+                                <DatePicker locale="ru" dateFormat="dd/MM/yyyy" selected={endDate} onChange={(date) => setEndDate(date)} />
                             </td>
                             <td>
                                 <Button onClick={updateReport} sm={1} variant="secondary" className="d-flex align-items-center">Построить отчет</Button>
