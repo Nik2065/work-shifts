@@ -6,6 +6,7 @@ using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using WorkShiftsApi.Controllers;
+using WorkShiftsApi.DTO;
 using DataTable = System.Data.DataTable;
 
 namespace WorkShiftsApi.Services
@@ -27,6 +28,7 @@ namespace WorkShiftsApi.Services
 
         //private readonly IConfiguration _config;
         private AppDbContext _context { get; set; }
+        private NLog.Logger _logger { get; set; } = NLog.LogManager.GetCurrentClassLogger();
 
 
         public DataTable GetReportForEmplList(DateTime begin, DateTime end, List<int> emplList)
@@ -201,10 +203,95 @@ namespace WorkShiftsApi.Services
 
         //Подготавливаем список таблиц с данными отчета
         //новая версия отчета с новым тимом данных
-        //public List<TableDataDto> CreateMainReportNew(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
-        //{
+        public MainReportDto CreateMainReportVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
+        {
+            var result = new MainReportDto();
 
-        //}
+            try
+            {
+                result.Employees = emplList;
+                result.EndDate = endDate.Date;
+
+
+                //result.EmpIds = emplList.Select(x => x.Id).ToList();
+                var fd = new EmployeeFinData();
+                foreach (var employee in emplList) 
+                {
+                    var finOperations = _context.FinOperations.Where(x => x.EmployeeId == employee.Id);
+                    //узнаем про аванс
+                    fd.AdvancePaymentInPeriod = finOperations.Any(x => x.Date <= endDate
+                    && x.Payed == false
+                    && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+
+                    //узнаем о рабочих днях и ставках..................................................
+                    //дней
+                    //var days = _context.WorkDays.Where(x => x.WorkDate <= endDate
+                    //    && x.Payed == false)
+                    //    .Select(x => x.WorkDate.Date)
+                    //    .Distinct().Count();
+
+                    
+                    var workdays = _context.WorkDays.Where(x => x.WorkDate <= endDate
+                        && x.Payed == false);
+
+                    //узнаем про все ставки которые использовались для этих дней/смен
+                    var rates = workdays.Select(x=>x.Rate).Distinct();
+
+                    foreach (var rate in rates) 
+                    {
+                        var w = new WorkDayFinItem
+                        {
+                            Rate = rate,
+                            WorkDaysCount = workdays.Where(x=>x.Rate == rate).Count()
+                        };
+                        fd.NotPayedWorkDays.Add(w);
+                    }
+
+                    //узнаем о рабочих часах и ставках..................................................
+                    //часы
+                    var workhours = _context.WorkHours.Where(x => x.WorkDate <= endDate
+                        && x.Payed == false);
+
+                    var ratesWh = workhours.Select(x => x.Rate).Distinct();
+                    foreach (var r in ratesWh)
+                    {
+                        var w = new WorkHourFinItem
+                        {
+                            Rate = r,
+                            Hours = workhours.Where(x => x.Rate == r).Count()
+                        };
+                        fd.NotPayedWorkHours.Add(w);
+                    }
+                }
+
+            }
+            catch (Exception ex) 
+            { 
+                _logger.Error(ex);
+            }
+
+            return result;
+        }
+
+        //создаем простую таблилцу для последующего экспорта в эксель
+        public void GenerateTableForMainReportVer3(MainReportDto mrData, out DataTable table)
+        {
+            table = new DataTable();
+
+            //7 столбцов
+            for (int i = 0; i < 10; i++)
+                table.Columns.Add();
+
+            //строки
+            var row1 = table.NewRow();
+            row1.ItemArray = new string[] { mrData.EndDate.ToString("dd/MM/yyyy"), "", "", "", "", "", "", "", "", "" };
+
+            //узнаем сколько выбранных пользователей используют ведомость
+            //var employeesVed = mrData.
+
+
+        }
+
 
         public DataTable SplitMainReportTablesList(List<TableDataDto> tables)
         {

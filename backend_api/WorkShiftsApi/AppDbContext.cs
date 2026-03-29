@@ -197,6 +197,12 @@ namespace WorkShiftsApi
 
         [Column("work_date")]
         public DateTime WorkDate { get; set; }
+
+        [Column("payed")]
+        public bool? Payed { get; set; } //если согласно отчету произведена оплата
+
+        [Column("report_id")]
+        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
     }
 
 
@@ -219,6 +225,14 @@ namespace WorkShiftsApi
 
         [Column("rate")]
         public int Rate { get; set; }
+
+        [Column("payed")]
+        public bool? Payed { get; set; } //если согласно отчету произведена оплата
+
+        [Column("report_id")]
+        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
+
+
     }
 
     //рабочие объекты
@@ -281,6 +295,12 @@ namespace WorkShiftsApi
         public virtual EmployeesDb Employee { get; set; }
 
         public virtual FinOperationTypeDb FinOperationType { get; set; }
+
+        [Column("payed")]
+        public bool? Payed { get; set; } //если согласно отчету произведена оплата
+
+        [Column("report_id")]
+        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
     }
 
     /// <summary>

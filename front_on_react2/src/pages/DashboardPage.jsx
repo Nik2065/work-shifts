@@ -376,6 +376,7 @@ export function DashboardPage () {
                         className='form-control'
                         //utcOffset={offset} 
                         locale={ru}
+                        dateFormat="dd/MM/yyyy"
                         selected={tempDate} 
                         onChange={(date) => {
                             onDateChange(date);
