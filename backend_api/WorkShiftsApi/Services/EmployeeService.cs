@@ -1,6 +1,3 @@
-using DocumentFormat.OpenXml.Drawing.Charts;
-using DocumentFormat.OpenXml.Office2013.Drawing.ChartStyle;
-using DocumentFormat.OpenXml.Spreadsheet;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
@@ -205,91 +202,220 @@ namespace WorkShiftsApi.Services
         //новая версия отчета с новым тимом данных
         public MainReportDto CreateMainReportVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
         {
-            var result = new MainReportDto();
+            var result = new MainReportDto
+            {
+                Employees = emplList ?? new List<EmployeesDb>(),
+                StartDate = startDate.Date,
+                EndDate = endDate.Date
+            };
 
             try
             {
-                result.Employees = emplList;
-                result.EndDate = endDate.Date;
+                var start = startDate.Date;
+                var end = endDate.Date;
 
-
-                //result.EmpIds = emplList.Select(x => x.Id).ToList();
-                var fd = new EmployeeFinData();
-                foreach (var employee in emplList) 
+                foreach (var employee in result.Employees)
                 {
-                    var finOperations = _context.FinOperations.Where(x => x.EmployeeId == employee.Id);
-                    //узнаем про аванс
-                    fd.AdvancePaymentInPeriod = finOperations.Any(x => x.Date <= endDate
-                    && x.Payed == false
-                    && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
-
-                    //узнаем о рабочих днях и ставках..................................................
-                    //дней
-                    //var days = _context.WorkDays.Where(x => x.WorkDate <= endDate
-                    //    && x.Payed == false)
-                    //    .Select(x => x.WorkDate.Date)
-                    //    .Distinct().Count();
-
-                    
-                    var workdays = _context.WorkDays.Where(x => x.WorkDate <= endDate
-                        && x.Payed == false);
-
-                    //узнаем про все ставки которые использовались для этих дней/смен
-                    var rates = workdays.Select(x=>x.Rate).Distinct();
-
-                    foreach (var rate in rates) 
+                    var fd = new EmployeeFinData
                     {
-                        var w = new WorkDayFinItem
+                        EmployeeId = employee.Id,
+                        Fio = employee.Fio ?? ""
+                    };
+
+                    var finInPeriod = _context.FinOperations
+                        .Where(x => x.EmployeeId == employee.Id
+                            && x.Date.Date >= start
+                            && x.Date.Date < end)
+                        .ToList();
+
+                    fd.AdvancePaymentInPeriod = finInPeriod.Any(x => x.Payed != true
+                        && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+
+                    fd.AdvancePaymentInEarlyPeriod = _context.FinOperations
+                        .Where(x => x.EmployeeId == employee.Id
+                            && x.Date.Date < start
+                            && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                            && x.Payed == true)
+                        .Select(x => x.Sum)
+                        .DefaultIfEmpty()
+                        .Sum();
+
+                    var workdays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
+                        && x.WorkDate.Date >= start
+                        && x.WorkDate.Date < end
+                        && x.Payed != true);
+
+                    foreach (var rate in workdays.Select(x => x.Rate).Distinct())
+                    {
+                        fd.NotPayedWorkDays.Add(new WorkDayFinItem
                         {
                             Rate = rate,
-                            WorkDaysCount = workdays.Where(x=>x.Rate == rate).Count()
-                        };
-                        fd.NotPayedWorkDays.Add(w);
+                            WorkDaysCount = workdays.Count(x => x.Rate == rate)
+                        });
                     }
 
-                    //узнаем о рабочих часах и ставках..................................................
-                    //часы
-                    var workhours = _context.WorkHours.Where(x => x.WorkDate <= endDate
-                        && x.Payed == false);
+                    var workhours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
+                        && x.WorkDate.Date >= start
+                        && x.WorkDate.Date < end
+                        && x.Payed != true);
 
-                    var ratesWh = workhours.Select(x => x.Rate).Distinct();
-                    foreach (var r in ratesWh)
+                    foreach (var rate in workhours.Select(x => x.Rate).Distinct())
                     {
-                        var w = new WorkHourFinItem
+                        fd.NotPayedWorkHours.Add(new WorkHourFinItem
                         {
-                            Rate = r,
-                            Hours = workhours.Where(x => x.Rate == r).Count()
-                        };
-                        fd.NotPayedWorkHours.Add(w);
+                            Rate = rate,
+                            Hours = workhours.Where(x => x.Rate == rate).Sum(x => x.Hours)
+                        });
                     }
-                }
 
+                    foreach (var g in finInPeriod.Where(x => x.Payed != true).GroupBy(x => x.TypeId))
+                    {
+                        fd.NotPayedFinOperations.Add(new FinOperationItem
+                        {
+                            TypeId = g.Key,
+                            Sum = g.Sum(x => x.Sum)
+                        });
+                    }
+
+                    result.EmployeeFinDatas.Add(fd);
+                }
             }
-            catch (Exception ex) 
-            { 
+            catch (Exception ex)
+            {
                 _logger.Error(ex);
             }
 
             return result;
         }
 
-        //создаем простую таблилцу для последующего экспорта в эксель
+        /// <summary>
+        /// Таблица в формате, совместимом с основной ведомостью (как GetReportForEmplList2): неоплаченные смены/часы и операции за период.
+        /// </summary>
         public void GenerateTableForMainReportVer3(MainReportDto mrData, out DataTable table)
         {
             table = new DataTable();
+            // object: в таблице и шапка с текстом заголовков, и числовые ячейки (int в int-колонку класть нельзя)
+            table.Columns.Add("ФИО", typeof(object));
+            table.Columns.Add("Дней", typeof(object));
+            table.Columns.Add("Ставка", typeof(object));
+            table.Columns.Add("Сумма за работу", typeof(object));
+            table.Columns.Add("Списания: Штрафы", typeof(object));
+            table.Columns.Add("Списания: Форма", typeof(object));
+            table.Columns.Add("Списания: УЧО", typeof(object));
+            table.Columns.Add("Списания: Другое", typeof(object));
+            table.Columns.Add("Начисления: Другое", typeof(object));
+            table.Columns.Add("Итого", typeof(object));
+            table.Columns.Add("Подпись сотрудника", typeof(object));
+            table.Columns.Add("Примечание", typeof(object));
 
-            //7 столбцов
-            for (int i = 0; i < 10; i++)
-                table.Columns.Add();
+            var meta = table.NewRow();
+            meta["ФИО"] = "Финансовый отчёт (версия 3)";
+            table.Rows.Add(meta);
 
-            //строки
-            var row1 = table.NewRow();
-            row1.ItemArray = new string[] { mrData.EndDate.ToString("dd/MM/yyyy"), "", "", "", "", "", "", "", "", "" };
+            meta = table.NewRow();
+            meta["ФИО"] = $"Период: {mrData.StartDate:dd.MM.yyyy} — {mrData.EndDate.AddDays(-1):dd.MM.yyyy} (включительно)";
+            table.Rows.Add(meta);
 
-            //узнаем сколько выбранных пользователей используют ведомость
-            //var employeesVed = mrData.
+            meta = table.NewRow();
+            table.Rows.Add(meta);
 
+            var headerRow = table.NewRow();
+            foreach (DataColumn col in table.Columns)
+                headerRow[col.ColumnName] = col.ColumnName;
+            table.Rows.Add(headerRow);
 
+            var grandTotal = 0;
+            foreach (var fd in mrData.EmployeeFinDatas.OrderBy(x => x.Fio))
+            {
+                var rates = fd.NotPayedWorkDays.Select(x => x.Rate)
+                    .Union(fd.NotPayedWorkHours.Select(x => x.Rate))
+                    .Distinct()
+                    .OrderBy(x => x)
+                    .ToList();
+
+                if (rates.Count == 0)
+                    rates.Add(0);
+
+                var firstRateRow = true;
+                var employeeRevenue = 0;
+                var employeeSpisania = 0;
+                var employeeOtherPayroll = 0;
+                DataRow? firstRow = null;
+
+                foreach (var rate in rates)
+                {
+                    var daysAtRate = fd.NotPayedWorkDays.Where(x => x.Rate == rate).Sum(x => x.WorkDaysCount);
+                    var hoursAtRate = fd.NotPayedWorkHours.Where(x => x.Rate == rate).Sum(x => x.Hours);
+                    var revenueFromDays = daysAtRate * rate;
+                    var revenueFromHours = hoursAtRate * rate;
+                    var revenue = revenueFromDays + revenueFromHours;
+
+                    if (rate == 0 && daysAtRate == 0 && hoursAtRate == 0 && !fd.NotPayedFinOperations.Any() && !fd.AdvancePaymentInPeriod)
+                        continue;
+
+                    var row = table.NewRow();
+                    if (firstRateRow)
+                    {
+                        firstRow = row;
+                        row["ФИО"] = fd.Fio;
+                    }
+
+                    row["Дней"] = daysAtRate;
+                    row["Ставка"] = rate;
+                    if (fd.AdvancePaymentInPeriod)
+                        revenue = 0;
+
+                    row["Сумма за работу"] = revenue;
+                    employeeRevenue += revenue;
+
+                    if (firstRateRow)
+                    {
+                        var shtraf = FinOpSum(fd, FinOperationTypeEnum.Shtraf);
+                        var forma = FinOpSum(fd, FinOperationTypeEnum.Forma);
+                        var ucho = FinOpSum(fd, FinOperationTypeEnum.Ucho);
+                        var other = FinOpSum(fd, FinOperationTypeEnum.Other);
+                        var otherPayroll = FinOpSum(fd, FinOperationTypeEnum.OtherPayroll)
+                            + FinOpSum(fd, FinOperationTypeEnum.AdvancePayment);
+
+                        row["Списания: Штрафы"] = shtraf;
+                        row["Списания: Форма"] = forma;
+                        row["Списания: УЧО"] = ucho;
+                        row["Списания: Другое"] = other == 0 ? "" : other.ToString();
+                        row["Начисления: Другое"] = otherPayroll;
+                        employeeOtherPayroll = otherPayroll;
+                        employeeSpisania = shtraf + forma + ucho + other;
+
+                        if (fd.AdvancePaymentInPeriod)
+                            row["Примечание"] = "В периоде есть неоплаченный аванс: сумма за смены/часы в итог не включена.";
+                        else if (fd.AdvancePaymentInEarlyPeriod != 0)
+                            row["Примечание"] = $"Ранее выплаченный аванс (до периода), сумма: {fd.AdvancePaymentInEarlyPeriod}";
+                    }
+
+                    table.Rows.Add(row);
+                    firstRateRow = false;
+                }
+
+                if (firstRow != null)
+                {
+                    var empTotal = fd.AdvancePaymentInPeriod
+                        ? employeeOtherPayroll - employeeSpisania
+                        : employeeRevenue + employeeOtherPayroll - employeeSpisania;
+                    grandTotal += empTotal;
+                    firstRow["Итого"] = empTotal;
+                }
+            }
+
+            var totalRow = table.NewRow();
+            totalRow["ФИО"] = "";
+            totalRow["Списания: Другое"] = "Общий итог:";
+            totalRow["Итого"] = grandTotal;
+            table.Rows.Add(totalRow);
+        }
+
+        private static int FinOpSum(EmployeeFinData fd, FinOperationTypeEnum type)
+        {
+            var id = (int)type;
+            return fd.NotPayedFinOperations.Where(x => x.TypeId == id).Sum(x => x.Sum);
         }
 
 

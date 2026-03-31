@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using System.Net;
 using System.Text.Json.Serialization;
+using WorkShiftsApi.DbEntities;
 using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
 
@@ -377,6 +378,41 @@ namespace WorkShiftsApi.Controllers
                 return StatusCode(500, $"Ошибка генерации Excel: {ex.Message}");
             }
 
+        }
+
+        /// <summary>
+        /// Финансовый отчёт ver.3: неоплаченные смены/часы и операции за период [startDate, endDate).
+        /// </summary>
+        [HttpGet("GetMainReportVer3AsXls")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportVer3AsXls([FromQuery] string startDate,
+            [FromQuery] string endDate,
+            [FromQuery] string employees)
+        {
+            try
+            {
+                if (!DateTime.TryParse(startDate, out var start) || !DateTime.TryParse(endDate, out var end))
+                    return BadRequest("Некорректные даты.");
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => int.Parse(x))
+                    .ToList();
+
+                var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
+                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                _employeeService.GenerateTableForMainReportVer3(mrData, out var table);
+                var fileBytes = _excelGenerator.CreateExcelFromMainReportVer3Table(table);
+
+                return File(
+                    fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Отчет_ver_3_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка генерации Excel (ver.3): {ex.Message}");
+            }
         }
 
         private void CreateReportTableFromTablesArray(List<TableDataDto> tables)

@@ -1,10 +1,13 @@
-﻿namespace WorkShiftsApi.DTO
+using WorkShiftsApi;
+
+namespace WorkShiftsApi.DTO
 {
     //для хранения данных отчета для всех пользователей списка
     public class MainReportDto
     {
         //public List<int> EmpIds { get; set; } = new List<int>();
-        public List<EmployeesDb> Employees { get; set; }
+        public List<EmployeesDb> Employees { get; set; } = new List<EmployeesDb>();
+        public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
 
         public List<EmployeeFinData> EmployeeFinDatas { get; set; } = new List<EmployeeFinData>();
@@ -14,7 +17,7 @@
     public class EmployeeFinData
     {
         public int EmployeeId { get; set; }
-        public string Fio {  get; set; }
+        public string Fio { get; set; } = "";
 
 
         /// <summary>
@@ -66,7 +69,8 @@
 
     public class FinOperationItem
     {
-
+        public int? TypeId { get; set; }
+        public int Sum { get; set; }
     }
 
 }
