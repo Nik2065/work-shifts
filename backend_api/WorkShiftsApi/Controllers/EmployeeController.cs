@@ -210,6 +210,7 @@ namespace WorkShiftsApi.Controllers
                 var employees = _context.Employees
                     .Include(e => e.Object)
                     .Include(e => e.Bank)
+                    .Include(e => e.FinOperations)
                     .AsQueryable();
 
                 if (objectId!=-1)
@@ -241,7 +242,7 @@ namespace WorkShiftsApi.Controllers
                                             { 
                                                 Comment = x.Comment,
                                                 Id = x.Id,
-                                                Date = selectedDate,
+                                                Date = x.Date.Date,
                                                 IsPenalty = x.IsPenalty,
                                                 Sum = x.Sum,
                                                 TypeId = x.TypeId,
@@ -261,6 +262,7 @@ namespace WorkShiftsApi.Controllers
 
 
                                         }).ToList();
+
 
 
                 foreach (var emp in result.EmployeesList)
