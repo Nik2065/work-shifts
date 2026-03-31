@@ -199,7 +199,7 @@ namespace WorkShiftsApi.Services
 
                 cell11.Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
                 cell11.Style.Font.FontSize = 14;
-                worksheet.Range("A1:K1").Merge();
+                worksheet.Range("A1:N1").Merge();
             }
             //------
             //заголовок для ведомости
@@ -211,16 +211,16 @@ namespace WorkShiftsApi.Services
                 cell.Style.Font.FontSize = 14;
                 cell.Style.Font.Bold = true;
                 cell.Style.Fill.SetBackgroundColor(XLColor.Yellow);
-                worksheet.Range("A2:L2").Merge();
+                worksheet.Range("A2:N2").Merge();
 
             }
             //если пользователей по ведомости нет то выводим надпись 
             var vedEmployees = reportData.Employees.Where(x => x.EmplOptions == EmplOptionEnums.Vedomost);
             var notVedEmployees = reportData.Employees.Where(x => x.EmplOptions != EmplOptionEnums.Vedomost);
             var currentRow = 4;
-            
+
             {
-                for (int i = 1; i <= 12; i++)
+                for (int i = 1; i <= 14; i++)
                 {
                     worksheet.Cell(currentRow, i).Style.Font.Bold = true;
                     worksheet.Cell(currentRow, i).Style.Fill.SetBackgroundColor(XLColor.Yellow);
@@ -236,10 +236,11 @@ namespace WorkShiftsApi.Services
                 worksheet.Cell(currentRow, 7).Value = "Форма";
                 worksheet.Cell(currentRow, 8).Value = "УЧО";
                 worksheet.Cell(currentRow, 9).Value = "Списания:Другое";
-                worksheet.Cell(currentRow, 10).Value = "Начисления:Другое";
-                worksheet.Cell(currentRow, 11).Value = "Итого";
-                worksheet.Cell(currentRow, 12).Value = "Подпись сотрудника";
-
+                worksheet.Cell(currentRow, 10).Value = "Аванс в предыдущем периоде";
+                worksheet.Cell(currentRow, 11).Value = "Начисления:Другое";
+                worksheet.Cell(currentRow, 12).Value = "Аванс";
+                worksheet.Cell(currentRow, 13).Value = "Итого";
+                worksheet.Cell(currentRow, 14).Value = "Подпись сотрудника";
             }
 
             currentRow += 1;
@@ -247,10 +248,12 @@ namespace WorkShiftsApi.Services
             {
                 //todo: объединить ячейки
                 worksheet.Cell(currentRow, 1).Value = "Нет сотрудников для расчета";
-                worksheet.Range(currentRow, 1, currentRow, 11).Merge();
+                worksheet.Range(currentRow, 1, currentRow, 14).Merge();
             }
             else
             {
+                decimal vedomostSum = 0;
+
                 foreach (var emp in vedEmployees)
                 {
                     worksheet.Cell(currentRow, 1).Value = emp.Fio;
@@ -258,7 +261,7 @@ namespace WorkShiftsApi.Services
                     var finData = reportData.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == emp.Id);
                     //var days = finData?.NotPayedWorkDays;
                     //worksheet.Cell(currentRow + 1, 2).Value = days?.ToString();
-
+                    decimal employeeSum = 0;
                     //.............................................................................................
                     //тут может быть несколько ставок в час т.е. будет несколько строк для одного сотрудника
                     //теперь добавляем несколько строк со ставками
@@ -266,24 +269,71 @@ namespace WorkShiftsApi.Services
                     {
                         worksheet.Cell(currentRow, 4).Value = item.Hours;
                         worksheet.Cell(currentRow, 5).Value = item.Rate;
-                        worksheet.Cell(currentRow, 11).Value = item.Hours * item.Rate;
+                        worksheet.Cell(currentRow, 13).Value = item.Hours * item.Rate;
+                        employeeSum += item.Hours * item.Rate;
                         currentRow += 1;
                     }
                     //.............................................................................................
 
-                    //теперь добавляем несколько строк со ставками
+                    //теперь добавляем несколько строк со ставками смен
                     foreach (var item in finData.NotPayedWorkDays)
                     {
                         worksheet.Cell(currentRow, 2).Value = item.WorkDaysCount;
                         worksheet.Cell(currentRow, 3).Value = item.Rate;
-                        worksheet.Cell(currentRow, 11).Value = item.WorkDaysCount * item.Rate;
+                        worksheet.Cell(currentRow, 13).Value = item.WorkDaysCount * item.Rate;
+                        employeeSum += item.WorkDaysCount * item.Rate;
                         currentRow += 1;
                     }
+
+                    //списания.....................................................................................
+                    //штраф
+                    var shtraf = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Shtraf);
+                    worksheet.Cell(currentRow, 6).Value = shtraf?.Sum ?? 0;
+                    //форма
+                    var forma = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Forma);
+                    worksheet.Cell(currentRow, 7).Value = forma?.Sum ?? 0;
+                    var ucho = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Ucho);
+                    worksheet.Cell(currentRow, 8).Value = ucho?.Sum ?? 0;
+                    var spisaniaOther = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Other);
+                    worksheet.Cell(currentRow, 9).Value = spisaniaOther?.Sum ?? 0;
+                    //
+                    var avansPrev = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                    worksheet.Cell(currentRow, 10).Value = avansPrev?.Sum ?? 0;
+
+                    //начисления
+                    var payrollOther = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
+                    worksheet.Cell(currentRow, 11).Value = payrollOther?.Sum ?? 0;
+                    //вычитаем
+                    employeeSum -= shtraf?.Sum ?? 0;
+                    employeeSum -= forma?.Sum ?? 0;
+                    employeeSum -= ucho?.Sum ?? 0;
+                    employeeSum -= spisaniaOther?.Sum ?? 0;
+                    employeeSum -= avansPrev?.Sum ?? 0;
+                    //суммируем
+                    employeeSum += payrollOther?.Sum ?? 0;
+
+
+                    //! для аванса отдельная логика
+                    //! АВАНС
+                    var avans = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+                    worksheet.Cell(currentRow, 12).Value = avans?.Sum ?? 0;
+
+                    //итоги по сотруднику
+                    currentRow += 1;
+                    worksheet.Cell(currentRow, 12).Value = "Итог по сотруднику:";
+                    worksheet.Cell(currentRow, 13).Value = employeeSum;
+                    vedomostSum += employeeSum;
 
 
                     //новый сотрудник = доп увеличиваем счетчик строк
                     currentRow += 1;
                 }
+
+                //итог по ведомости
+                worksheet.Cell(currentRow, 12).Value = "Общий итог:";
+                worksheet.Cell(currentRow, 12).Style.Fill.SetBackgroundColor(XLColor.BlueGray);
+                worksheet.Cell(currentRow, 12).Style.Font.Bold = true;
+                worksheet.Cell(currentRow, 13).Value = vedomostSum;
 
             }
 
@@ -294,19 +344,21 @@ namespace WorkShiftsApi.Services
 
                 //поазываем только банки по которым есть расчет
                 var banksToCount = notVedEmployees.Select(x => x.Bank).Distinct();
-                
-                foreach (var bank in banksToCount) 
-                {
-                    //шапка расчета
-                    
+                decimal bankItog = 0;
 
-                    worksheet.Cell(currentRow, 1).Value = "Расчет для карт банка " + bank?.BankName ?? "";
+                foreach (var bank in banksToCount)
+                {
+                    //выбираем сотрудников только по этому банку
+                    var notVedEmployeesForBank = notVedEmployees.Where(x => x.BankId == bank.Id);
+
+                    //шапка расчета
+                    worksheet.Cell(currentRow, 1).Value = "Расчет для карт банка: " + bank?.BankName ?? "";
                     worksheet.Cell(currentRow, 1).Style.Font.FontSize = 14;
                     worksheet.Cell(currentRow, 1).Style.Alignment.SetHorizontal(XLAlignmentHorizontalValues.Left);
 
                     currentRow += 1;
 
-                    for (int i = 1; i <= 12; i++)
+                    for (int i = 1; i <= 14; i++)
                     {
                         worksheet.Cell(currentRow, i).Style.Font.Bold = true;
                         worksheet.Cell(currentRow, i).Style.Fill.SetBackgroundColor(XLColor.Yellow);
@@ -320,32 +372,105 @@ namespace WorkShiftsApi.Services
                     worksheet.Cell(currentRow, 7).Value = "Форма";
                     worksheet.Cell(currentRow, 8).Value = "УЧО";
                     worksheet.Cell(currentRow, 9).Value = "Списания:Другое";
-                    worksheet.Cell(currentRow, 10).Value = "Начисления:Другое";
-                    worksheet.Cell(currentRow, 11).Value = "Итого";
-                    worksheet.Cell(currentRow, 12).Value = "Подпись сотрудника";
+                    worksheet.Cell(currentRow, 10).Value = "Аванс в предыдущем периоде";
+                    worksheet.Cell(currentRow, 11).Value = "Начисления:Другое";
+                    worksheet.Cell(currentRow, 12).Value = "Аванс";
+                    worksheet.Cell(currentRow, 13).Value = "Итого";
+                    worksheet.Cell(currentRow, 14).Value = "Подпись сотрудника";
                     //завершили оформление шапки
                     currentRow += 1;
 
+
+                    foreach (var emp in notVedEmployeesForBank)
+                    {
+                        worksheet.Cell(currentRow, 1).Value = emp.Fio;
+                        var finData = reportData.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == emp.Id);
+                        decimal employeeSum = 0;
+                        //из таблицы о часах работы
+                        foreach (var item in finData.NotPayedWorkHours)
+                        {
+                            worksheet.Cell(currentRow, 4).Value = item.Hours;
+                            worksheet.Cell(currentRow, 5).Value = item.Rate;
+                            worksheet.Cell(currentRow, 13).Value = item.Hours * item.Rate;
+                            employeeSum += item.Hours * item.Rate;
+                            currentRow += 1;
+                        }
+                        //.............................................................................................
+                        //из таблицы о сменах
+                        foreach (var item in finData.NotPayedWorkDays)
+                        {
+                            worksheet.Cell(currentRow, 2).Value = item.WorkDaysCount;
+                            worksheet.Cell(currentRow, 3).Value = item.Rate;
+                            worksheet.Cell(currentRow, 13).Value = item.WorkDaysCount * item.Rate;
+                            employeeSum += item.WorkDaysCount * item.Rate;
+                            currentRow += 1;
+                        }
+                        //списания.....................................................................................
+                        //штраф
+                        var shtraf = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Shtraf);
+                        worksheet.Cell(currentRow, 6).Value = shtraf?.Sum ?? 0;
+                        //форма
+                        var forma = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Forma);
+                        worksheet.Cell(currentRow, 7).Value = forma?.Sum ?? 0;
+                        var ucho = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Ucho);
+                        worksheet.Cell(currentRow, 8).Value = ucho?.Sum ?? 0;
+                        var spisaniaOther = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.Other);
+                        worksheet.Cell(currentRow, 9).Value = spisaniaOther?.Sum ?? 0;
+                        //
+                        var avansPrev = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                        worksheet.Cell(currentRow, 10).Value = avansPrev?.Sum ?? 0;
+
+                        //начисления
+                        var payrollOther = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
+                        worksheet.Cell(currentRow, 11).Value = payrollOther?.Sum ?? 0;
+                        //! АВАНС
+                        var avans = finData.NotPayedFinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+                        worksheet.Cell(currentRow, 12).Value = avans?.Sum ?? 0;
+
+
+                        //вычитаем
+                        employeeSum -= shtraf?.Sum ?? 0;
+                        employeeSum -= forma?.Sum ?? 0;
+                        employeeSum -= ucho?.Sum ?? 0;
+                        employeeSum -= spisaniaOther?.Sum ?? 0;
+                        employeeSum -= avansPrev?.Sum ?? 0;
+                        //суммируем
+                        employeeSum += payrollOther?.Sum ?? 0;
+                        //итоги по сотруднику
+                        currentRow += 1;
+                        worksheet.Cell(currentRow, 12).Value = "Итог по сотруднику:";
+                        worksheet.Cell(currentRow, 13).Value = employeeSum;
+                        bankItog += employeeSum;
+
+                        //новый сотрудник = доп увеличиваем счетчик строк
+                        currentRow += 1;
+                    }
+
+                    //итог по банку
+                    worksheet.Cell(currentRow, 12).Value = "Общий итог:";
+                    worksheet.Cell(currentRow, 12).Style.Fill.SetBackgroundColor(XLColor.BlueGray);
+                    worksheet.Cell(currentRow, 12).Style.Font.Bold = true;
+                    worksheet.Cell(currentRow, 13).Value = bankItog;
+
+
+                    currentRow += 1;
                 }
-
-
-
             }
 
 
-            
-            
+            //пишем общий итог
+            currentRow += 1;
+            currentRow += 1;
+
+           
+
             worksheet.Columns().AdjustToContents();
 
             using var stream = new MemoryStream();
             workbook.SaveAs(stream);
             return stream.ToArray();
-
         }
-
-
-
-        }
+    }
 
     public class TableDataDto
     {

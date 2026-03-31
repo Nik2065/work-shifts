@@ -245,7 +245,8 @@ namespace WorkShiftsApi.Services
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
-                    foreach (var rate in workdays.Select(x => x.Rate).Distinct())
+                    var dayRateVariants = workdays.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct();
+                    foreach (var rate in dayRateVariants)
                     {
                         fd.NotPayedWorkDays.Add(new WorkDayFinItem
                         {
@@ -259,7 +260,8 @@ namespace WorkShiftsApi.Services
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
-                    foreach (var rate in workhours.Select(x => x.Rate).Distinct())
+                    var hourRateVariants = workhours.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct();
+                    foreach (var rate in hourRateVariants)
                     {
                         fd.NotPayedWorkHours.Add(new WorkHourFinItem
                         {
