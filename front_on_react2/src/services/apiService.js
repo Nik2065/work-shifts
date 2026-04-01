@@ -299,6 +299,15 @@ export async function GetMainReportForPeriodAsTableWithBanks(params) {
 
 }
 
+/** Та же структура, что в Excel GetMainReportVer4AsXls (14 колонок, стили строк). */
+export async function GetMainReportVer4AsTable(params) {
+    const url = apiUrl + '/api/report/GetMainReportVer4AsTable?startDate='
+        + params.startDate
+        + '&endDate=' + params.endDate + '&employees=' + params.employees;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
 //сохранить отметки об оплате для отчета
 export async function SavePayoutMarks(params) {
     const url = apiUrl + '/api/report/SavePayoutMarks';

@@ -10,8 +10,7 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import {GetEmployeeList, 
-    GetMainReportForPeriodAsTable,
-    GetMainReportForPeriodAsTableWithBanks,
+    GetMainReportVer4AsTable,
     GetAllObjects, 
     DownloadFileWithAuth,
     SavePayoutMarks} from '../services/apiService';
@@ -19,6 +18,90 @@ import {GetEmployeeList,
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';
 registerLocale('ru', ru)
+
+function normalizeVer4Cells(cells) {
+    const c = cells && Array.isArray(cells) ? [...cells] : [];
+    while (c.length < 14) c.push('');
+    return c.slice(0, 14);
+}
+
+function renderMainReportVer4Row(row, idx) {
+    const cells = normalizeVer4Cells(row.cells);
+    const td = (i, extra = {}) => (
+        <td key={i} {...extra}>{cells[i] !== '' ? cells[i] : ''}</td>
+    );
+
+    switch (row.kind) {
+        case 'title':
+            return (
+                <tr key={idx}>
+                    <td colSpan={14} style={{ fontSize: '1.05rem', fontWeight: 500, borderBottom: 'none' }}>{cells[0]}</td>
+                </tr>
+            );
+        case 'sectionBanner':
+            return (
+                <tr key={idx} style={{ backgroundColor: '#fff3cd' }}>
+                    <td colSpan={14} style={{ fontSize: '1.05rem', fontWeight: 700 }}>{cells[0]}</td>
+                </tr>
+            );
+        case 'spacer':
+            return (
+                <tr key={idx} style={{ height: 8 }}>
+                    <td colSpan={14} style={{ padding: 0, border: 'none', height: 8 }} />
+                </tr>
+            );
+        case 'columnHeader':
+            return (
+                <tr key={idx} style={{ backgroundColor: '#fff3cd' }}>
+                    {cells.map((v, i) => (
+                        <th key={i} style={{ fontWeight: 700, fontSize: '0.82rem', whiteSpace: 'nowrap' }}>{v}</th>
+                    ))}
+                </tr>
+            );
+        case 'noEmployees':
+            return (
+                <tr key={idx}>
+                    <td colSpan={14}>{cells[0]}</td>
+                </tr>
+            );
+        case 'bankTitle':
+            return (
+                <tr key={idx}>
+                    <td colSpan={14} style={{ fontSize: '1.05rem', fontWeight: 500, paddingTop: '0.75rem' }}>{cells[0]}</td>
+                </tr>
+            );
+        case 'grandTotalWithBankTitle':
+            return (
+                <tr key={idx}>
+                    <td colSpan={10} style={{ fontSize: '1.05rem', verticalAlign: 'middle' }}>{cells[0]}</td>
+                    <td>{cells[10]}</td>
+                    <td style={{ backgroundColor: '#a7b0b9', fontWeight: 700 }}>{cells[11]}</td>
+                    <td style={{ backgroundColor: '#a7b0b9', fontWeight: 700 }}>{cells[12]}</td>
+                    <td>{cells[13]}</td>
+                </tr>
+            );
+        case 'grandTotal':
+            return (
+                <tr key={idx}>
+                    {Array.from({ length: 14 }, (_, i) => {
+                        if (i === 11) return <td key={i} style={{ backgroundColor: '#a7b0b9', fontWeight: 700 }}>{cells[i]}</td>;
+                        if (i === 12) return <td key={i} style={{ backgroundColor: '#a7b0b9', fontWeight: 700 }}>{cells[i]}</td>;
+                        return td(i);
+                    })}
+                </tr>
+            );
+        case 'data':
+        case 'employeeTotal':
+        default:
+            return (
+                <tr key={idx}>
+                    {cells.map((v, i) => (
+                        <td key={i} style={{ whiteSpace: 'nowrap' }}>{v}</td>
+                    ))}
+                </tr>
+            );
+    }
+}
 
 export function ReportForEmployesListPage() {
 
@@ -28,7 +111,7 @@ export function ReportForEmployesListPage() {
     const [updateReportAnimation, setUpdateReportAnimation] = useState(false);
     const [selectedEmployesList, setSelectedEmployesList] = useState([]);
     const [objectsList, setObjectsList] = useState([]);
-    const [resultTable, setResultTable] = useState([]);
+    const [reportVer4Rows, setReportVer4Rows] = useState([]);
     const [savingMarks, setSavingMarks] = useState(false);
 
     useEffect(() => {
@@ -80,46 +163,6 @@ export function ReportForEmployesListPage() {
 
 
 
-    function updateReport() {
-
-        if(selectedEmployesList.length == 0){
-            alert("Список сотрудников пуст");
-            return;
-        }
-
-        const list = selectedEmployesList.join(",");
-
-        const params = {
-            employees: list,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString()
-        };
-
-        setUpdateReportAnimation(true);
-        GetMainReportForPeriodAsTable(params)
-        .then((data) => {
-            setUpdateReportAnimation(false);
-            console.log(data);
-            if(data.isSuccess){
-
-                setResultTable(
-                    data.mainReportTable.items
-                );
-
-            }
-            else {
-                //alert
-            }
-        })
-        .catch((error) => {
-            setUpdateReportAnimation(false);
-            console.error('Ошибка при получении данных отчета:', error)
-        });
-    }
-
-    //
-    //Новая версия кнопки. Показываем в интерфейсе разбивку по банкам
-    //
     function updateReport2() {
 
         if(selectedEmployesList.length == 0){
@@ -136,24 +179,22 @@ export function ReportForEmployesListPage() {
         };
 
         setUpdateReportAnimation(true);
-        GetMainReportForPeriodAsTableWithBanks(params)
+        GetMainReportVer4AsTable(params)
         .then((data) => {
             setUpdateReportAnimation(false);
-            console.log(data);
             if(data.isSuccess){
-
-                setResultTable(
-                    data.mainReportTable.items
-                );
-
+                setReportVer4Rows(data.rows || []);
             }
             else {
-                //alert
+                setReportVer4Rows([]);
+                alert(data.message || "Не удалось построить отчёт");
             }
         })
         .catch((error) => {
             setUpdateReportAnimation(false);
-            console.error('Ошибка при получении данных отчета:', error)
+            setReportVer4Rows([]);
+            console.error('Ошибка при получении данных отчета:', error);
+            alert("Ошибка при получении данных отчета");
         });
     }
 
@@ -306,29 +347,16 @@ export function ReportForEmployesListPage() {
                 <div className="table-responsive" style={{minHeight:"400px"}}>
                 <br/>
                 <div className="h3">Данные о рабочих часах</div>
-                
-                <Table bordered hover>
-
-                    <tbody>
-                        {   resultTable ?
-                            resultTable.map((item) => (<tr key={item[0]}>
-                                    <td>{item[0]}</td>
-                                    <td>{item[1]}</td>
-                                    <td>{item[2]}</td>
-                                    <td>{item[3]}</td>
-                                    <td>{item[4]}</td>
-                                    <td>{item[5]}</td>
-                                    <td>{item[6]}</td>
-                                    <td>{item[7]}</td>
-                                    <td>{item[8]}</td>
-                                    <td>{item[9]}</td>
-                                    </tr>)
-                            )
-                            :
-                            <></>
-                        }
-                    </tbody>
-                </Table>
+                <p className="text-muted small mb-2">Таблица совпадает с выгрузкой «Скачать отчёт» (версия с разбивкой по банкам).</p>
+                {reportVer4Rows.length === 0 ? (
+                    <p className="text-muted">Нажмите «Построить отчёт», чтобы сформировать таблицу.</p>
+                ) : (
+                    <Table bordered hover className="mt-2" style={{ fontSize: '0.88rem' }}>
+                        <tbody>
+                            {reportVer4Rows.map((row, i) => renderMainReportVer4Row(row, i))}
+                        </tbody>
+                    </Table>
+                )}
                 <br/>
 
                 </div>

@@ -453,6 +453,40 @@ namespace WorkShiftsApi.Controllers
             }
         }
 
+        /// <summary>
+        /// Та же таблица, что в GetMainReportVer4AsXls, для отображения на странице (JSON).
+        /// </summary>
+        [HttpGet("GetMainReportVer4AsTable")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportVer4AsTable([FromQuery] string startDate, [FromQuery] string endDate,
+            [FromQuery] string employees)
+        {
+            var result = new GetMainReportVer4AsTableResponse { IsSuccess = true, Message = "" };
+
+            try
+            {
+                if (!DateTime.TryParse(startDate, out var start) || !DateTime.TryParse(endDate, out var end))
+                    return BadRequest("Некорректные даты.");
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => int.Parse(x))
+                    .ToList();
+
+                var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
+                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                result.Rows = MainReportVer4TableBuilder.Build(mrData);
+            }
+            catch (Exception ex)
+            {
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return Ok(result);
+        }
+
 
         private void CreateReportTableFromTablesArray(List<TableDataDto> tables)
         {
@@ -1118,6 +1152,12 @@ namespace WorkShiftsApi.Controllers
     {
         [JsonPropertyName("mainReportTable")]
         public MainReportTable Table { get; set; }
+    }
+
+    public class GetMainReportVer4AsTableResponse : ResponseBase
+    {
+        [JsonPropertyName("rows")]
+        public List<MainReportVer4WebRowDto> Rows { get; set; } = new();
     }
 
     public class MainReportTable
