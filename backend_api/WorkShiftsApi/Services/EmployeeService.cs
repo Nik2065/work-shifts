@@ -202,17 +202,19 @@ namespace WorkShiftsApi.Services
         //новая версия отчета с новым тимом данных
         public MainReportDto CreateMainReportVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
         {
+            var start = startDate.Date;
+            var end = endDate.Date.AddDays(1);
+
             var result = new MainReportDto
             {
                 Employees = emplList ?? new List<EmployeesDb>(),
-                StartDate = startDate.Date,
-                EndDate = endDate.Date
+                StartDate = start,
+                EndDate = end
             };
 
             try
             {
-                var start = startDate.Date;
-                var end = endDate.Date;
+
 
                 foreach (var employee in result.Employees)
                 {
