@@ -345,15 +345,37 @@ namespace WorkShiftsApi.Controllers
                     throw new Exception("Не удалось разобрать строку как дату:" + date);
 
 
-                var listDto = list.Select(x => new WorkHourDto
+                var whList = list.ToList();
+                var wdList = _context.WorkDays
+                    .Where(x => x.WorkDate.Date == d.Date)
+                    .ToList();
+
+                var empIds = whList.Select(x => x.EmployeeId)
+                    .Union(wdList.Select(x => x.EmployeeId))
+                    .Distinct()
+                    .ToList();
+
+                var listDto = new List<WorkHourDto>();
+                foreach (var empId in empIds)
                 {
-                    Created = x.Created,
-                    EmployeeId = x.EmployeeId,
-                    Hours = x.Hours,
-                    Id = x.Id,
-                    Rate = x.Rate,
+                    var wh = whList.FirstOrDefault(x => x.EmployeeId == empId);
+                    var wd = wdList.FirstOrDefault(x => x.EmployeeId == empId);
+                    var isDaily = wd != null;
+
+                    listDto.Add(new WorkHourDto
+                    {
+                        Created = wh?.Created ?? wd?.Created ?? DateTime.Now,
+                        Date = d.Date,
+                        EmployeeId = empId,
+                        Hours = wh?.Hours ?? 0,
+                        Id = wh?.Id ?? 0,
+                        Rate = wh?.Rate ?? 0,
+                        DayRate = wd?.Rate ?? 0,
+                        WorkDayId = wd?.Id ?? 0,
+                        CompensationType = isDaily ? "daily" : "hourly",
+                        ItemSalary = isDaily ? (wd?.Rate ?? 0) : ((wh?.Hours ?? 0) * (wh?.Rate ?? 0)),
+                    });
                 }
-                ).ToList();
 
                 result.WorkHoursList = listDto;
             }
@@ -376,20 +398,55 @@ namespace WorkShiftsApi.Controllers
 
             try
             {
-                //TODO:
-                // проверка полученных значений
+                var isDaily = (!string.IsNullOrWhiteSpace(request.CompensationType)
+                    && request.CompensationType.Equals("daily", StringComparison.OrdinalIgnoreCase))
+                    || (request.DayRate > 0 && request.Hours == 0);
 
-                var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == request.Date.Date);
+                var workDate = request.Date.Date;
 
-                if(one == null)
+                if (isDaily)
                 {
-                    var wh = new WorkHoursDb { Created = DateTime.Now, WorkDate = request.Date, EmployeeId = request.EmployeeId, Hours = request.Hours, Rate = request.Rate };
-                    _context.WorkHours.Add(wh);
+                    result.Message = "Стоимость за день успешно сохранена";
+
+                    var dayRate = request.DayRate > 0 ? request.DayRate : request.Rate;
+                    var wd = _context.WorkDays.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == workDate);
+                    if (wd == null)
+                    {
+                        _context.WorkDays.Add(new WorkDaysDb
+                        {
+                            Created = DateTime.Now,
+                            WorkDate = workDate,
+                            EmployeeId = request.EmployeeId,
+                            Rate = dayRate,
+                        });
+                    }
+                    else
+                    {
+                        wd.Rate = dayRate;
+                    }
+
+                    var whRemove = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == workDate);
+                    if (whRemove != null)
+                        _context.WorkHours.Remove(whRemove);
                 }
                 else
                 {
-                    one.Hours = request.Hours;
-                    one.Rate = request.Rate;
+                    var wdRemove = _context.WorkDays.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == workDate);
+                    if (wdRemove != null)
+                        _context.WorkDays.Remove(wdRemove);
+
+                    var one = _context.WorkHours.FirstOrDefault(x => x.EmployeeId == request.EmployeeId && x.WorkDate.Date == workDate);
+
+                    if (one == null)
+                    {
+                        var wh = new WorkHoursDb { Created = DateTime.Now, WorkDate = workDate, EmployeeId = request.EmployeeId, Hours = request.Hours, Rate = request.Rate };
+                        _context.WorkHours.Add(wh);
+                    }
+                    else
+                    {
+                        one.Hours = request.Hours;
+                        one.Rate = request.Rate;
+                    }
                 }
 
                 _context.SaveChanges();
@@ -814,6 +871,10 @@ namespace WorkShiftsApi.Controllers
         public int Rate { get; set; }
         public DateTime Date { get; set; }
         public decimal ItemSalary { get; set; }
+        /// <summary>«hourly» — часы и ставка в час (work_hours); «daily» — стоимость дня (work_days.rate)</summary>
+        public string? CompensationType { get; set; }
+        public int DayRate { get; set; }
+        public int WorkDayId { get; set; }
     }
 
     public class FinOperationDto
@@ -836,6 +897,9 @@ namespace WorkShiftsApi.Controllers
         public int Rate { get; set; }
 
         public DateTime Date { get; set; }
+        /// <summary>«hourly» или «daily»</summary>
+        public string? CompensationType { get; set; }
+        public int DayRate { get; set; }
     }
 
     public class CreateWorkShiftRequestDto

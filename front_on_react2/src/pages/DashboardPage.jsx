@@ -37,7 +37,7 @@ export function DashboardPage () {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [tempDate, setTempDate] = useState(new Date());
 
-    const [workHoursList, setWorkHoursList] = useState({});
+    const [workHoursList, setWorkHoursList] = useState([]);
     const [savingWorkHours, setSavingWorkHours] = useState(false);
     const 
     [showToastMsg, setShowToastMsg] = useState({
@@ -88,27 +88,45 @@ export function DashboardPage () {
 
 
 
+      function GetWorkItem(employeeId) {
+        if (!workHoursList || workHoursList.length === 0) return null;
+        return workHoursList.find(item => item.employeeId === employeeId) || null;
+      }
+
+      function GetCompensationType(employeeId) {
+        const workItem = GetWorkItem(employeeId);
+        if (!workItem) return "hourly";
+        return workItem.compensationType === "daily" ? "daily" : "hourly";
+      }
+
       //список отработанных часов
       function GetHours(employeeId) {
-        let result = 0;
-        if(workHoursList && workHoursList.length > 0){
-          let workHoursItem = workHoursList.filter(item => item.employeeId === employeeId)[0];
-          if(workHoursItem){
-            result = workHoursItem.hours;
-          }
-        }
-        return result;
+        const workHoursItem = GetWorkItem(employeeId);
+        return workHoursItem?.hours ?? 0;
       }
 
       function GetRate(employeeId) {
-       let result = 0;
-       if(workHoursList && workHoursList.length > 0){
-          let workHoursItem = workHoursList.filter(item => item.employeeId === employeeId)[0];
-          if(workHoursItem){
-            result = workHoursItem.rate;
-          }
-        }
-        return result;
+        const workHoursItem = GetWorkItem(employeeId);
+        return workHoursItem?.rate ?? 0;
+      }
+
+      function GetDayRate(employeeId) {
+        const workHoursItem = GetWorkItem(employeeId);
+        return workHoursItem?.dayRate ?? 0;
+      }
+
+      function GetSavePayload(employeeId) {
+        const compensationType = GetCompensationType(employeeId);
+        const dayRate = GetDayRate(employeeId);
+        const hourlyRate = GetRate(employeeId);
+        return {
+          employeeId: employeeId,
+          hours: GetHours(employeeId),
+          rate: hourlyRate,
+          dayRate: compensationType === "daily" ? (dayRate > 0 ? dayRate : hourlyRate) : dayRate,
+          compensationType: compensationType,
+          date: currentDate,
+        };
       }
 
       //меняем ставку в час на форме
@@ -120,12 +138,15 @@ export function DashboardPage () {
           //console.log("item", item);
           if(item){
             item.rate = rate;
+            item.compensationType = "hourly";
           }else{
             const item2 = {
               rate: rate,
               hours: 8,
               date: currentDate,
               employeeId: employeeId,
+              compensationType: "hourly",
+              dayRate: 0,
             };
             
             newList.push(item2);
@@ -139,6 +160,8 @@ export function DashboardPage () {
             hours: 8,
             date: currentDate,
             employeeId: employeeId,
+            compensationType: "hourly",
+            dayRate: 0,
           }]);
         }
       }
@@ -153,12 +176,15 @@ export function DashboardPage () {
           //console.log("item", item);
           if(item){
             item.hours = hours;
+            item.compensationType = "hourly";
           }else{
             const item2 = {
               rate: 0,
               hours: hours,
               date: currentDate,
               employeeId: employeeId,
+              compensationType: "hourly",
+              dayRate: 0,
             };
             
             newList.push(item2);
@@ -172,8 +198,80 @@ export function DashboardPage () {
             hours: hours,
             date: currentDate,
             employeeId: employeeId,
+            compensationType: "hourly",
+            dayRate: 0,
           }]);
         }
+      }
+
+      function SetDayRate(employeeId, dayRate) {
+        if(workHoursList && workHoursList.length > 0){
+          let newList = workHoursList.slice();
+          let item = newList.filter(item => item.employeeId === employeeId)[0];
+          if(item){
+            item.dayRate = dayRate;
+            item.compensationType = "daily";
+          }else{
+            newList.push({
+              rate: 0,
+              hours: 0,
+              dayRate: dayRate,
+              date: currentDate,
+              employeeId: employeeId,
+              compensationType: "daily",
+            });
+          }
+          setWorkHoursList(newList);
+        } else {
+          setWorkHoursList([{
+            rate: 0,
+            hours: 0,
+            dayRate: dayRate,
+            date: currentDate,
+            employeeId: employeeId,
+            compensationType: "daily",
+          }]);
+        }
+      }
+
+      function SetCompensationType(employeeId, compensationType) {
+        const isDaily = compensationType === "daily";
+        if(workHoursList && workHoursList.length > 0){
+          let newList = workHoursList.slice();
+          let item = newList.filter(i => i.employeeId === employeeId)[0];
+          if(item){
+            item.compensationType = compensationType;
+            if (isDaily) {
+              item.hours = 0;
+              item.dayRate = item.dayRate > 0 ? item.dayRate : (item.rate ?? 0);
+              item.rate = 0;
+            } else {
+              item.dayRate = 0;
+              item.hours = item.hours ?? 8;
+              item.rate = item.rate ?? 0;
+            }
+          } else {
+            newList.push({
+              employeeId: employeeId,
+              date: currentDate,
+              compensationType: compensationType,
+              hours: isDaily ? 0 : 8,
+              rate: 0,
+              dayRate: 0,
+            });
+          }
+          setWorkHoursList(newList);
+          return;
+        }
+
+        setWorkHoursList([{
+          employeeId: employeeId,
+          date: currentDate,
+          compensationType: compensationType,
+          hours: isDaily ? 0 : 8,
+          rate: 0,
+          dayRate: 0,
+        }]);
       }
 
     //обновляем таблицу с сотрудниками и фин операциями
@@ -230,12 +328,7 @@ export function DashboardPage () {
     function SaveWorkHoursItem(employeeId){
       console.log("SaveWorkHoursItem");
 
-      const params = {
-        employeeId: employeeId,
-        hours: GetHours(employeeId),
-        rate: GetRate(employeeId),
-        date: currentDate,
-      };
+      const params = GetSavePayload(employeeId);
 
       setSavingWorkHours(true);//анимация
       SaveWorkHoursItemOnServer(params)
@@ -266,12 +359,7 @@ export function DashboardPage () {
       }
       setSavingAllWorkHours(true);
       const promises = list.map((emp) =>
-        SaveWorkHoursItemOnServer({
-          employeeId: emp.id,
-          hours: GetHours(emp.id),
-          rate: GetRate(emp.id),
-          date: currentDate,
-        }).then((r) => r.json()).then((data) => ({ id: emp.id, ok: data.isSuccess, msg: data.message }))
+        SaveWorkHoursItemOnServer(GetSavePayload(emp.id)).then((r) => r.json()).then((data) => ({ id: emp.id, ok: data.isSuccess, msg: data.message }))
           .catch(() => ({ id: emp.id, ok: false, msg: "Ошибка сети" }))
       );
       Promise.all(promises).then((results) => {
@@ -473,13 +561,14 @@ export function DashboardPage () {
                             
                             </th>
                             <th rowSpan={2} width="10%"><strong>Объект</strong></th>
-                            <th colSpan={3} width="30%" className='text-center' style={{fontSize:"1.2rem"}}>{getDateFormat1(currentDate)}</th>
+                            <th colSpan={4} width="40%" className='text-center' style={{fontSize:"1.2rem"}}>{getDateFormat1(currentDate)}</th>
                             <th colSpan={2} rowSpan={2} width="25%" style={{verticalAlign:"middle"}} ><strong>Действия</strong><br/></th>
                           </tr>
                           <tr>
                             <th width="10%">Вахта</th>
+                            <th width="10%">Тип оплаты</th>
                             <th width="10%">Отработанно часов</th>
-                            <th width="10%">Ставка в час, руб.</th>
+                            <th width="10%">Ставка / день, руб.</th>
                             
                           </tr>
                         </thead>
@@ -538,6 +627,15 @@ export function DashboardPage () {
                                           employee.isInWorkShift ? "Да" : "Нет"
                                         }
                                         </td>
+                                        <td>
+                                          <Form.Select
+                                            value={GetCompensationType(employee.id)}
+                                            onChange={(e) => SetCompensationType(employee.id, e.target.value)}
+                                          >
+                                            <option value="hourly">Ставка в час + часы</option>
+                                            <option value="daily">Стоимость за день</option>
+                                          </Form.Select>
+                                        </td>
                                           {
                                             //Столбец: Отработанно часов
                                           }
@@ -545,6 +643,7 @@ export function DashboardPage () {
 
                                         <Form.Control 
                                         type='number'
+                                        disabled={GetCompensationType(employee.id) === "daily"}
                                         onFocus={(e) => handleFocus(e)}
                                         onChange={(e) => {
                                             //const value = e.target.value.replace(/[^\d ]/g, '');
@@ -559,7 +658,7 @@ export function DashboardPage () {
                                         }}
                                         min={0}
                                         max={24}
-                                        value={GetHours(employee.id)}
+                                        value={GetCompensationType(employee.id) === "daily" ? 0 : GetHours(employee.id)}
                                         
                                         />
                                         </td>
@@ -576,7 +675,11 @@ export function DashboardPage () {
                                             const value = e.target.value;
                                             //console.log("value", value);
                                             if(value >= 0 && value <= 10000){
-                                              SetRate(employee.id, value);
+                                              if (GetCompensationType(employee.id) === "daily") {
+                                                SetDayRate(employee.id, value);
+                                              } else {
+                                                SetRate(employee.id, value);
+                                              }
                                             }
                                             else{
                                                 ToastShowAndHide({show: true, msg: "Ставка должна быть в диапазоне от 0 до 10000", variant: "danger"});
@@ -584,7 +687,7 @@ export function DashboardPage () {
                                         }}
 
 
-                                        value={GetRate(employee.id)}
+                                        value={GetCompensationType(employee.id) === "daily" ? GetDayRate(employee.id) : GetRate(employee.id)}
                                         type='number'
                                         min={0}
                                         max={10000}
@@ -614,7 +717,7 @@ export function DashboardPage () {
                                     {
                                       employee.finOperations ?
                                       <tr key={employee.id.toString() + "b"}>
-                                              <td  colSpan="9">
+                                              <td  colSpan="10">
                                                 <FinTable operations={employee.finOperations} deleteFinOperation={deleteFinOperation} />
                                                 </td>
                                       </tr>
@@ -628,7 +731,7 @@ export function DashboardPage () {
                             }
                             {displayedEmployeeList.length === 0 && (
                               <tr>
-                                <td colSpan={9} className="text-center text-muted py-4">
+                                <td colSpan={10} className="text-center text-muted py-4">
                                   {employeeList.length === 0 ? 'Сотрудников не найдено' : 'По заданным фильтрам сотрудников не найдено'}
                                 </td>
                               </tr>
