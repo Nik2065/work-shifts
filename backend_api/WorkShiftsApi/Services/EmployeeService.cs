@@ -243,11 +243,12 @@ namespace WorkShiftsApi.Services
                         .Sum();
 
                     var workdays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
+                    && x.Rate != 0
                         && x.WorkDate.Date >= start
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
-                    var dayRateVariants = workdays.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct();
+                    var dayRateVariants = workdays.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct().ToList();
                     foreach (var rate in dayRateVariants)
                     {
                         fd.NotPayedWorkDays.Add(new WorkDayFinItem
@@ -258,17 +259,21 @@ namespace WorkShiftsApi.Services
                     }
 
                     var workhours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
+                    && x.Rate != 0
                         && x.WorkDate.Date >= start
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
-                    var hourRateVariants = workhours.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct();
+                    var hourRateVariants = workhours.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct().ToList();
                     foreach (var rate in hourRateVariants)
                     {
+                        //var tmp = workhours.Where(x => x.Rate == rate).ToList();
+                        var s = workhours.Where(x => x.Rate == rate).Sum(x => x.Hours);
+
                         fd.NotPayedWorkHours.Add(new WorkHourFinItem
                         {
                             Rate = rate,
-                            Hours = workhours.Where(x => x.Rate == rate).Sum(x => x.Hours)
+                            Hours = s
                         });
                     }
 

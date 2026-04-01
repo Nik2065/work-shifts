@@ -415,6 +415,45 @@ namespace WorkShiftsApi.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Самая актуальная версия отчета на 1.04.2026
+        /// </summary>
+        /// <param name="startDate"></param>
+        /// <param name="endDate"></param>
+        /// <param name="employees"></param>
+        /// <returns></returns>
+        [HttpGet("GetMainReportVer4AsXls")]
+        [AllowAnonymous]
+        public ActionResult GetMainReportVer4AsXls([FromQuery] string startDate, [FromQuery] string endDate,
+            [FromQuery] string employees)
+        {
+            try
+            {
+                if (!DateTime.TryParse(startDate, out var start) || !DateTime.TryParse(endDate, out var end))
+                    return BadRequest("Некорректные даты.");
+
+                var list = employees
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => int.Parse(x))
+                    .ToList();
+
+                var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
+                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                var fileBytes = _excelGenerator.CreateExcelFromMainReportVer4Table(mrData);
+
+                return File(
+                    fileBytes,
+                    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    $"Отчет для списка сотрудников_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Ошибка генерации Excel (ver.4): {ex.Message}");
+            }
+        }
+
+
         private void CreateReportTableFromTablesArray(List<TableDataDto> tables)
         {
             var allTablesSum = 0;

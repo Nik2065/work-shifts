@@ -388,7 +388,8 @@ export function ReportForEmployesListPage() {
                                 //проверяем выбран ли хотя бы один сотрудник
                                 if(selectedEmployesList.length > 0){
 
-                                const url = apiUrl + '/api/report/GetMainReportForPeriodAsXlsWithBanks?startDate=' 
+                                //const url = apiUrl + '/api/report/GetMainReportForPeriodAsXlsWithBanks?startDate=' 
+                                const url = apiUrl + '/api/report/GetMainReportVer4AsXls?startDate=' 
                                     + startDate.toISOString() 
                                     + '&endDate=' + endDate.toISOString() + '&employees=' + selectedEmployesList.join(",");
 
