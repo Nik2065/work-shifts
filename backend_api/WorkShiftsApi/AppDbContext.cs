@@ -202,8 +202,8 @@ namespace WorkShiftsApi
         [Column("payed")]
         public bool? Payed { get; set; } //если согласно отчету произведена оплата
 
-        [Column("report_id")]
-        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
+        [Column("report_number")]
+        public int? ReportNumber { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
     }
 
 
@@ -230,8 +230,8 @@ namespace WorkShiftsApi
         [Column("payed")]
         public bool? Payed { get; set; } //если согласно отчету произведена оплата
 
-        [Column("report_id")]
-        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
+        [Column("report_number")]
+        public int? ReportNumber { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
 
 
     }
@@ -300,8 +300,8 @@ namespace WorkShiftsApi
         [Column("payed")]
         public bool? Payed { get; set; } //если согласно отчету произведена оплата
 
-        [Column("report_id")]
-        public int? ReportId { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
+        [Column("report_number")]
+        public int? ReportNumber { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
 
         [Column("deducted_advance_payment_in_next_period")]
         public int? DeductedAdvancePaymentInNextPeriod { get; set; }//не забыть вычесть аванс в следующем периоде

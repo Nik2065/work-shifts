@@ -322,9 +322,28 @@ export async function SavePayoutMarks(params) {
     return parseJSON(response);
 }
 
+export async function SavePayoutMarks2(params) {
+    const url = apiUrl + '/api/report/SavePayoutMarks2';
+    const response = await authenticatedFetch(url, {
+        method: 'POST',
+        body: JSON.stringify({
+            startDate: params.startDate,
+            endDate: params.endDate,
+            employees: params.employees
+        }),
+    });
+    return parseJSON(response);
+}
+
 //восстановить отчет по сохраненным отметкам об оплате (по report_number)
 export async function GetMainReportFromPayoutMarks(reportNumber) {
     const url = apiUrl + '/api/report/GetMainReportFromPayoutMarks?reportNumber=' + reportNumber;
+    const response = await authenticatedFetch(url);
+    return parseJSON(response);
+}
+
+export async function GetMainReportFromPayoutMarks2(reportNumber) {
+    const url = apiUrl + '/api/report/GetMainReportFromPayoutMarks2?reportNumber=' + reportNumber;
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }

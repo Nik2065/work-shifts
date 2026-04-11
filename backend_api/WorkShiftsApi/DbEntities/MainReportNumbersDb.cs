@@ -25,5 +25,8 @@ namespace WorkShiftsApi.DbEntities
 
         [Column("end_date")]
         public DateTime EndDate { get; set; }
+
+        [Column("employees_ids")]
+        public string? EmployeeIds { get; set; } //идентификаторы сотрудников через ","
     }
 }

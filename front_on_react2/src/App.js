@@ -22,6 +22,7 @@ import { ReportForEmployesListPage } from './pages/ReportForEmployesListPage.jsx
 import { EmployeesPage } from './pages/EmployeesPage.jsx';
 import { ObjectsPage } from './pages/ObjectsPage.jsx';
 import { PayoutReportPage } from './pages/PayoutReportPage.jsx';
+import { PayoutReportPage2 } from './pages/PayoutReportPage2.jsx';
 import {ReportForOneEmployeePage} from './pages/ReportForOneEmployeePage.jsx'
 
 function App() {
@@ -106,6 +107,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <PayoutReportPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route 
+              path="/reportForPayout2"
+              element={
+                <ProtectedRoute>
+                  <PayoutReportPage2 />
                 </ProtectedRoute>
               }
             />

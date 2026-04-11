@@ -234,6 +234,39 @@ export function ReportForEmployesListPage() {
             });
     }
 
+
+    function handleTest(){
+        //создаем отчет с отметками
+        if (selectedEmployesList.length === 0) {
+            alert("Выберите хотя бы одного сотрудника");
+            return;
+        }
+
+        const params = {
+            employees: selectedEmployesList.join(","),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString()
+        };
+
+        setSavingMarks(true);
+        SavePayoutMarks2(params)            
+        .then((data) => {
+                setSavingMarks(false);
+                if (data.isSuccess) {
+                    alert(data.message || "Отчет с отметками создан. Дальнейшие отметки о выдаче зарплаты — на странице «Зарплата».");
+                } else {
+                    alert(data.message || "Ошибка при создании отчета");
+                }
+        })
+        .catch((error) => {
+          setSavingMarks(false);
+            console.error("Ошибка при создании отчета с отметками:", error);
+            alert("Ошибка при создании отчета с отметками");
+        });
+
+
+    }
+
     return (
     
         <Container expand="lg">
@@ -453,6 +486,10 @@ export function ReportForEmployesListPage() {
                                         ) : (
                                             "Создать отчет с отметками"
                                         )}
+                                    </Button>
+
+                                    <Button variant="primary" onClick={handleTest}>
+                                        SavePayoutMarks2
                                     </Button>
                             </td>
                         </tr>

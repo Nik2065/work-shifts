@@ -62,7 +62,7 @@ namespace WorkShiftsApi.Tests
             //empService.GetReportForEmplList2(begin, end, empList, out DataTable table, out int totalSum);
             
             //собираем данные для отчета
-            var reportData = empService.CreateMainReportVer3(start, end, employees);
+            var reportData = empService.PrepareMainReportDataVer3(start, end, employees);
 
             //перекладываем данные отчета в таблицу 
             //empService.GenerateTableForMainReportVer3(mrData, out DataTable table);
@@ -75,6 +75,8 @@ namespace WorkShiftsApi.Tests
 
 
         }
+
+
 
 
         [Test]

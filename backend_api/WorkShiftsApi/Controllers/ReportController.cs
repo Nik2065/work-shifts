@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
+using System.Linq;
 using System.Net;
 using System.Text.Json.Serialization;
 using WorkShiftsApi.DbEntities;
@@ -400,7 +401,7 @@ namespace WorkShiftsApi.Controllers
                     .ToList();
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
-                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                var mrData = _employeeService.PrepareMainReportDataVer3(start, end, emplList);
                 _employeeService.GenerateTableForMainReportVer3(mrData, out var table);
                 var fileBytes = _excelGenerator.CreateExcelFromMainReportVer3Table(table);
 
@@ -439,7 +440,7 @@ namespace WorkShiftsApi.Controllers
                     .ToList();
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
-                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                var mrData = _employeeService.PrepareMainReportDataVer3(start, end, emplList);
                 var fileBytes = _excelGenerator.CreateExcelFromMainReportVer4Table(mrData);
 
                 return File(
@@ -474,7 +475,7 @@ namespace WorkShiftsApi.Controllers
                     .ToList();
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
-                var mrData = _employeeService.CreateMainReportVer3(start, end, emplList);
+                var mrData = _employeeService.PrepareMainReportDataVer3(start, end, emplList);
                 result.Rows = MainReportVer4TableBuilder.Build(mrData);
             }
             catch (Exception ex)
@@ -488,7 +489,7 @@ namespace WorkShiftsApi.Controllers
         }
 
 
-        private void CreateReportTableFromTablesArray(List<TableDataDto> tables)
+        /*private void CreateReportTableFromTablesArray(List<TableDataDto> tables)
         {
             var allTablesSum = 0;
 
@@ -498,7 +499,7 @@ namespace WorkShiftsApi.Controllers
 
             }
 
-        }
+        }*/
 
         /// <summary>
         /// Выгрузка на сайте по списку сотрудников с разбивкой на банки
@@ -843,9 +844,128 @@ namespace WorkShiftsApi.Controllers
         }
 
         /// <summary>
+        /// Сохранить отметки об оплате для отчета.
+        /// Новая версия. 8.04.2026
+        /// </summary>
+        [HttpPost("SavePayoutMarks2")]
+        [Authorize]
+        public async Task<IActionResult> SavePayoutMarks2([FromBody] SavePayoutMarksRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Отметки об оплате сохранены" };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(request.StartDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(request.EndDate, out DateTime end);
+
+                if (!canParseStart || !canParseEnd)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Ошибка при разборе даты";
+                    return Ok(result);
+                }
+
+                var employeeIds = request.Employees
+                .Split(',', StringSplitOptions.TrimEntries)
+                .Select(x => Int32.Parse(x))
+                .ToList();
+
+                if (employeeIds.Count == 0)
+                {
+                    result.IsSuccess = false;
+                    result.Message = "Не указаны сотрудники";
+                    return Ok(result);
+                }
+
+                // Получаем следующий номер отчета: макс. report_number из main_report_numbers + 1
+                int reportNumber = 1;
+                if (_context.MainReportNumbers.Any())
+                {
+                    reportNumber = _context.MainReportNumbers.Max(x => x.ReportNumber) + 1;
+                }
+
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+
+
+                    // Сохраняем запись в MainReportNumbers
+                    var createAuthor = User.Identity?.Name ?? "";
+                    var mainReportRecord = new MainReportNumbersDb
+                    {
+                        Created = DateTime.Now,
+                        CreateAuthor = createAuthor,
+                        ReportNumber = reportNumber,
+                        StartDate = start,
+                        EndDate = end,
+                        EmployeeIds = string.Join(",", employeeIds)
+                    };
+                    _context.MainReportNumbers.Add(mainReportRecord);
+                    await _context.SaveChangesAsync();
+
+                    //новая логика
+                    //проходим по всем платежам которые есть в отчете и проставляем им привязку к этому отчету
+                    // Получаем все work_hours для выбранных сотрудников за период
+
+                    //!не привязанные к другим отчетам
+
+                    var workHoursList = _context.WorkHours
+                        .Where(x => employeeIds.Contains(x.EmployeeId)
+                            && x.WorkDate.Date >= start.Date
+                            && x.WorkDate.Date < end.Date
+                            && x.ReportNumber == null)
+                        .ToList();
+                    var workDaysList = _context.WorkDays
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        && x.WorkDate.Date >= start.Date
+                        && x.WorkDate.Date < end.Date
+                        && x.ReportNumber == null)
+                    .ToList();
+                    // Получаем все fin_operations для выбранных сотрудников за период
+                    var finOperationsList = _context.FinOperations
+                        .Where(x => employeeIds.Contains(x.EmployeeId)
+                            && x.Date.Date >= start.Date
+                            && x.Date.Date < end.Date
+                            && x.ReportNumber == null)
+                        .ToList();
+
+                    //привязываем к отчету
+                    foreach (var wh in workHoursList)
+                    {
+                        wh.ReportNumber = reportNumber;
+                    }
+                    foreach (var wd in workDaysList)
+                    {
+                        wd.ReportNumber = reportNumber;
+                    }
+                    foreach (var f in finOperationsList)
+                    {
+                        f.ReportNumber = reportNumber;
+                    }
+
+                    await _context.SaveChangesAsync();
+                    transaction.Commit();
+                }
+
+                result.Message = $"Отметки об оплате сохранены. Номер отчета: {reportNumber}";
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+            }
+
+            return Ok(result);
+
+        }
+
+
+        //Устаревший вариант через RevenueReportsFin
+
+        /// <summary>
         /// Восстановить отчет по сохраненным отметкам об оплате (по report_number)
         /// </summary>
-        [HttpGet("GetMainReportFromPayoutMarks")]
+        /*[HttpGet("GetMainReportFromPayoutMarks")]
         [Authorize]
         public ActionResult GetMainReportFromPayoutMarks([FromQuery] int reportNumber)
         {
@@ -949,7 +1069,40 @@ namespace WorkShiftsApi.Controllers
             }
 
             return Ok(result);
+        }*/
+
+        /// <summary>
+        /// Восстановить отчет по сохраненным отметкам об оплате (по report_number)
+        /// новая версия
+        /// </summary>
+        [HttpGet("GetMainReportFromPayoutMarks2")]
+        [Authorize]
+        public ActionResult GetMainReportFromPayoutMarks2([FromQuery] int reportNumber)
+        {
+            var result = new GetMainReportFromPayoutMarks2Response { IsSuccess = true, Message = "" };
+
+            try
+            {
+                // Проверяем наличие отчета по таблице main_report_numbers
+                if (!_context.MainReportNumbers.Any(x => x.ReportNumber == reportNumber))
+                {
+                    result.IsSuccess = false;
+                    result.Message = $"Отчет с номером {reportNumber} не найден";
+                    return Ok(result);
+                }
+
+                //нужно заново собрать отчетную таблицу но по выбранным платежам
+
+
+            }
+            catch(Exception ex)
+            {
+
+            }
+
+            return Ok(result);
         }
+
 
         /// <summary>
         /// Получить статусы выплат (PayOff) по сотрудникам для сохраненного отчета

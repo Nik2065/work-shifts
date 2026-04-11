@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Office2016.Excel;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
@@ -198,9 +199,10 @@ namespace WorkShiftsApi.Services
             return tables;
         }
 
-        //Подготавливаем список таблиц с данными отчета
+        //Подготавливаем данные для будущего отчета 
+        //
         //новая версия отчета с новым тимом данных
-        public MainReportDto CreateMainReportVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
+        public MainReportDto PrepareMainReportDataVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
         {
             var start = startDate.Date;
             var end = endDate.Date.AddDays(1);
@@ -296,6 +298,58 @@ namespace WorkShiftsApi.Services
 
             return result;
         }
+
+        /// <summary>
+        /// Получить данные одного из отчетов
+        /// </summary>
+        /// <returns></returns>
+        public MainReportDto GetMainReportDataVer3(int reportNumber)
+        {
+            var result = new MainReportDto();
+
+            try
+            {
+                var mr = _context.MainReportNumbers.FirstOrDefault(x => x.ReportNumber == reportNumber);
+
+                if (mr == null)
+                    throw new Exception($"Отчет {reportNumber} не найден");
+
+                var ids = mr.EmployeeIds?
+                    .Split(',', StringSplitOptions.TrimEntries)
+                    .Select(x => Int32.Parse(x))
+                    .ToList();
+
+                if (ids == null || ids.Count() == 0)
+                    throw new Exception("Ошибочные данные отчета");
+
+                result.StartDate = mr.StartDate;
+                result.EndDate = mr.EndDate;
+                result.Employees = _context.Employees.Where(x => ids.Contains(x.Id)).ToList();
+
+                foreach (var employee in result.Employees)
+                {
+                    var fd = new EmployeeFinData
+                    {
+                        EmployeeId = employee.Id,
+                        Fio = employee.Fio ?? ""
+                    };
+
+                    var finInPeriod = _context.FinOperations
+                    
+                     .Where(x => x.EmployeeId == employee.Id
+                     && x.ReportNumber == )
+                    .ToList();
+
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex);
+            }
+
+            return result;
+        }
+
 
         /// <summary>
         /// Таблица в формате, совместимом с основной ведомостью (как GetReportForEmplList2): неоплаченные смены/часы и операции за период.
@@ -782,10 +836,13 @@ namespace WorkShiftsApi.Services
             table.Rows.Add(rowTotal);
         }
 
+
+        //устаревший вариант через RevenueReportsFin
+
         /// <summary>
         /// Восстановить отчет по сохраненным отметкам об оплате для конкретных сотрудников
         /// </summary>
-        public void GetReportForEmplListFromPayoutMarksByEmployees(int reportNumber, List<int> employeeIds, out DataTable table, out int totalSum)
+        /*public void GetReportForEmplListFromPayoutMarksByEmployees(int reportNumber, List<int> employeeIds, out DataTable table, out int totalSum)
         {
             table = new DataTable();
             totalSum = 0;
@@ -939,7 +996,7 @@ namespace WorkShiftsApi.Services
                 totalSum = empListSum;
                 table.Rows.Add(rowTotal);
             }
-        }
+        }*/
 
     }
 
