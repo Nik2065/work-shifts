@@ -19,6 +19,10 @@ namespace WorkShiftsApi.DTO
         public int EmployeeId { get; set; }
         public string Fio { get; set; } = "";
 
+        //ведомость
+        public bool Vedomost { get; set; }
+        //или банк
+        public string? BankName { get; set; }
 
         /// <summary>
         /// Если в выбранном периоде есть выплата авансового платежа, то в качестве результата ЗП не учитываются рабочаи часы и дни
@@ -32,23 +36,20 @@ namespace WorkShiftsApi.DTO
 
         //public int NotPayedWorkHours { get; set; }
         //public int PayedWorkHours { get; set; }
-        public List<WorkHourFinItem> NotPayedWorkHours { get; set; } = new List<WorkHourFinItem>();
+        public List<WorkHourFinItem> WorkHours { get; set; } = new List<WorkHourFinItem>();
 
-        public List<WorkDayFinItem> NotPayedWorkDays { get; set; } = new List<WorkDayFinItem>();
+        public List<WorkDayFinItem> WorkDays { get; set; } = new List<WorkDayFinItem>();
 
-        public List<FinOperationItem> NotPayedFinOperations { get; set; } = new List<FinOperationItem>();
+        public List<FinOperationItem> FinOperations { get; set; } = new List<FinOperationItem>();
 
-
-         
     }
 
 
     //содержимое из таблицы work_hours
     public class WorkHourFinItem
     {
-        public int Id { get; set; }
-        public int Hours { get; set; }
-        public int Rate { get; set; }
+        public int Hours { get; set; }//общее количество часов за период
+        public int Rate { get; set; }//ставка для этих часов
         //Общая стоимость, salary = Hours*Rate
     }
 

@@ -253,7 +253,7 @@ namespace WorkShiftsApi.Services
                     var dayRateVariants = workdays.Where(x => x.Rate != 0).Select(x => x.Rate).Distinct().ToList();
                     foreach (var rate in dayRateVariants)
                     {
-                        fd.NotPayedWorkDays.Add(new WorkDayFinItem
+                        fd.WorkDays.Add(new WorkDayFinItem
                         {
                             Rate = rate,
                             WorkDaysCount = workdays.Count(x => x.Rate == rate)
@@ -272,7 +272,7 @@ namespace WorkShiftsApi.Services
                         //var tmp = workhours.Where(x => x.Rate == rate).ToList();
                         var s = workhours.Where(x => x.Rate == rate).Sum(x => x.Hours);
 
-                        fd.NotPayedWorkHours.Add(new WorkHourFinItem
+                        fd.WorkHours.Add(new WorkHourFinItem
                         {
                             Rate = rate,
                             Hours = s
@@ -281,7 +281,7 @@ namespace WorkShiftsApi.Services
 
                     foreach (var g in finInPeriod.Where(x => x.Payed != true).GroupBy(x => x.TypeId))
                     {
-                        fd.NotPayedFinOperations.Add(new FinOperationItem
+                        fd.FinOperations.Add(new FinOperationItem
                         {
                             TypeId = g.Key,
                             Sum = g.Sum(x => x.Sum)
@@ -334,11 +334,59 @@ namespace WorkShiftsApi.Services
                         Fio = employee.Fio ?? ""
                     };
 
-                    var finInPeriod = _context.FinOperations
-                    
+                    var finOperations = _context.FinOperations
                      .Where(x => x.EmployeeId == employee.Id
-                     && x.ReportNumber == )
+                     && x.ReportNumber == reportNumber)
+                     .Select(x => new FinOperationItem
+                     {
+                         Sum = x.Sum,
+                         TypeId = x.TypeId
+                     })
                     .ToList();
+
+                    var workHours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
+                    && x.ReportNumber == reportNumber);
+
+
+                    var hourrateVariants = workHours.Select(x => x.Rate).Distinct();
+                    foreach (var rate in hourrateVariants)
+                    {
+                        var f = new WorkHourFinItem
+                        {
+                            Hours = workHours.Where(x => x.Rate == rate).Select(x=>x.Hours).Sum(),
+                            Rate = rate,
+                        };
+                        fd.WorkHours.Add(f);
+                    }
+
+                    //....................
+
+
+                    var workDays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
+                    && x.ReportNumber == reportNumber);
+
+                    var dayrateVariants = workDays.Select(x => x.Rate).Distinct();
+                    
+                    foreach(var rate in dayrateVariants)
+                    {
+                        var f = new WorkDayFinItem
+                        {
+                            Rate = rate, WorkDaysCount = workDays.Where(x=>x.Rate == rate).Count()
+                        };
+                        fd.WorkDays.Add(f);
+                    };
+
+                    //....................
+ 
+
+                    fd.FinOperations = finOperations;
+                    
+
+
+
+
+
+                    result.EmployeeFinDatas.Add(fd);
 
                 }
             }
@@ -390,8 +438,8 @@ namespace WorkShiftsApi.Services
             var grandTotal = 0;
             foreach (var fd in mrData.EmployeeFinDatas.OrderBy(x => x.Fio))
             {
-                var rates = fd.NotPayedWorkDays.Select(x => x.Rate)
-                    .Union(fd.NotPayedWorkHours.Select(x => x.Rate))
+                var rates = fd.WorkDays.Select(x => x.Rate)
+                    .Union(fd.WorkHours.Select(x => x.Rate))
                     .Distinct()
                     .OrderBy(x => x)
                     .ToList();
@@ -407,13 +455,13 @@ namespace WorkShiftsApi.Services
 
                 foreach (var rate in rates)
                 {
-                    var daysAtRate = fd.NotPayedWorkDays.Where(x => x.Rate == rate).Sum(x => x.WorkDaysCount);
-                    var hoursAtRate = fd.NotPayedWorkHours.Where(x => x.Rate == rate).Sum(x => x.Hours);
+                    var daysAtRate = fd.WorkDays.Where(x => x.Rate == rate).Sum(x => x.WorkDaysCount);
+                    var hoursAtRate = fd.WorkHours.Where(x => x.Rate == rate).Sum(x => x.Hours);
                     var revenueFromDays = daysAtRate * rate;
                     var revenueFromHours = hoursAtRate * rate;
                     var revenue = revenueFromDays + revenueFromHours;
 
-                    if (rate == 0 && daysAtRate == 0 && hoursAtRate == 0 && !fd.NotPayedFinOperations.Any() && !fd.AdvancePaymentInPeriod)
+                    if (rate == 0 && daysAtRate == 0 && hoursAtRate == 0 && !fd.FinOperations.Any() && !fd.AdvancePaymentInPeriod)
                         continue;
 
                     var row = table.NewRow();
@@ -478,7 +526,7 @@ namespace WorkShiftsApi.Services
         private static int FinOpSum(EmployeeFinData fd, FinOperationTypeEnum type)
         {
             var id = (int)type;
-            return fd.NotPayedFinOperations.Where(x => x.TypeId == id).Sum(x => x.Sum);
+            return fd.FinOperations.Where(x => x.TypeId == id).Sum(x => x.Sum);
         }
 
 

@@ -4,7 +4,8 @@ import {
   Card,
   Spinner,
   Toast,
-  ToastContainer
+  ToastContainer,
+  FormCheck
 } from 'react-bootstrap';
 
 
@@ -12,7 +13,8 @@ import {
   GetMainReportNumbersList,
   GetMainReportFromPayoutMarks,
   GetPayOffStatusesForReport,
-  SetPayOffForEmployeeInReport
+  SetPayOffForEmployeeInReport,
+GetMainReportFromPayoutMarks2
 } from '../services/apiService';
 import { getDateFormat2 } from '../services/commonService';
 
@@ -49,6 +51,8 @@ export function PayoutReportPage2(){
     }
 
     async function handleSelectSavedReport(reportNumber) {
+        //alert(reportNumber);
+
         if (!reportNumber) {
           return;
         }
@@ -59,8 +63,10 @@ export function PayoutReportPage2(){
 
         try{
             //todo: загрузка отчета
-            GetMainReportFromPayoutMarks2(row.reportNumber)
+            GetMainReportFromPayoutMarks2(reportNumber)
             .then(data =>{
+                console.log("data", data);
+
                 setUpdateReportAnimation(false);
                 if (data.isSuccess) {
                     setResultTable(data.items || []);
@@ -138,7 +144,7 @@ export function PayoutReportPage2(){
                             reportNumbersList.map((row) => (
                             <tr
                                 key={row.id}
-                                onClick={() => handleSelectSavedReport(row)}
+                                onClick={() => handleSelectSavedReport(row.reportNumber)}
                                 style={{ cursor: 'pointer' }}
                                 className={row.reportNumber === selectedReportNumber ? 'table-active' : ''}
                             >
@@ -169,16 +175,44 @@ export function PayoutReportPage2(){
                 ) : (resultTable && resultTable.length > 0 && (
                       <div className="table-responsive" style={{ minHeight: "400px", marginTop: "20px" }}>
                         <Table bordered hover>
+                            <thead>
+                                <tr>
+                                    <th>Id</th>
+                                    <th>ФИО</th>
+                                    <th>Есть аванс в расчетном периоде</th>
+                                    <th>Есть аванс в предыдущем периоде</th>
+                                    <th>Итоговая сумма к расчету, руб.</th>
+                                    <th>Подтвердить</th>
+                                </tr>
+                            </thead>
                           <tbody>
                             {resultTable.map((row, i) => {
 
                                 return (
                                     <tr>
                                         <td>
-
+                                            {row.employeeId}
                                         </td>
                                         <td>
+                                            {row.employeeFio}
+                                        </td>
+                                        <td>
+                                            {
+                                                row.hasAdvancePayment==true ? "Да" : "Нет"
+                                            }
+                                        </td>
+                                        <td>
+                                            {
+                                                row.hasAdvancePaymentInPrevPeriod==true ? "Да" : "Нет"
+                                            }
+                                        </td>
+                                        <td>
+                                            {row.totalSum}
+                                        </td>
+                                        <td>
+                                            <FormCheck>
 
+                                            </FormCheck>
                                         </td>
                                     </tr>
                                 )

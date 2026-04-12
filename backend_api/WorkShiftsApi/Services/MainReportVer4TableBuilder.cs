@@ -58,7 +58,7 @@ namespace WorkShiftsApi.Services
 
                     if (finData.AdvancePaymentInPeriod)
                     {
-                        var avans = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var avans = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
                         var line = Row14();
                         line[0] = emp.Fio ?? "";
@@ -69,7 +69,7 @@ namespace WorkShiftsApi.Services
                     else
                     {
                         var firstLine = true;
-                        foreach (var item in finData.NotPayedWorkHours)
+                        foreach (var item in finData.WorkHours)
                         {
                             var line = Row14();
                             if (firstLine)
@@ -86,7 +86,7 @@ namespace WorkShiftsApi.Services
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                         }
 
-                        foreach (var item in finData.NotPayedWorkDays)
+                        foreach (var item in finData.WorkDays)
                         {
                             var line = Row14();
                             if (firstLine)
@@ -103,17 +103,17 @@ namespace WorkShiftsApi.Services
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                         }
 
-                        var shtraf = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var shtraf = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.Shtraf);
-                        var forma = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var forma = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.Forma);
-                        var ucho = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var ucho = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.Ucho);
-                        var spisaniaOther = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var spisaniaOther = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.Other);
-                        var avansPrev = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var avansPrev = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
-                        var payrollOther = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                        var payrollOther = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
 
                         var ded = Row14();
@@ -194,7 +194,7 @@ namespace WorkShiftsApi.Services
 
                         if (finData.AdvancePaymentInPeriod)
                         {
-                            var avans = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var avans = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
                             var line = Row14();
                             line[0] = emp.Fio ?? "";
@@ -205,7 +205,7 @@ namespace WorkShiftsApi.Services
                         else
                         {
                             var firstLine = true;
-                            foreach (var item in finData.NotPayedWorkHours)
+                            foreach (var item in finData.WorkHours)
                             {
                                 var line = Row14();
                                 if (firstLine)
@@ -222,7 +222,7 @@ namespace WorkShiftsApi.Services
                                 rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                             }
 
-                            foreach (var item in finData.NotPayedWorkDays)
+                            foreach (var item in finData.WorkDays)
                             {
                                 var line = Row14();
                                 if (firstLine)
@@ -239,17 +239,17 @@ namespace WorkShiftsApi.Services
                                 rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                             }
 
-                            var shtraf = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var shtraf = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.Shtraf);
-                            var forma = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var forma = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.Forma);
-                            var ucho = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var ucho = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.Ucho);
-                            var spisaniaOther = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var spisaniaOther = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.Other);
-                            var avansPrev = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var avansPrev = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
-                            var payrollOther = finData.NotPayedFinOperations.FirstOrDefault(x =>
+                            var payrollOther = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
 
                             var ded = Row14();

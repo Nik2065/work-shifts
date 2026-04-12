@@ -13,7 +13,8 @@ import {GetEmployeeList,
     GetMainReportVer4AsTable,
     GetAllObjects, 
     DownloadFileWithAuth,
-    SavePayoutMarks} from '../services/apiService';
+    SavePayoutMarks, SavePayoutMarks2
+} from '../services/apiService';
 
 import { registerLocale, setDefaultLocale } from  "react-datepicker";
 import { ru } from 'date-fns/locale/ru';

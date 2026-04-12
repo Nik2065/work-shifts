@@ -1,15 +1,16 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+﻿using DocumentFormat.OpenXml.InkML;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using NUnit.Framework;
 using NUnit.Framework.Internal;
 using System.Data;
-using System.Text.Json.Serialization;
 using WorkShiftsApi.Controllers;
-using WorkShiftsApi.DTO;
 using WorkShiftsApi.Services;
+
+
 
 namespace WorkShiftsApi.Tests
 {
+    [TestFixture]
     public class MainTest
     {
         public MainTest()
@@ -17,14 +18,17 @@ namespace WorkShiftsApi.Tests
 
         }
 
-        private readonly string _connectionString = "server=localhost;database=workshiftsdb;user=workshifts_user;password=kjsdhH547";
-        private AppDbContext _dbContext;
+        //private readonly string _connectionString = "server=localhost;database=workshiftsdb;user=workshifts_user;password=kjsdhH547";
+        private static AppDbContext _dbContext;
 
-
-        [SetUp]
-        public void Setup()
+        // Выполняется один раз перед всеми тестами
+        [OneTimeSetUp]
+        public void OneTimeSetUp()
         {
-            var options = new DbContextOptionsBuilder<AppDbContext>()
+
+            //для работы с реальной базой
+
+            /*var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseMySql(
                 _connectionString,
                 ServerVersion.AutoDetect(_connectionString),
@@ -35,21 +39,62 @@ namespace WorkShiftsApi.Tests
                 })
             .Options;
 
+            _dbContext = new AppDbContext(options);*/
+            //для работы с виртуальной базой
+
+            // Arrange
+            var options = new DbContextOptionsBuilder<AppDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .Options;
             _dbContext = new AppDbContext(options);
+
+            //заполняем основные данные
+            var initdb = new InitDb();
+            initdb.FillDbDictionary(_dbContext);
         }
 
-        [TearDown]
-        public async Task TearDown()
+        // Выполняется один раз после всех тестов
+        [OneTimeTearDown]
+        public static void OneTimeTearDown()
         {
-            // Очистка таблиц после каждого теста (но не удаление БД)
-            if (_dbContext != null)
-            {
-                await _dbContext.DisposeAsync();
-            }
+            _dbContext?.Dispose();      // Освобождаем ресурсы – БД «удаляется» из памяти
+            _dbContext = null;
         }
+
+
+        [Test]
+        //создаем основной фин отчет (MainReport)
+        //заполняем только рабочие часы
+        public void CreateMainReportData_checkFillWorkHours()
+        {
+            //заполняем период данными 
+            //период 5-11 января 2026
+            var es = new EmployeeService(_dbContext);
+            var start = new DateTime(5, 1, 2026);
+            var end = new DateTime(11, 1, 2026);
+            var empIds = new List<int> { 1 };
+            var employees = _dbContext.Employees
+                .Where(x => empIds.Contains(x.Id))
+                .ToList();
+
+            var mainReportData = es.PrepareMainReportDataVer3(start, end, employees);
+
+            //Оцениваем результат
+
+        }
+
+
+        [Test]
+        //получаем данные сохраненного отчета
+        //для отображения в коротком виде на странице с отметками
+        public void GetMainReportData()
+        {
+            //
+        }
+
 
         // проверка работы отчета
-        [Test]
+        /*[Test]
         public void TestReportResult()
         {
             var empService = new EmployeeService(_dbContext);
@@ -74,12 +119,12 @@ namespace WorkShiftsApi.Tests
             File.WriteAllBytes(@"c:\tmp\my.xlsx", bytes);
 
 
-        }
+        }*/
 
 
 
 
-        [Test]
+        /*[Test]
         public void TestReportResult2()
         {
             var empService = new EmployeeService(_dbContext);
@@ -106,7 +151,7 @@ namespace WorkShiftsApi.Tests
                 
             }
 
-        }
+        }*/
 
         private string[] GetStrArray(object[] items)
         {

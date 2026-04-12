@@ -857,6 +857,7 @@ namespace WorkShiftsApi.Controllers
             {
                 var canParseStart = DateTime.TryParse(request.StartDate, out DateTime start);
                 var canParseEnd = DateTime.TryParse(request.EndDate, out DateTime end);
+                end = end.AddDays(1);//день "до" тоже включаем в выгрузку
 
                 if (!canParseStart || !canParseEnd)
                 {
@@ -1092,12 +1093,33 @@ namespace WorkShiftsApi.Controllers
                 }
 
                 //нужно заново собрать отчетную таблицу но по выбранным платежам
+                var reportData = _employeeService.GetMainReportDataVer3(reportNumber);
 
+                foreach(var fd in reportData.EmployeeFinDatas)
+                {
+
+                    var total = fd.WorkDays.Sum(x => x.WorkDaysCount * x.Rate);
+                    total = total + fd.WorkHours.Sum(x => x.Hours * x.Rate);
+
+
+                    var item = new PayAndMarkDto {
+                        EmployeeFio = fd.Fio,
+                        EmployeeId = fd.EmployeeId,
+                        //HasAdvancePaymentInPrevPeriod = 
+                        TotalSum = total
+                    };
+
+
+                    result.Items.Add(item);
+                }
 
             }
             catch(Exception ex)
             {
-
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
             }
 
             return Ok(result);
