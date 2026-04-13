@@ -468,3 +468,13 @@ export async function GetBanksList() {
     const response = await authenticatedFetch(url);
     return parseJSON(response);
 }
+
+
+export async function MarkPayoutRow(params){
+    const url = apiUrl + '/api/report/MarkPayoutRow';
+    const response = await authenticatedFetch(url, {
+            method: 'POST',
+            body: JSON.stringify(params)
+    });
+    return parseJSON(response);
+}

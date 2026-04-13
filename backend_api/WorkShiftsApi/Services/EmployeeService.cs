@@ -1,9 +1,12 @@
 using DocumentFormat.OpenXml.Office2016.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
+using DocumentFormat.OpenXml.Vml;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using WorkShiftsApi.Controllers;
+using WorkShiftsApi.DbEntities;
 using WorkShiftsApi.DTO;
 using DataTable = System.Data.DataTable;
 
@@ -331,8 +334,12 @@ namespace WorkShiftsApi.Services
                     var fd = new EmployeeFinData
                     {
                         EmployeeId = employee.Id,
-                        Fio = employee.Fio ?? ""
+                        Fio = employee.Fio ?? "",
+                        BankName = employee.Bank?.BankName ?? "",
+                        Vedomost = employee.EmplOptions == EmplOptionEnums.Vedomost
                     };
+                    
+
 
                     var finOperations = _context.FinOperations
                      .Where(x => x.EmployeeId == employee.Id
@@ -343,51 +350,99 @@ namespace WorkShiftsApi.Services
                          TypeId = x.TypeId
                      })
                     .ToList();
-
-                    var workHours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
-                    && x.ReportNumber == reportNumber);
+                    fd.FinOperations = finOperations;
 
 
-                    var hourrateVariants = workHours.Select(x => x.Rate).Distinct();
-                    foreach (var rate in hourrateVariants)
+                    //добавляем учет АВАНСА и 
+                    //АВАНСА в предыдущем периоде
+                    var avans = finOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+
+                    if (avans != null)
                     {
-                        var f = new WorkHourFinItem
+                        //пишем только аванс
+                        //пустые списки
+                        //fd.WorkHours 
+                        //fd.WorkDays
+                        //fd.FinOperations
+                        fd.AdvancePaymentInPeriod = true;
+                        fd.TotalSumForPeriod = avans.Sum;
+                    }
+                    else
+                    {
+                        var totalSumForPeriod = 0;
+
+
+                        //...............................................................
+                        var workHours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
+                        && x.ReportNumber == reportNumber);
+
+                        var whSum = 0;
+                        var hourrateVariants = workHours.Select(x => x.Rate).Distinct().ToList();
+                        foreach (var rate in hourrateVariants)
                         {
-                            Hours = workHours.Where(x => x.Rate == rate).Select(x=>x.Hours).Sum(),
-                            Rate = rate,
-                        };
-                        fd.WorkHours.Add(f);
+                            var f = new WorkHourFinItem
+                            {
+                                Hours = workHours.Where(x => x.Rate == rate).Select(x => x.Hours).Sum(),
+                                Rate = rate,
+                            };
+                            fd.WorkHours.Add(f);
+                            whSum += f.Hours * f.Rate;
+                        }
+
+
+                        //суммируем
+                        totalSumForPeriod += whSum;
+                        //....................
+
+
+                        var workDays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
+                        && x.ReportNumber == reportNumber);
+
+                        var wdSum = 0;
+                        var dayrateVariants = workDays.Select(x => x.Rate).Distinct().ToList();
+                        foreach (var rate in dayrateVariants)
+                        {
+                            var f = new WorkDayFinItem
+                            {
+                                Rate = rate,
+                                WorkDaysCount = workDays.Where(x => x.Rate == rate).Count()
+                            };
+                            fd.WorkDays.Add(f);
+                            wdSum += f.WorkDaysCount * f.Rate;
+                        }
+
+                        //суммируем
+                        totalSumForPeriod += wdSum;
+
+                        //....................
+                        //сумма по фин операциям 
+                        //минусы
+                        var shtraf = FinOpSum(finOperations, FinOperationTypeEnum.Shtraf);
+                        var forma = FinOpSum(finOperations, FinOperationTypeEnum.Forma);
+                        var ucho = FinOpSum(finOperations, FinOperationTypeEnum.Ucho);
+                        var other = FinOpSum(finOperations, FinOperationTypeEnum.Other);
+                        
+                        totalSumForPeriod = totalSumForPeriod - shtraf - forma - ucho - other;
+
+                        var otherPayroll = FinOpSum(finOperations, FinOperationTypeEnum.OtherPayroll);
+                        totalSumForPeriod = totalSumForPeriod + otherPayroll;
+
+                        //узнаем были у этого сотрудника неучтеные авансы
+                        //т.е. авансы которые выплатили но не учли в следующем периоде
+                        //prevAvansList - неучтеные авансы
+                        var prevAvans = _context.FinOperations
+                            .FirstOrDefault(x => x.EmployeeId == employee.Id
+                            && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                            && x.Payed == true && x.DecreaseTotalBecauseOfAdvancePayment != true);
+
+                        var advancePaymentInEarlyPeriod = prevAvans?.Sum ?? 0;
+                        totalSumForPeriod = totalSumForPeriod - advancePaymentInEarlyPeriod;
+
+                        fd.AdvancePaymentInEarlyPeriod = advancePaymentInEarlyPeriod;
+                        fd.TotalSumForPeriod = totalSumForPeriod;
                     }
 
-                    //....................
-
-
-                    var workDays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
-                    && x.ReportNumber == reportNumber);
-
-                    var dayrateVariants = workDays.Select(x => x.Rate).Distinct();
-                    
-                    foreach(var rate in dayrateVariants)
-                    {
-                        var f = new WorkDayFinItem
-                        {
-                            Rate = rate, WorkDaysCount = workDays.Where(x=>x.Rate == rate).Count()
-                        };
-                        fd.WorkDays.Add(f);
-                    };
-
-                    //....................
- 
-
-                    fd.FinOperations = finOperations;
-                    
-
-
-
-
-
                     result.EmployeeFinDatas.Add(fd);
-
                 }
             }
             catch (Exception ex)
@@ -396,6 +451,12 @@ namespace WorkShiftsApi.Services
             }
 
             return result;
+        }
+
+        private int FinOpSum(List<FinOperationDb> operations, FinOperationTypeEnum type)
+        {
+            var sum = operations.Where(x=>x.TypeId == (int)type).Sum(x => x.Sum);
+            return sum;
         }
 
 
@@ -529,6 +590,11 @@ namespace WorkShiftsApi.Services
             return fd.FinOperations.Where(x => x.TypeId == id).Sum(x => x.Sum);
         }
 
+        private int FinOpSum(List<FinOperationItem> operations, FinOperationTypeEnum type)
+        {
+            var id = (int)type;
+            return operations.Where(x => x.TypeId == id).Sum(x => x.Sum);
+        }
 
         public DataTable SplitMainReportTablesList(List<TableDataDto> tables)
         {
@@ -882,6 +948,135 @@ namespace WorkShiftsApi.Services
             totalSum = empListSum;
 
             table.Rows.Add(rowTotal);
+        }
+
+
+        public async Task<int> SavePayoutMarksLogic(string createAuthor, DateTime start, DateTime end, List<int> employeeIds)
+        {
+            // Получаем следующий номер отчета: макс. report_number из main_report_numbers + 1
+            int reportNumber = 1;
+            if (_context.MainReportNumbers.Any())
+            {
+                reportNumber = _context.MainReportNumbers.Max(x => x.ReportNumber) + 1;
+            }
+
+            //using (var transaction = _context.Database.BeginTransaction())
+            {
+
+
+                // Сохраняем запись в MainReportNumbers
+
+                var mainReportRecord = new MainReportNumbersDb
+                {
+                    Created = DateTime.Now,
+                    CreateAuthor = createAuthor,
+                    ReportNumber = reportNumber,
+                    StartDate = start,
+                    EndDate = end,
+                    EmployeeIds = string.Join(",", employeeIds)
+                };
+                _context.MainReportNumbers.Add(mainReportRecord);
+                //await _context.SaveChangesAsync();
+
+                //новая логика
+                //проходим по всем платежам которые есть в отчете и проставляем им привязку к этому отчету
+                // Получаем все work_hours для выбранных сотрудников за период
+
+                //!не привязанные к другим отчетам
+
+                var workHoursList = _context.WorkHours
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        && x.WorkDate.Date >= start.Date
+                        && x.WorkDate.Date < end.Date
+                        && x.ReportNumber == null)
+                    .ToList();
+                var workDaysList = _context.WorkDays
+                .Where(x => employeeIds.Contains(x.EmployeeId)
+                    && x.WorkDate.Date >= start.Date
+                    && x.WorkDate.Date < end.Date
+                    && x.ReportNumber == null)
+                .ToList();
+                // Получаем все fin_operations для выбранных сотрудников за период
+                var finOperationsList = _context.FinOperations
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        && x.Date.Date >= start.Date
+                        && x.Date.Date < end.Date
+                        && x.ReportNumber == null)
+                    .ToList();
+
+                //привязываем к отчету
+                foreach (var wh in workHoursList)
+                {
+                    wh.ReportNumber = reportNumber;
+                }
+                foreach (var wd in workDaysList)
+                {
+                    wd.ReportNumber = reportNumber;
+                }
+                foreach (var f in finOperationsList)
+                {
+                    f.ReportNumber = reportNumber;
+                }
+
+                await _context.SaveChangesAsync();
+                //transaction.Commit();
+            }
+
+            return reportNumber;
+        }
+
+        /// <summary>
+        /// Получить данные для отчета с отметками для отображения на сайте
+        /// </summary>
+        public List<PayAndMarkDto> GetPayoutMarksTableData(int reportNumber)
+        {
+            var result = new List<PayAndMarkDto>();
+            //нужно заново собрать отчетную таблицу но по выбранным платежам
+            var reportData = GetMainReportDataVer3(reportNumber);
+
+            foreach (var fd in reportData.EmployeeFinDatas)
+            {
+                //var total = 0;
+
+                /*if (fd.AdvancePaymentInPeriod)
+                {
+                    var avans = fd.FinOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment)?.Sum ?? 0;
+                    total = avans;
+                }
+                else {
+
+                    total = fd.WorkDays.Sum(x => x.WorkDaysCount * x.Rate);
+                    total = total + fd.WorkHours.Sum(x => x.Hours * x.Rate);
+                    var ucho = fd.FinOperations.Where(x => x.TypeId == (int)FinOperationTypeEnum.Ucho).Sum(x => x.Sum);
+                    var shtraf = fd.FinOperations.Where(x => x.TypeId == (int)FinOperationTypeEnum.Shtraf).Sum(x => x.Sum);
+                    var forma = fd.FinOperations.Where(x => x.TypeId == (int)FinOperationTypeEnum.Forma).Sum(x => x.Sum);
+                    var other = fd.FinOperations.Where(x => x.TypeId == (int)FinOperationTypeEnum.Other).Sum(x => x.Sum);
+
+                    total = total - ucho - shtraf - forma - other;
+                    var otherPayrol = fd.FinOperations.Where(x => x.TypeId == (int)FinOperationTypeEnum.OtherPayroll).Sum(x => x.Sum);
+
+                    total = total + otherPayrol;
+
+                    if (fd.AdvancePaymentInEarlyPeriod != 0)
+                    {
+                        total = total - fd.AdvancePaymentInEarlyPeriod;
+                    }
+                }*/
+                
+                
+                var item = new PayAndMarkDto
+                {
+                    EmployeeFio = fd.Fio,
+                    EmployeeId = fd.EmployeeId,
+                    HasAdvancePaymentInPrevPeriod = fd.AdvancePaymentInEarlyPeriod != 0,
+                    HasAdvancePayment = fd.AdvancePaymentInPeriod,
+                    TotalSum = fd.TotalSumForPeriod
+                };
+
+                result.Add(item);
+            }
+
+            return result;
         }
 
 

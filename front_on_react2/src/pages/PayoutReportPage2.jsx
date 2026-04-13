@@ -14,7 +14,8 @@ import {
   GetMainReportFromPayoutMarks,
   GetPayOffStatusesForReport,
   SetPayOffForEmployeeInReport,
-GetMainReportFromPayoutMarks2
+GetMainReportFromPayoutMarks2,
+MarkPayoutRow
 } from '../services/apiService';
 import { getDateFormat2 } from '../services/commonService';
 
@@ -83,7 +84,25 @@ export function PayoutReportPage2(){
 
     }
 
+    function MarkRow(state, reportNumber, employeeId){
+        console.log({state});
 
+        const q = {
+            ReportNumber: reportNumber,
+            EmployeeId: employeeId
+        }
+        /*
+        MarkPayoutRow(q)
+        .then(data => {
+            console.log("MarkRow", data);
+
+            if(data.isSuccess){
+                alert("Подтверждение сохранено");
+            }
+        })
+        .catch((error) => console.log(error));
+        */
+    }
 
 
     return(
@@ -210,7 +229,9 @@ export function PayoutReportPage2(){
                                             {row.totalSum}
                                         </td>
                                         <td>
-                                            <FormCheck>
+                                            <FormCheck onClick={(e) => {
+                                                MarkRow(e.target.value, selectedReportNumber, row.employeeId)
+                                            }}>
 
                                             </FormCheck>
                                         </td>

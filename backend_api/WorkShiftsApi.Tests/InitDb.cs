@@ -1,4 +1,6 @@
 ﻿
+using WorkShiftsApi.Controllers;
+
 namespace WorkShiftsApi.Tests
 {
     internal class InitDb
@@ -22,6 +24,7 @@ namespace WorkShiftsApi.Tests
                 Id = 1,
                 Created = DateTime.Now.AddDays(-1),
                 BankId = 1,
+                EmplOptions = EmplOptionEnums.Card,
                 DateOfBirth = DateTime.Now.AddYears(-20),
                 Fio = "Тестовый 1",
                 ObjectId = 1,
@@ -33,7 +36,9 @@ namespace WorkShiftsApi.Tests
                 Id=2,
                 Created= DateTime.Now.AddDays(-1), 
                 BankId = null,
-                
+                EmplOptions = EmplOptionEnums.Vedomost,
+                Fio = "Тестовый 2",
+                ObjectId = 1
             };
 
             db.Employees.Add(e1);

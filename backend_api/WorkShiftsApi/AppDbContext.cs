@@ -303,8 +303,9 @@ namespace WorkShiftsApi
         [Column("report_number")]
         public int? ReportNumber { get; set; }//номер отчета из таблицы main_report_numbers в который попала выплата
 
+        //признак что мы вычли аванс в следующем периоде
         [Column("deducted_advance_payment_in_next_period")]
-        public int? DeductedAdvancePaymentInNextPeriod { get; set; }//не забыть вычесть аванс в следующем периоде
+        public bool? DecreaseTotalBecauseOfAdvancePayment { get; set; }//не забыть вычесть аванс в следующем периоде
     }
 
 }

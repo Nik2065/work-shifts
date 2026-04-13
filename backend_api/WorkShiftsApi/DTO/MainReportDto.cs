@@ -42,6 +42,8 @@ namespace WorkShiftsApi.DTO
 
         public List<FinOperationItem> FinOperations { get; set; } = new List<FinOperationItem>();
 
+
+        public decimal TotalSumForPeriod { get; set; }
     }
 
 

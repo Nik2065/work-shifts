@@ -877,76 +877,8 @@ namespace WorkShiftsApi.Controllers
                     result.Message = "Не указаны сотрудники";
                     return Ok(result);
                 }
-
-                // Получаем следующий номер отчета: макс. report_number из main_report_numbers + 1
-                int reportNumber = 1;
-                if (_context.MainReportNumbers.Any())
-                {
-                    reportNumber = _context.MainReportNumbers.Max(x => x.ReportNumber) + 1;
-                }
-
-                using (var transaction = _context.Database.BeginTransaction())
-                {
-
-
-                    // Сохраняем запись в MainReportNumbers
-                    var createAuthor = User.Identity?.Name ?? "";
-                    var mainReportRecord = new MainReportNumbersDb
-                    {
-                        Created = DateTime.Now,
-                        CreateAuthor = createAuthor,
-                        ReportNumber = reportNumber,
-                        StartDate = start,
-                        EndDate = end,
-                        EmployeeIds = string.Join(",", employeeIds)
-                    };
-                    _context.MainReportNumbers.Add(mainReportRecord);
-                    await _context.SaveChangesAsync();
-
-                    //новая логика
-                    //проходим по всем платежам которые есть в отчете и проставляем им привязку к этому отчету
-                    // Получаем все work_hours для выбранных сотрудников за период
-
-                    //!не привязанные к другим отчетам
-
-                    var workHoursList = _context.WorkHours
-                        .Where(x => employeeIds.Contains(x.EmployeeId)
-                            && x.WorkDate.Date >= start.Date
-                            && x.WorkDate.Date < end.Date
-                            && x.ReportNumber == null)
-                        .ToList();
-                    var workDaysList = _context.WorkDays
-                    .Where(x => employeeIds.Contains(x.EmployeeId)
-                        && x.WorkDate.Date >= start.Date
-                        && x.WorkDate.Date < end.Date
-                        && x.ReportNumber == null)
-                    .ToList();
-                    // Получаем все fin_operations для выбранных сотрудников за период
-                    var finOperationsList = _context.FinOperations
-                        .Where(x => employeeIds.Contains(x.EmployeeId)
-                            && x.Date.Date >= start.Date
-                            && x.Date.Date < end.Date
-                            && x.ReportNumber == null)
-                        .ToList();
-
-                    //привязываем к отчету
-                    foreach (var wh in workHoursList)
-                    {
-                        wh.ReportNumber = reportNumber;
-                    }
-                    foreach (var wd in workDaysList)
-                    {
-                        wd.ReportNumber = reportNumber;
-                    }
-                    foreach (var f in finOperationsList)
-                    {
-                        f.ReportNumber = reportNumber;
-                    }
-
-                    await _context.SaveChangesAsync();
-                    transaction.Commit();
-                }
-
+                var createAuthor = User.Identity?.Name ?? "";
+                var reportNumber = await _employeeService.SavePayoutMarksLogic(createAuthor, start, end, employeeIds);
                 result.Message = $"Отметки об оплате сохранены. Номер отчета: {reportNumber}";
             }
             catch (Exception ex)
@@ -957,7 +889,6 @@ namespace WorkShiftsApi.Controllers
             }
 
             return Ok(result);
-
         }
 
 
@@ -1091,30 +1022,82 @@ namespace WorkShiftsApi.Controllers
                     result.Message = $"Отчет с номером {reportNumber} не найден";
                     return Ok(result);
                 }
-
-                //нужно заново собрать отчетную таблицу но по выбранным платежам
-                var reportData = _employeeService.GetMainReportDataVer3(reportNumber);
-
-                foreach(var fd in reportData.EmployeeFinDatas)
-                {
-
-                    var total = fd.WorkDays.Sum(x => x.WorkDaysCount * x.Rate);
-                    total = total + fd.WorkHours.Sum(x => x.Hours * x.Rate);
-
-
-                    var item = new PayAndMarkDto {
-                        EmployeeFio = fd.Fio,
-                        EmployeeId = fd.EmployeeId,
-                        //HasAdvancePaymentInPrevPeriod = 
-                        TotalSum = total
-                    };
-
-
-                    result.Items.Add(item);
-                }
+             
+                result.Items = _employeeService.GetPayoutMarksTableData(reportNumber);
 
             }
             catch(Exception ex)
+            {
+                _logger.Error(ex.ToString());
+                result.IsSuccess = false;
+                result.Message = ex.Message;
+                return Problem(ex.Message, "", (int)HttpStatusCode.InternalServerError);
+            }
+
+            return Ok(result);
+        }
+
+        [HttpPost]
+        [Authorize]
+        public ActionResult MarkPayoutRow([FromBody] MarkPayoutRowRequest request)
+        {
+            var result = new ResponseBase { IsSuccess = true, Message = "Отметка о выплате проставлена" };
+
+            try
+            {
+                //todo проверки
+
+
+
+                var report = _employeeService.GetMainReportDataVer3(request.ReportNumber);
+                if (report == null)
+                    throw new Exception("Отчет номер " + request.ReportNumber + " не найден");
+                var reportForEmployee = report.EmployeeFinDatas.FirstOrDefault(x=>x.EmployeeId == request.EmployeeId);
+                if (reportForEmployee == null)
+                    throw new Exception("В отчете не найдены данные для сотрудника");
+
+                //если есть аванс то помечаем выплаченым только его
+                if (reportForEmployee.AdvancePaymentInPeriod)
+                {
+                    //ищем
+                    var fo = _context.FinOperations
+                        .Where(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                        && x.EmployeeId == request.EmployeeId
+                        && x.ReportNumber == request.ReportNumber);
+                    
+                    if (fo == null)
+                        throw new Exception("Не найден аванс");
+                }
+                else
+                {
+                    var wh = _context.WorkHours.Where(x => x.ReportNumber == request.ReportNumber 
+                    && x.EmployeeId == request.EmployeeId);
+
+                    foreach (var f in wh)
+                        f.Payed = true;
+
+                    var wd = _context.WorkDays.Where(x => x.ReportNumber == request.ReportNumber
+                    && x.EmployeeId == request.EmployeeId);
+
+                    foreach (var f in wd)
+                        f.Payed = true;
+
+                    //фин операции
+                    var fo = _context.FinOperations.Where(x => x.ReportNumber == request.ReportNumber
+                    && x.EmployeeId == request.EmployeeId);
+
+                    foreach (var f in wd)
+                        f.Payed = true;
+
+
+
+                }
+
+                _context.SaveChanges();
+
+
+            }
+            catch (Exception ex)
             {
                 _logger.Error(ex.ToString());
                 result.IsSuccess = false;
@@ -1450,6 +1433,11 @@ namespace WorkShiftsApi.Controllers
         public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер", "ПСБ" };
     }*/
 
+    public class MarkPayoutRowRequest
+    {
+        public int ReportNumber { get; set; }
+        public int EmployeeId { get; set; }
+    }
 
 }
 

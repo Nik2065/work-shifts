@@ -471,9 +471,10 @@ export function ReportForEmployesListPage() {
                                 и заполнить данные о выплатах <br/>
                                 <small>Дальнейшие отметки о выдаче зарплаты на странице "Зарплата"</small>
                                 <br/>
-                                <Button variant="link"  >Перейти к заполнению отметок об оплате</Button>
+                                <Button variant="link" href="/reportForPayout2" >Перейти к заполнению отметок об оплате</Button>
                             </td>
                             <td>
+                                {  /*
                                     <Button
                                         variant="primary"
                                         onClick={handleCreateReportWithMarks}
@@ -488,9 +489,17 @@ export function ReportForEmployesListPage() {
                                             "Создать отчет с отметками"
                                         )}
                                     </Button>
+                                    */ }
 
                                     <Button variant="primary" onClick={handleTest}>
-                                        SavePayoutMarks2
+                                                                                {savingMarks ? (
+                                            <>
+                                                <Spinner animation="border" size="sm" className="me-2" />
+                                                Создание...
+                                            </>
+                                        ) : (
+                                            "Создать отчет с отметками"
+                                        )}
                                     </Button>
                             </td>
                         </tr>
