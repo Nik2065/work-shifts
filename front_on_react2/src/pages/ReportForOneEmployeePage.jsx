@@ -86,6 +86,8 @@ export function ReportForOneEmployeePage(){
 
       try {
         const data = await GetEmployeeFinancialReportApi(params);
+        console.log("data", data);
+        
         if (data.isSuccess) {
           setReportItems(data.items || []);
         } else {
@@ -200,7 +202,7 @@ export function ReportForOneEmployeePage(){
                   ) : (
                     reportItems.map((item, index) => {
                       const accountingText = item.accountingInfo || '--';
-                      const payOffText = item.payOff === true ? ' Выплата: да' : item.payOff === false ? ' Выплата: нет' : '';
+                      const payOffText = item.payed === true ? ' Выплата: да' : item.payed === false ? ' Выплата: нет' : '';
                       return (
                         <tr key={index}>
                           <td>{getDateFormat2(item.date)}</td>

@@ -118,13 +118,13 @@ namespace WorkShiftsApi.Tests
             //int ReportNumber
             //int EmployeeId
             //bool Checked
-            es.MarkPayoutRowLogic(reportNumber, selectedEmployeeId1, true);
+            es.MarkPayoutRowLogic2(reportNumber, selectedEmployeeId1, true);
 
             //проверяем что аванс стал выплаченным
             var avans = es.GetAvansByReportNumber(reportNumber, selectedEmployeeId1);
             Assert.That(true, Is.EqualTo(avans.Payed));
             //отменяем оплату?
-            es.MarkPayoutRowLogic(reportNumber, selectedEmployeeId1, false);
+            es.MarkPayoutRowLogic2(reportNumber, selectedEmployeeId1, false);
             var avans1 = es.GetAvansByReportNumber(reportNumber, selectedEmployeeId1);
             Assert.That(false, Is.EqualTo(avans1.Payed));
             //
@@ -140,6 +140,12 @@ namespace WorkShiftsApi.Tests
                 //проверяем что все 4 записи попали в отчетный период
                 var expectedWorkHours1 = 4;
                 Assert.That(expectedWorkHours1, Is.EqualTo(fd2.WorkHours.Count()));
+                //проверяем что у нас есть аванс за предыдущий период
+                //fd2.AdvancePaymentInEarlyPeriod не ноль. т.е. что-то надо вычесть
+                //fd2.AvansInPrevPeriodId = тоже не ноль
+                //и итоговая сумма меньше на стоимость аванса (5000)
+                var expectedTotalSum2 = 5 * 200 + 5 * 300 + 10 * 200 + 10 * 300 - 5000;
+                Assert.That(expectedTotalSum2, Is.EqualTo(fd.TotalSumForPeriod));
             }
 
 
@@ -207,7 +213,7 @@ namespace WorkShiftsApi.Tests
             {
                 Created = DateTime.Now,
                 EmployeeId = selectedEmployeeId1,
-                Hours = 1,
+                Hours = 10,
                 Rate = 200,
                 WorkDate = new DateTime(2026, 1, 12)
             };
@@ -217,7 +223,7 @@ namespace WorkShiftsApi.Tests
             {
                 Created = DateTime.Now,
                 EmployeeId = selectedEmployeeId1,
-                Hours = 1,
+                Hours = 10,
                 Rate = 300,
                 WorkDate = new DateTime(2026, 1, 13)
             };

@@ -109,7 +109,7 @@ namespace WorkShiftsApi.Controllers
         /// Детальный финансовый отчет для одного сотрудника
         /// (объединяет work_hours, work_days и fin_operations)
         /// </summary>
-        [HttpPost("GetEmployeeFinancialReport")]
+        /*[HttpPost("GetEmployeeFinancialReport")]
         [Authorize]
         public ActionResult GetEmployeeFinancialReport([FromBody] GetReportRequest request)
         {
@@ -312,10 +312,51 @@ namespace WorkShiftsApi.Controllers
                 result.Message = ex.ToString();
             }
 
-            Thread.Sleep(1000);
+
+            return Ok(result);
+        }*/
+
+
+        /// <summary>
+        /// Детальный финансовый отчет для одного сотрудника
+        /// (объединяет work_hours, work_days и fin_operations)
+        /// </summary>
+        [HttpPost("GetEmployeeFinancialReport2")]
+        [Authorize]
+        public ActionResult GetEmployeeFinancialReport2([FromBody] GetReportRequest request)
+        {
+            var result = new EmployeeFinancialReportResponse
+            {
+                IsSuccess = true,
+                Message = "Отчет сформирован"
+            };
+
+            try
+            {
+                var canParseStart = DateTime.TryParse(request.StartDate, out DateTime start);
+                var canParseEnd = DateTime.TryParse(request.EndDate, out DateTime end);
+
+                if (!canParseStart || !canParseEnd)
+                    throw new Exception("Ошибка при разборе даты");
+
+                end = end.AddDays(1);
+                var employeeId = request.EmployeeId;
+
+                result = _employeeService.GetEmployeeFinancialReportLogic(start, end, request.EmployeeId);
+                result.IsSuccess = true;
+                result.Message = "Отчет сформирован";
+            }
+            catch(Exception ex)
+            {
+                _logger.Error(ex);
+                result.IsSuccess = false;
+                result.Message = ex.ToString();
+            }
+
 
             return Ok(result);
         }
+
 
         [HttpGet("test")]
         [AllowAnonymous]
@@ -1043,19 +1084,22 @@ namespace WorkShiftsApi.Controllers
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        [HttpPost]
+        [HttpPost("MarkPayoutRow")]
         [Authorize]
-        public ActionResult MarkPayoutRow([FromBody] MarkPayoutRowRequest request)
+        public async Task<ActionResult> MarkPayoutRow([FromBody] MarkPayoutRowRequest request)
         {
-            var result = new ResponseBase { IsSuccess = true, Message = "Отметка о выплате проставлена" };
+            var result = new ResponseBase { IsSuccess = true, Message = "" };
 
             try
             {
                 //todo проверки
 
 
-                _employeeService.MarkPayoutRowLogic(request.ReportNumber, request.EmployeeId, request.Checked);
-
+                await _employeeService.MarkPayoutRowLogic2(request.ReportNumber, request.EmployeeId, request.Checked);
+                if (request.Checked)
+                    result.Message = "Отметка о выплате проставлена";
+                else
+                    result.Message = "Отметка о выплате снята";
             }
             catch (Exception ex)
             {
@@ -1335,7 +1379,8 @@ namespace WorkShiftsApi.Controllers
         public int Amount { get; set; }
         public string AccountingInfo { get; set; } = "";
         /// <summary>Признак выплаты (из revenue_reports_wh / revenue_reports_fin). null — не в отчете.</summary>
-        public bool? PayOff { get; set; }
+        //public bool? PayOff { get; set; }
+        public bool? Payed { get; set; }
     }
 
     public class EmployeeFinancialReportResponse : ResponseBase

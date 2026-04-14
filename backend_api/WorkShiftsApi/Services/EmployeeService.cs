@@ -361,6 +361,13 @@ namespace WorkShiftsApi.Services
                         //fd.FinOperations
                         fd.AdvancePaymentInPeriod = true;
                         fd.TotalSumForPeriod = avans.Sum;
+                        fd.FinOperations = new List<FinOperationItem>{ new FinOperationItem
+                            {
+                                Sum = avans.Sum,
+                                TypeId = avans.TypeId
+                            } 
+                        };
+
                     }
                     else
                     {
@@ -462,7 +469,8 @@ namespace WorkShiftsApi.Services
 
         //помечаем все записи о платежах для конкретного сотрудника 
         //исполненными (payed=true)
-        public void MarkPayoutRowLogic(int reportNumber, int employeeId, bool payed)
+        //можно написать альтернативный вариант потому что теперь внутри FinData есть id сущностей
+        public void MarkPayoutRowLogic_old(int reportNumber, int employeeId, bool payed)
         {
             var report = GetMainReportDataVer3(reportNumber);
             if (report == null)
@@ -507,6 +515,249 @@ namespace WorkShiftsApi.Services
 
             _context.SaveChanges();
         }
+
+
+        //Новый вариант, с учетом аванса за предыдущий период
+        public async Task MarkPayoutRowLogic2(int reportNumber, int employeeId, bool payed)
+        {
+            var report = GetMainReportDataVer3(reportNumber);
+            if (report == null)
+                throw new Exception("Отчет номер " + reportNumber + " не найден");
+            var reportForEmployee = report.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == employeeId);
+            if (reportForEmployee == null)
+                throw new Exception("В отчете не найдены данные для сотрудника");
+
+            //Если аванс в текущем периоде
+            if(reportForEmployee.FoAvansId != null)
+            {
+                var fo = _context.FinOperations.FirstOrDefault(x => x.Id == reportForEmployee.FoAvansId);
+                if (fo == null)
+                    throw new Exception("Не найдена финансовая операция");
+
+                fo.Payed = payed;
+            }
+            else
+            {
+                var workHours = _context.WorkHours.Where(x => reportForEmployee.WorkHoursIds.Contains(x.Id));
+                foreach(var workHour in workHours) 
+                    workHour.Payed = payed;
+                
+                var workDays = _context.WorkDays.Where(x => reportForEmployee.WorkDaysIds.Contains(x.Id));
+                foreach(var workDay in workDays) 
+                    workDay.Payed = payed;
+
+                var finOperations = _context.FinOperations.Where(x => reportForEmployee.FinOperationIds.Contains(x.Id));
+                foreach (var finOperation in finOperations)
+                    finOperation.Payed = payed;
+
+                if(reportForEmployee.AvansInPrevPeriodId != null && reportForEmployee.AvansInPrevPeriodId != 0)
+                {
+                    var pp = _context.FinOperations.FirstOrDefault(x => x.Id == reportForEmployee.AvansInPrevPeriodId);
+                    if (pp != null && payed)
+                        pp.DecreaseTotalBecauseOfAdvancePayment = true;
+                    if(pp!=null && !payed)
+                        pp.DecreaseTotalBecauseOfAdvancePayment = null;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        public EmployeeFinancialReportResponse GetEmployeeFinancialReportLogic(DateTime start, DateTime end, int employeeId)
+        {
+
+            var result = new EmployeeFinancialReportResponse();
+
+            // Рабочие часы
+            var workHours = (from wh in _context.WorkHours
+                             join emp in _context.Employees on wh.EmployeeId equals emp.Id
+                             join obj in _context.Objects on emp.ObjectId equals obj.Id
+                             where wh.EmployeeId == employeeId
+                                   && wh.WorkDate.Date >= start.Date
+                                   && wh.WorkDate.Date < end.Date
+                             select new
+                             {
+                                 wh.Id,
+                                 Date = wh.WorkDate.Date,
+                                 wh.Hours,
+                                 wh.Rate,
+                                 ObjectName = obj.Name,
+                                 wh.Payed,
+                                 wh.ReportNumber
+                             }).ToList();
+
+            var workHourIds = workHours.Select(x => x.Id).ToList();
+            var whReportRecords = _context.RevenueReportsWh
+                .Where(x => workHourIds.Contains(x.WorkHoursId))
+                .GroupBy(x => x.WorkHoursId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ReportNumber).First());
+
+            // Рабочие дни
+            var workDays = (from wd in _context.WorkDays
+                            join emp in _context.Employees on wd.EmployeeId equals emp.Id
+                            join obj in _context.Objects on emp.ObjectId equals obj.Id
+                            where wd.EmployeeId == employeeId
+                                  && wd.WorkDate.Date >= start.Date
+                                  && wd.WorkDate.Date < end.Date
+                            select new
+                            {
+                                wd.Id,
+                                Date = wd.WorkDate.Date,
+                                wd.Rate,
+                                ObjectName = obj.Name,
+                                wd.Payed,
+                                wd.ReportNumber
+                            }).ToList();
+
+            // Финансовые операции
+            var finOps = (from fo in _context.FinOperations
+                          join t in _context.FinOperationTypes on fo.TypeId equals t.Id into ft
+                          from t in ft.DefaultIfEmpty()
+                          where fo.EmployeeId == employeeId
+                                && fo.Date.Date >= start.Date
+                                && fo.Date.Date < end.Date
+                          select new
+                          {
+                              fo.Id,
+                              Date = fo.Date.Date,
+                              fo.Sum,
+                              fo.IsPenalty,
+                              fo.Comment,
+                              TypeId = fo.TypeId,
+                              TypeName = t != null ? t.OperationName : null,
+                              fo.Payed,
+                              fo.ReportNumber
+                          }).ToList();
+
+            var finOpIds = finOps.Select(x => x.Id).ToList();
+            var finReportRecords = _context.RevenueReportsFin
+                .Where(x => finOpIds.Contains(x.FinOperationId))
+                .GroupBy(x => x.FinOperationId)
+                .ToDictionary(g => g.Key, g => g.OrderByDescending(r => r.ReportNumber).First());
+
+            var items = new List<EmployeeFinancialReportRowDto>();
+
+
+            // Заполняем строки по рабочим часам
+            foreach (var wh in workHours)
+            {
+                var amount = wh.Hours * wh.Rate;
+                var description =
+                    $"Объект: {wh.ObjectName}. Рабочие часы: {wh.Hours}. Ставка в час: {wh.Rate} руб.";
+
+                var accountingInfo = "--";
+                bool? payOff = null;
+                /*if (whReportRecords.TryGetValue(wh.Id, out var rrWh))
+                {
+                    accountingInfo = $"Учтен в отчете #{rrWh.ReportNumber}";
+                    payOff = rrWh.PayOff != 0;
+                }*/
+                if(wh.ReportNumber != null)
+                    accountingInfo = $"Учтен в отчете #{wh.ReportNumber}";
+
+                items.Add(new EmployeeFinancialReportRowDto
+                {
+                    Date = wh.Date,
+                    Description = description,
+                    Amount = amount,
+                    AccountingInfo = accountingInfo,
+                    Payed = wh.Payed
+                });
+
+                result.TotalHours += wh.Hours;
+                result.TotalWorkHoursAmount += amount;
+            }
+
+            // Заполняем строки по рабочим дням
+            foreach (var wd in workDays)
+            {
+                var amount = wd.Rate;
+                var description =
+                    $"Объект: {wd.ObjectName}. Рабочая смена. Ставка за смену: {wd.Rate} руб.";
+
+                // Для рабочих дней пока нет отметок об учете
+                var accountingInfo = "--";
+                if(wd.ReportNumber != null)
+                    accountingInfo = $"Учтен в отчете #{wd.ReportNumber}";
+
+                items.Add(new EmployeeFinancialReportRowDto
+                {
+                    Date = wd.Date,
+                    Description = description,
+                    Amount = amount,
+                    AccountingInfo = accountingInfo,
+                    Payed = wd.Payed
+                });
+
+                result.TotalWorkDays += 1;
+                result.TotalWorkDaysAmount += amount;
+            }
+
+            // Заполняем строки по финансовым операциям
+            foreach (var fo in finOps)
+            {
+                var isPenalty = fo.IsPenalty;
+                var sign = isPenalty ? -1 : 1;
+                var amount = sign * fo.Sum;
+
+                var typeName = string.IsNullOrWhiteSpace(fo.TypeName) ? "Без типа" : fo.TypeName;
+
+                var descriptionPrefix = isPenalty ? "Списание" : "Начисление";
+                var description =
+                    $"{descriptionPrefix}. {typeName}. {fo.Sum} руб.";
+
+                if (!string.IsNullOrWhiteSpace(fo.Comment))
+                {
+                    description += $" Комментарий: {fo.Comment}";
+                }
+
+                var accountingInfo = "--";
+                /*if (finReportRecords.TryGetValue(fo.Id, out var rrFin))
+                {
+                    accountingInfo = $"Учтен в отчете #{rrFin.ReportNumber}";
+                    payOff = rrFin.PayOff != 0;
+                }*/
+
+                items.Add(new EmployeeFinancialReportRowDto
+                {
+                    Date = fo.Date,
+                    Description = description,
+                    Amount = amount,
+                    AccountingInfo = accountingInfo,
+                    Payed = fo.Payed
+                });
+
+                //TODO: неправильная логика
+
+                if (isPenalty)
+                {
+                    result.TotalPenalties += fo.Sum;
+                }
+                else
+                {
+                    result.TotalBonuses += fo.Sum;
+                }
+            }
+
+            // Сортировка по дате
+            result.Items = items
+                .OrderBy(x => x.Date)
+                .ThenBy(x => x.Description)
+                .ToList();
+
+            // Итоговая сумма: работа + начисления - списания
+            result.TotalSalary =
+                result.TotalWorkHoursAmount +
+                result.TotalWorkDaysAmount +
+                result.TotalBonuses -
+                result.TotalPenalties;
+
+            result.ItemsCount = result.Items.Count;
+
+
+            return result;
+        }
+
 
         private int FinOpSum(List<FinOperationDb> operations, FinOperationTypeEnum type)
         {

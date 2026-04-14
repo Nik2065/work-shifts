@@ -84,25 +84,28 @@ export function PayoutReportPage2(){
 
     }
 
+
     function MarkRow(state, reportNumber, employeeId){
-        //console.log({state});
+        console.log({state});
 
         const q = {
             ReportNumber: reportNumber,
             EmployeeId: employeeId,
             Checked: state
         }
-        /*
+        
         MarkPayoutRow(q)
         .then(data => {
             console.log("MarkRow", data);
 
+            alert(data.message);
+
             if(data.isSuccess){
-                alert("Подтверждение сохранено");
+                
             }
         })
         .catch((error) => console.log(error));
-        */
+        
     }
 
 

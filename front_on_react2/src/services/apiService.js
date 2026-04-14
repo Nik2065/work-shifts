@@ -267,7 +267,7 @@ export async function GetWorkHoursForPeriodApi(params) {
 //детальный финансовый отчет для одного сотрудника
 export async function GetEmployeeFinancialReportApi(params) {
     console.log(params);
-    const url = apiUrl + '/api/report/GetEmployeeFinancialReport';
+    const url = apiUrl + '/api/report/GetEmployeeFinancialReport2';
     const response = await authenticatedFetch(url, {
             method: 'POST',
             body: JSON.stringify(params)
