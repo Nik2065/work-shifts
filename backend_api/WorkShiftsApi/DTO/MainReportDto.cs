@@ -44,6 +44,14 @@ namespace WorkShiftsApi.DTO
 
 
         public decimal TotalSumForPeriod { get; set; }
+
+        //добавляем идентификаторы всех учтенных платежей
+        public List<int> WorkHoursIds { get; set; }
+        public List<int> WorkDaysIds { get; set; }
+        public List<int> FinOperationIds { get; set; }//без авансов
+        public int? FoAvansId { get; set; }//если есть аванс заполняем id
+        public int? AvansInPrevPeriodId { get; set; }//если есть аванс за предыдущий период
+
     }
 
 

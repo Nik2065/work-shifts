@@ -338,25 +338,20 @@ namespace WorkShiftsApi.Services
                         BankName = employee.Bank?.BankName ?? "",
                         Vedomost = employee.EmplOptions == EmplOptionEnums.Vedomost
                     };
+
+
                     
-
-
                     var finOperations = _context.FinOperations
                      .Where(x => x.EmployeeId == employee.Id
-                     && x.ReportNumber == reportNumber)
-                     .Select(x => new FinOperationItem
-                     {
-                         Sum = x.Sum,
-                         TypeId = x.TypeId
-                     })
-                    .ToList();
-                    fd.FinOperations = finOperations;
+                     && x.ReportNumber == reportNumber);
+                    
 
 
                     //добавляем учет АВАНСА и 
                     //АВАНСА в предыдущем периоде
                     var avans = finOperations.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
-
+                    fd.FoAvansId = avans?.Id;
+                    
                     if (avans != null)
                     {
                         //пишем только аванс
@@ -371,10 +366,19 @@ namespace WorkShiftsApi.Services
                     {
                         var totalSumForPeriod = 0;
 
+                        fd.FinOperations = finOperations.Select(x => new FinOperationItem
+                        {
+                            Sum = x.Sum,
+                            TypeId = x.TypeId
+                        })
+                        .ToList();
+                        //теперь и айдишники запоминаем для более простой обработке
+                        fd.FinOperationIds = finOperations.Select(x => x.Id).ToList();
 
                         //...............................................................
                         var workHours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
                         && x.ReportNumber == reportNumber);
+                        fd.WorkHoursIds = workHours.Select(x => x.Id).ToList();
 
                         var whSum = 0;
                         var hourrateVariants = workHours.Select(x => x.Rate).Distinct().ToList();
@@ -397,6 +401,7 @@ namespace WorkShiftsApi.Services
 
                         var workDays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
                         && x.ReportNumber == reportNumber);
+                        fd.WorkDaysIds = workDays.Select(x => x.Id).ToList();
 
                         var wdSum = 0;
                         var dayrateVariants = workDays.Select(x => x.Rate).Distinct().ToList();
@@ -417,14 +422,14 @@ namespace WorkShiftsApi.Services
                         //....................
                         //сумма по фин операциям 
                         //минусы
-                        var shtraf = FinOpSum(finOperations, FinOperationTypeEnum.Shtraf);
-                        var forma = FinOpSum(finOperations, FinOperationTypeEnum.Forma);
-                        var ucho = FinOpSum(finOperations, FinOperationTypeEnum.Ucho);
-                        var other = FinOpSum(finOperations, FinOperationTypeEnum.Other);
+                        var shtraf = FinOpSum(fd.FinOperations, FinOperationTypeEnum.Shtraf);
+                        var forma = FinOpSum(fd.FinOperations, FinOperationTypeEnum.Forma);
+                        var ucho = FinOpSum(fd.FinOperations, FinOperationTypeEnum.Ucho);
+                        var other = FinOpSum(fd.FinOperations, FinOperationTypeEnum.Other);
                         
                         totalSumForPeriod = totalSumForPeriod - shtraf - forma - ucho - other;
 
-                        var otherPayroll = FinOpSum(finOperations, FinOperationTypeEnum.OtherPayroll);
+                        var otherPayroll = FinOpSum(fd.FinOperations, FinOperationTypeEnum.OtherPayroll);
                         totalSumForPeriod = totalSumForPeriod + otherPayroll;
 
                         //узнаем были у этого сотрудника неучтеные авансы
@@ -434,6 +439,8 @@ namespace WorkShiftsApi.Services
                             .FirstOrDefault(x => x.EmployeeId == employee.Id
                             && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
                             && x.Payed == true && x.DecreaseTotalBecauseOfAdvancePayment != true);
+
+                        fd.AvansInPrevPeriodId = prevAvans?.Id;
 
                         var advancePaymentInEarlyPeriod = prevAvans?.Sum ?? 0;
                         totalSumForPeriod = totalSumForPeriod - advancePaymentInEarlyPeriod;
@@ -468,15 +475,12 @@ namespace WorkShiftsApi.Services
             if (reportForEmployee.AdvancePaymentInPeriod)
             {
                 //ищем
-                var fo = _context.FinOperations
-                    .FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
-                    && x.EmployeeId == employeeId
-                    && x.ReportNumber == reportNumber);
+                var fo = GetAvansByReportNumber(reportNumber, employeeId);
 
                 if (fo == null)
                     throw new Exception("Не найден аванс");
 
-                fo.Payed = true;
+                fo.Payed = payed;
             }
             else
             {
@@ -484,20 +488,20 @@ namespace WorkShiftsApi.Services
                 && x.EmployeeId == employeeId);
 
                 foreach (var f in wh)
-                    f.Payed = true;
+                    f.Payed = payed;
 
                 var wd = _context.WorkDays.Where(x => x.ReportNumber == reportNumber
                 && x.EmployeeId == employeeId);
 
                 foreach (var f in wd)
-                    f.Payed = true;
+                    f.Payed = payed;
 
                 //прочие фин. операции
                 var fo = _context.FinOperations.Where(x => x.ReportNumber == reportNumber
                 && x.EmployeeId == employeeId);
 
                 foreach (var f in wd)
-                    f.Payed = true;
+                    f.Payed = payed;
 
             }
 
@@ -510,6 +514,13 @@ namespace WorkShiftsApi.Services
             return sum;
         }
 
+        public FinOperationDb? GetAvansByReportNumber(int reportNumber,int employeeId)
+        {
+            return _context.FinOperations
+                    .FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                    && x.EmployeeId == employeeId
+                    && x.ReportNumber == reportNumber);
+        }
 
         /// <summary>
         /// Таблица в формате, совместимом с основной ведомостью (как GetReportForEmplList2): неоплаченные смены/часы и операции за период.
@@ -1039,41 +1050,54 @@ namespace WorkShiftsApi.Services
                 //новая логика
                 //проходим по всем платежам которые есть в отчете и проставляем им привязку к этому отчету
                 // Получаем все work_hours для выбранных сотрудников за период
-
                 //!не привязанные к другим отчетам
-
-                var workHoursList = _context.WorkHours
-                    .Where(x => employeeIds.Contains(x.EmployeeId)
-                        && x.WorkDate.Date >= start.Date
-                        && x.WorkDate.Date < end.Date
-                        && x.ReportNumber == null)
-                    .ToList();
-                var workDaysList = _context.WorkDays
-                .Where(x => employeeIds.Contains(x.EmployeeId)
-                    && x.WorkDate.Date >= start.Date
-                    && x.WorkDate.Date < end.Date
-                    && x.ReportNumber == null)
-                .ToList();
+                
+                
+                //
+                //прежде всего проверяем наличие аванса!
+                //
+                
+                
                 // Получаем все fin_operations для выбранных сотрудников за период
                 var finOperationsList = _context.FinOperations
                     .Where(x => employeeIds.Contains(x.EmployeeId)
-                        && x.Date.Date >= start.Date
+                        //&& x.Date.Date >= start.Date
                         && x.Date.Date < end.Date
                         && x.ReportNumber == null)
                     .ToList();
 
-                //привязываем к отчету
-                foreach (var wh in workHoursList)
+                var avans = finOperationsList.FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
+                //тогда для этого номера отчета и для этого сотрудника 
+                //привязываем в отчет только аванс
+                if (avans != null)
                 {
-                    wh.ReportNumber = reportNumber;
+                    avans.ReportNumber = reportNumber;
                 }
-                foreach (var wd in workDaysList)
+                else
                 {
-                    wd.ReportNumber = reportNumber;
-                }
-                foreach (var f in finOperationsList)
-                {
-                    f.ReportNumber = reportNumber;
+                    var workHoursList = _context.WorkHours
+                        .Where(x => employeeIds.Contains(x.EmployeeId)
+                            //&& x.WorkDate.Date >= start.Date
+                            && x.WorkDate.Date < end.Date
+                            && x.ReportNumber == null)
+                        .ToList();
+
+                    var workDaysList = _context.WorkDays
+                    .Where(x => employeeIds.Contains(x.EmployeeId)
+                        //&& x.WorkDate.Date >= start.Date
+                        && x.WorkDate.Date < end.Date
+                        && x.ReportNumber == null)
+                    .ToList();
+
+                    //привязываем к отчету
+                    foreach (var wh in workHoursList)
+                        wh.ReportNumber = reportNumber;
+
+                    foreach (var wd in workDaysList)
+                        wd.ReportNumber = reportNumber;
+
+                    foreach (var f in finOperationsList)
+                        f.ReportNumber = reportNumber;
                 }
 
                 await _context.SaveChangesAsync();

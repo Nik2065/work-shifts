@@ -55,6 +55,10 @@ namespace WorkShiftsApi.Tests
          * для сохранения вот такой метод и он работает с базой напрямую 
          * SavePayoutMarksLogic
          * 
+         * Вопрос: если мы делаем отчет за период в 1 неделю с авансом. номер отчета проставляется только у аванса а платежи мы не трогаем?
+         * - пока да
+         * 
+         * 
          * по сохраненному отчету на выплаты (у каждого свой номер в таблице main_report_numbers)
          * можно заново получить структуру MainReportDto с помощью метода GetMainReportDataVer3
          * дальше необходимо в этом отчете подтвердить все выплаты
@@ -85,15 +89,28 @@ namespace WorkShiftsApi.Tests
             var es = new EmployeeService(_dbContext);
             var start1 = new DateTime(2026, 1, 5);
             var end1 = new DateTime(2026, 1, 11);
+
             var empIds = new List<int> { selectedEmployeeId1 };
             var employees = _dbContext.Employees
                 .Where(x => empIds.Contains(x.Id))
                 .ToList();
 
             var reportNumber = await es.SavePayoutMarksLogic("mail@mail.ru", start1, end1, empIds);
-            //проверяем что в выплатах только аванс
             var report = es.GetMainReportDataVer3(reportNumber);
             var fd = report.EmployeeFinDatas.FirstOrDefault();
+            //проверяем что в отчете только аванс
+            var expectedWorkDays = 0;
+            Assert.That(expectedWorkDays, Is.EqualTo(fd.WorkDays.Count()));
+            var expectedWorkHours = 0;
+            Assert.That(expectedWorkHours, Is.EqualTo(fd.WorkHours.Count()));
+
+            var foCount = fd.FinOperations.Count();
+            var expectedFinOperations = 1;
+            Assert.That(expectedFinOperations, Is.EqualTo(foCount));
+
+
+
+            //проверяем что в выплатах только аванс
             int expectedTotalSum = 5000;
             Assert.That(expectedTotalSum, Is.EqualTo(fd.TotalSumForPeriod));
 
@@ -103,8 +120,27 @@ namespace WorkShiftsApi.Tests
             //bool Checked
             es.MarkPayoutRowLogic(reportNumber, selectedEmployeeId1, true);
 
-
+            //проверяем что аванс стал выплаченным
+            var avans = es.GetAvansByReportNumber(reportNumber, selectedEmployeeId1);
+            Assert.That(true, Is.EqualTo(avans.Payed));
             //отменяем оплату?
+            es.MarkPayoutRowLogic(reportNumber, selectedEmployeeId1, false);
+            var avans1 = es.GetAvansByReportNumber(reportNumber, selectedEmployeeId1);
+            Assert.That(false, Is.EqualTo(avans1.Payed));
+            //
+            //за следующий период нужно вычесть аванс 
+            //
+            //! собираем отчет за следующий период
+            var start2 = new DateTime(2026, 1, 12);
+            var end2 = new DateTime(2026, 1, 18);
+            {
+                var reportNumber2 = await es.SavePayoutMarksLogic("mail@mail.ru", start2, end2, empIds);
+                var report2 = es.GetMainReportDataVer3(reportNumber2);
+                var fd2 = report.EmployeeFinDatas.FirstOrDefault();
+                //проверяем что все 4 записи попали в отчетный период
+                var expectedWorkHours1 = 4;
+                Assert.That(expectedWorkHours1, Is.EqualTo(fd2.WorkHours.Count()));
+            }
 
 
         }
