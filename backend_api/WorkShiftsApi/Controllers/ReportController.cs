@@ -1037,6 +1037,12 @@ namespace WorkShiftsApi.Controllers
             return Ok(result);
         }
 
+
+        /// <summary>
+        /// Отметка о выплате на вкладке "выплаты" т.е. чекбокс
+        /// </summary>
+        /// <param name="request"></param>
+        /// <returns></returns>
         [HttpPost]
         [Authorize]
         public ActionResult MarkPayoutRow([FromBody] MarkPayoutRowRequest request)
@@ -1048,53 +1054,7 @@ namespace WorkShiftsApi.Controllers
                 //todo проверки
 
 
-
-                var report = _employeeService.GetMainReportDataVer3(request.ReportNumber);
-                if (report == null)
-                    throw new Exception("Отчет номер " + request.ReportNumber + " не найден");
-                var reportForEmployee = report.EmployeeFinDatas.FirstOrDefault(x=>x.EmployeeId == request.EmployeeId);
-                if (reportForEmployee == null)
-                    throw new Exception("В отчете не найдены данные для сотрудника");
-
-                //если есть аванс то помечаем выплаченым только его
-                if (reportForEmployee.AdvancePaymentInPeriod)
-                {
-                    //ищем
-                    var fo = _context.FinOperations
-                        .Where(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
-                        && x.EmployeeId == request.EmployeeId
-                        && x.ReportNumber == request.ReportNumber);
-                    
-                    if (fo == null)
-                        throw new Exception("Не найден аванс");
-                }
-                else
-                {
-                    var wh = _context.WorkHours.Where(x => x.ReportNumber == request.ReportNumber 
-                    && x.EmployeeId == request.EmployeeId);
-
-                    foreach (var f in wh)
-                        f.Payed = true;
-
-                    var wd = _context.WorkDays.Where(x => x.ReportNumber == request.ReportNumber
-                    && x.EmployeeId == request.EmployeeId);
-
-                    foreach (var f in wd)
-                        f.Payed = true;
-
-                    //фин операции
-                    var fo = _context.FinOperations.Where(x => x.ReportNumber == request.ReportNumber
-                    && x.EmployeeId == request.EmployeeId);
-
-                    foreach (var f in wd)
-                        f.Payed = true;
-
-
-
-                }
-
-                _context.SaveChanges();
-
+                _employeeService.MarkPayoutRowLogic(request.ReportNumber, request.EmployeeId, request.Checked);
 
             }
             catch (Exception ex)
@@ -1428,15 +1388,14 @@ namespace WorkShiftsApi.Controllers
         public static readonly string Card = "Карта";
     }
 
-    /*public class Banks
-    {
-        public static List<string> BanksList { get; set; } = new List<string> {"ВТБ", "Альфа", "Т-Банк", "Сбер", "ПСБ" };
-    }*/
+
 
     public class MarkPayoutRowRequest
     {
         public int ReportNumber { get; set; }
         public int EmployeeId { get; set; }
+        public bool Checked { get; set; }
+
     }
 
 }

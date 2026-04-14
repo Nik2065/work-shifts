@@ -453,6 +453,57 @@ namespace WorkShiftsApi.Services
             return result;
         }
 
+        //помечаем все записи о платежах для конкретного сотрудника 
+        //исполненными (payed=true)
+        public void MarkPayoutRowLogic(int reportNumber, int employeeId, bool payed)
+        {
+            var report = GetMainReportDataVer3(reportNumber);
+            if (report == null)
+                throw new Exception("Отчет номер " + reportNumber + " не найден");
+            var reportForEmployee = report.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == employeeId);
+            if (reportForEmployee == null)
+                throw new Exception("В отчете не найдены данные для сотрудника");
+
+            //если есть аванс то помечаем выплаченым только его
+            if (reportForEmployee.AdvancePaymentInPeriod)
+            {
+                //ищем
+                var fo = _context.FinOperations
+                    .FirstOrDefault(x => x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                    && x.EmployeeId == employeeId
+                    && x.ReportNumber == reportNumber);
+
+                if (fo == null)
+                    throw new Exception("Не найден аванс");
+
+                fo.Payed = true;
+            }
+            else
+            {
+                var wh = _context.WorkHours.Where(x => x.ReportNumber == reportNumber
+                && x.EmployeeId == employeeId);
+
+                foreach (var f in wh)
+                    f.Payed = true;
+
+                var wd = _context.WorkDays.Where(x => x.ReportNumber == reportNumber
+                && x.EmployeeId == employeeId);
+
+                foreach (var f in wd)
+                    f.Payed = true;
+
+                //прочие фин. операции
+                var fo = _context.FinOperations.Where(x => x.ReportNumber == reportNumber
+                && x.EmployeeId == employeeId);
+
+                foreach (var f in wd)
+                    f.Payed = true;
+
+            }
+
+            _context.SaveChanges();
+        }
+
         private int FinOpSum(List<FinOperationDb> operations, FinOperationTypeEnum type)
         {
             var sum = operations.Where(x=>x.TypeId == (int)type).Sum(x => x.Sum);
@@ -950,7 +1001,14 @@ namespace WorkShiftsApi.Services
             table.Rows.Add(rowTotal);
         }
 
-
+        /// <summary>
+        /// Создание отчета на выплаты
+        /// </summary>
+        /// <param name="createAuthor"></param>
+        /// <param name="start"></param>
+        /// <param name="end"></param>
+        /// <param name="employeeIds"></param>
+        /// <returns></returns>
         public async Task<int> SavePayoutMarksLogic(string createAuthor, DateTime start, DateTime end, List<int> employeeIds)
         {
             // Получаем следующий номер отчета: макс. report_number из main_report_numbers + 1

@@ -157,9 +157,9 @@ namespace WorkShiftsApi.Tests
 
         //аванс
         [Test]
-        //забираем данные отчета в нужный формат
+        //забираем данные отчета 
         //проверяем формат
-        //example 1 - 2 записи о рабочих часах
+        //example2 -это 2 записи о рабочих часах и аванс
         public async Task Check_GetMainReportDataVer3_example2()
         {
             //заполняем период данными 
@@ -182,24 +182,14 @@ namespace WorkShiftsApi.Tests
 
             //получаем отчет с помощью метода. проверяем результат
             var report = _employeeService.GetMainReportDataVer3(reportNumber);
+            var fd = report.EmployeeFinDatas.FirstOrDefault();//тут только одна запись
+
 
             //...проверки........
+            //проверяем что не смотря на отработанные часы итоговая сумма равна авансу
             int expectedTotalSum = 5000; //см.example
-
-
-            /*
-            var expectedWdSum = 0;
-            var wdTotalSum = report.EmployeeFinDatas
-                .FirstOrDefault(x => x.EmployeeId == selectedEmployeeId1)?.WorkDays.Sum(x => x.Rate * x.WorkDaysCount);
-
-            Assert.That(expectedWdSum, Is.EqualTo(wdTotalSum));
-
-            var expectedWhSum = expectedTotalSum;
-            var whTotalSum = report.EmployeeFinDatas
-                .FirstOrDefault(x => x.EmployeeId == selectedEmployeeId1)?.WorkHours.Sum(x => x.Rate * x.Hours);
-
-            Assert.That(expectedWhSum, Is.EqualTo(whTotalSum));
-            */
+            Assert.That(fd, Is.Not.Null);
+            Assert.That(expectedTotalSum, Is.EqualTo(fd.TotalSumForPeriod));
 
         }
 

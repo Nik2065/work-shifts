@@ -85,11 +85,12 @@ export function PayoutReportPage2(){
     }
 
     function MarkRow(state, reportNumber, employeeId){
-        console.log({state});
+        //console.log({state});
 
         const q = {
             ReportNumber: reportNumber,
-            EmployeeId: employeeId
+            EmployeeId: employeeId,
+            Checked: state
         }
         /*
         MarkPayoutRow(q)
@@ -230,7 +231,9 @@ export function PayoutReportPage2(){
                                         </td>
                                         <td>
                                             <FormCheck onClick={(e) => {
-                                                MarkRow(e.target.value, selectedReportNumber, row.employeeId)
+                                                //console.log(e.target.checked);
+
+                                                MarkRow(e.target.checked, selectedReportNumber, row.employeeId)
                                             }}>
 
                                             </FormCheck>
