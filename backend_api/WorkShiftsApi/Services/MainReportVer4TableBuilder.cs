@@ -54,7 +54,7 @@ namespace WorkShiftsApi.Services
                     var finData = reportData.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == emp.Id);
                     if (finData == null)
                         continue;
-                    decimal employeeSum = 0;
+                    //decimal employeeSum = 0;
 
                     if (finData.AdvancePaymentInPeriod)
                     {
@@ -63,7 +63,7 @@ namespace WorkShiftsApi.Services
                         var line = Row14();
                         line[0] = emp.Fio ?? "";
                         line[11] = Num(avans?.Sum ?? 0);
-                        employeeSum += avans?.Sum ?? 0;
+                        //employeeSum += avans?.Sum ?? 0;
                         rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                     }
                     else
@@ -74,7 +74,7 @@ namespace WorkShiftsApi.Services
                             var line = Row14();
                             if (firstLine)
                             {
-                                line[0] = emp.Fio ?? "";
+                                //line[0] = emp.Fio ?? "";
                                 firstLine = false;
                             }
 
@@ -82,7 +82,7 @@ namespace WorkShiftsApi.Services
                             line[4] = Num(item.Rate);
                             var sub = item.Hours * item.Rate;
                             line[12] = Num(sub);
-                            employeeSum += sub;
+                            //employeeSum += sub;
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                         }
 
@@ -91,7 +91,7 @@ namespace WorkShiftsApi.Services
                             var line = Row14();
                             if (firstLine)
                             {
-                                line[0] = emp.Fio ?? "";
+                                //line[0] = emp.Fio ?? "";
                                 firstLine = false;
                             }
 
@@ -99,7 +99,7 @@ namespace WorkShiftsApi.Services
                             line[2] = Num(item.Rate);
                             var sub = item.WorkDaysCount * item.Rate;
                             line[12] = Num(sub);
-                            employeeSum += item.WorkDaysCount * item.Rate;
+                            //employeeSum += item.WorkDaysCount * item.Rate;
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                         }
 
@@ -111,35 +111,41 @@ namespace WorkShiftsApi.Services
                             x.TypeId == (int)FinOperationTypeEnum.Ucho);
                         var spisaniaOther = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.Other);
-                        var avansPrev = finData.FinOperations.FirstOrDefault(x =>
-                            x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                        //var avansPrev = finData.FinOperations.FirstOrDefault(x =>
+                        //    x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                        int avansPrev = finData.AdvancePaymentInEarlyPeriod;
+
                         var payrollOther = finData.FinOperations.FirstOrDefault(x =>
                             x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
 
                         var ded = Row14();
                         if (firstLine)
-                            ded[0] = emp.Fio ?? "";
+                        {
+                            //ded[0] = emp.Fio ?? "";
+                        }
                         ded[5] = Num(shtraf?.Sum ?? 0);
                         ded[6] = Num(forma?.Sum ?? 0);
                         ded[7] = Num(ucho?.Sum ?? 0);
                         ded[8] = Num(spisaniaOther?.Sum ?? 0);
-                        ded[9] = Num(avansPrev?.Sum ?? 0);
+                        ded[9] = Num(avansPrev);
                         ded[10] = Num(payrollOther?.Sum ?? 0);
                         rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = ded });
 
-                        employeeSum -= shtraf?.Sum ?? 0;
-                        employeeSum -= forma?.Sum ?? 0;
-                        employeeSum -= ucho?.Sum ?? 0;
-                        employeeSum -= spisaniaOther?.Sum ?? 0;
-                        employeeSum -= avansPrev?.Sum ?? 0;
-                        employeeSum += payrollOther?.Sum ?? 0;
+                        //employeeSum -= shtraf?.Sum ?? 0;
+                        //employeeSum -= forma?.Sum ?? 0;
+                        //employeeSum -= ucho?.Sum ?? 0;
+                        //employeeSum -= spisaniaOther?.Sum ?? 0;
+                        //employeeSum -= avansPrev?.Sum ?? 0;
+                        //employeeSum += payrollOther?.Sum ?? 0;
                     }
 
                     var subtotal = Row14();
+                    subtotal[0] = emp.Fio ?? "";
                     subtotal[11] = "Итог по сотруднику:";
-                    subtotal[12] = Num(employeeSum);
+                    //subtotal[12] = Num(employeeSum);
+                    subtotal[12] = Num(finData.TotalSumForPeriod);
                     rows.Add(new MainReportVer4WebRowDto { Kind = "employeeTotal", Cells = subtotal });
-                    vedomostSum += employeeSum;
+                    vedomostSum += finData.TotalSumForPeriod;
 
                     rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
                 }
@@ -190,7 +196,7 @@ namespace WorkShiftsApi.Services
                         var finData = reportData.EmployeeFinDatas.FirstOrDefault(x => x.EmployeeId == emp.Id);
                         if (finData == null)
                             continue;
-                        decimal employeeSum = 0;
+                        //decimal employeeSum = 0;
 
                         if (finData.AdvancePaymentInPeriod)
                         {
@@ -199,7 +205,7 @@ namespace WorkShiftsApi.Services
                             var line = Row14();
                             line[0] = emp.Fio ?? "";
                             line[11] = Num(avans?.Sum ?? 0);
-                            employeeSum += avans?.Sum ?? 0;
+                            //employeeSum += avans?.Sum ?? 0;
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                         }
                         else
@@ -210,7 +216,7 @@ namespace WorkShiftsApi.Services
                                 var line = Row14();
                                 if (firstLine)
                                 {
-                                    line[0] = emp.Fio ?? "";
+                                    //line[0] = emp.Fio ?? "";
                                     firstLine = false;
                                 }
 
@@ -218,7 +224,7 @@ namespace WorkShiftsApi.Services
                                 line[4] = Num(item.Rate);
                                 var sub = item.Hours * item.Rate;
                                 line[12] = Num(sub);
-                                employeeSum += sub;
+                                //employeeSum += sub;
                                 rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                             }
 
@@ -227,7 +233,7 @@ namespace WorkShiftsApi.Services
                                 var line = Row14();
                                 if (firstLine)
                                 {
-                                    line[0] = emp.Fio ?? "";
+                                    //line[0] = emp.Fio ?? "";
                                     firstLine = false;
                                 }
 
@@ -235,7 +241,7 @@ namespace WorkShiftsApi.Services
                                 line[2] = Num(item.Rate);
                                 var sub = item.WorkDaysCount * item.Rate;
                                 line[12] = Num(sub);
-                                employeeSum += item.WorkDaysCount * item.Rate;
+                                //employeeSum += item.WorkDaysCount * item.Rate;
                                 rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = line });
                             }
 
@@ -247,35 +253,37 @@ namespace WorkShiftsApi.Services
                                 x.TypeId == (int)FinOperationTypeEnum.Ucho);
                             var spisaniaOther = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.Other);
-                            var avansPrev = finData.FinOperations.FirstOrDefault(x =>
-                                x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                            //var avansPrev = finData.FinOperations.FirstOrDefault(x =>
+                            //    x.TypeId == (int)FinOperationTypeEnum.AdvancePaymentPrevPeriod);
+                            var avansPrev = finData.AdvancePaymentInEarlyPeriod;
                             var payrollOther = finData.FinOperations.FirstOrDefault(x =>
                                 x.TypeId == (int)FinOperationTypeEnum.OtherPayroll);
 
                             var ded = Row14();
-                            if (firstLine)
-                                ded[0] = emp.Fio ?? "";
+                            //if (firstLine)
+                            //    ded[0] = emp.Fio ?? "";
                             ded[5] = Num(shtraf?.Sum ?? 0);
                             ded[6] = Num(forma?.Sum ?? 0);
                             ded[7] = Num(ucho?.Sum ?? 0);
                             ded[8] = Num(spisaniaOther?.Sum ?? 0);
-                            ded[9] = Num(avansPrev?.Sum ?? 0);
+                            ded[9] = Num(avansPrev);
                             ded[10] = Num(payrollOther?.Sum ?? 0);
                             rows.Add(new MainReportVer4WebRowDto { Kind = "data", Cells = ded });
 
-                            employeeSum -= shtraf?.Sum ?? 0;
-                            employeeSum -= forma?.Sum ?? 0;
-                            employeeSum -= ucho?.Sum ?? 0;
-                            employeeSum -= spisaniaOther?.Sum ?? 0;
-                            employeeSum -= avansPrev?.Sum ?? 0;
-                            employeeSum += payrollOther?.Sum ?? 0;
+                            //employeeSum -= shtraf?.Sum ?? 0;
+                            //employeeSum -= forma?.Sum ?? 0;
+                            //employeeSum -= ucho?.Sum ?? 0;
+                            //employeeSum -= spisaniaOther?.Sum ?? 0;
+                            //employeeSum -= avansPrev;
+                            //employeeSum += payrollOther?.Sum ?? 0;
                         }
 
                         var subtotal = Row14();
+                        subtotal[0] = emp.Fio ?? "";
                         subtotal[11] = "Итог по сотруднику:";
-                        subtotal[12] = Num(employeeSum);
+                        subtotal[12] = Num(finData.TotalSumForPeriod);
                         rows.Add(new MainReportVer4WebRowDto { Kind = "employeeTotal", Cells = subtotal });
-                        bankItog += employeeSum;
+                        bankItog += finData.TotalSumForPeriod;
 
                         rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
                     }
@@ -289,8 +297,8 @@ namespace WorkShiftsApi.Services
                 }
             }
 
-            rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
-            rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
+            //rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
+            //rows.Add(new MainReportVer4WebRowDto { Kind = "spacer", Cells = Row14() });
 
             return rows;
         }

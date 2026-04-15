@@ -204,7 +204,9 @@ namespace WorkShiftsApi.Services
 
         //Подготавливаем данные для будущего отчета 
         //
-        //новая версия отчета с новым тимом данных
+        //новая версия отчета с новым типом данных
+        //2026-04-15
+        //теперь не обращаем внимание на дату старта отчета и учитываем все неоплаченные часы/дни/операции
         public MainReportDto PrepareMainReportDataVer3(DateTime startDate, DateTime endDate, List<EmployeesDb> emplList)
         {
             var start = startDate.Date;
@@ -231,25 +233,47 @@ namespace WorkShiftsApi.Services
 
                     var finInPeriod = _context.FinOperations
                         .Where(x => x.EmployeeId == employee.Id
-                            && x.Date.Date >= start
-                            && x.Date.Date < end)
+                            //&& x.Date.Date >= start
+                            && x.Date.Date < end
+                            && x.Payed != true)
                         .ToList();
 
-                    fd.AdvancePaymentInPeriod = finInPeriod.Any(x => x.Payed != true
+                    var avans = finInPeriod.FirstOrDefault(x => x.Payed != true
                         && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment);
 
-                    fd.AdvancePaymentInEarlyPeriod = _context.FinOperations
-                        .Where(x => x.EmployeeId == employee.Id
-                            && x.Date.Date < start
-                            && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
-                            && x.Payed == true)
-                        .Select(x => x.Sum)
-                        .DefaultIfEmpty()
-                        .Sum();
+                    if(avans != null)
+                    {
+                        fd.AdvancePaymentInPeriod = true;
+                        fd.TotalSumForPeriod = avans.Sum;
+
+                        fd.FinOperations = new List<FinOperationItem>{ new FinOperationItem
+                            {
+                                Sum = avans.Sum,
+                                TypeId = avans.TypeId
+                            }
+                        };
+                    }
+                    else
+                    {
+                        var totalSumForPeriod = 0;
+
+
+
+                    }
+
+                        fd.AdvancePaymentInEarlyPeriod = _context.FinOperations
+                            .Where(x => x.EmployeeId == employee.Id
+                                //&& x.Date.Date < start
+                                && x.TypeId == (int)FinOperationTypeEnum.AdvancePayment
+                                && x.Payed == true
+                                && x.DecreaseTotalBecauseOfAdvancePayment != true)//еще не вычитали этот аванс
+                            .Select(x => x.Sum)
+                            .DefaultIfEmpty()
+                            .Sum();
 
                     var workdays = _context.WorkDays.Where(x => x.EmployeeId == employee.Id
                     && x.Rate != 0
-                        && x.WorkDate.Date >= start
+                        //&& x.WorkDate.Date >= start
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
@@ -265,7 +289,7 @@ namespace WorkShiftsApi.Services
 
                     var workhours = _context.WorkHours.Where(x => x.EmployeeId == employee.Id
                     && x.Rate != 0
-                        && x.WorkDate.Date >= start
+                        //&& x.WorkDate.Date >= start
                         && x.WorkDate.Date < end
                         && x.Payed != true);
 
@@ -646,7 +670,7 @@ namespace WorkShiftsApi.Services
                     $"Объект: {wh.ObjectName}. Рабочие часы: {wh.Hours}. Ставка в час: {wh.Rate} руб.";
 
                 var accountingInfo = "--";
-                bool? payOff = null;
+                //bool? payOff = null;
                 /*if (whReportRecords.TryGetValue(wh.Id, out var rrWh))
                 {
                     accountingInfo = $"Учтен в отчете #{rrWh.ReportNumber}";
@@ -661,7 +685,8 @@ namespace WorkShiftsApi.Services
                     Description = description,
                     Amount = amount,
                     AccountingInfo = accountingInfo,
-                    Payed = wh.Payed
+                    Payed = wh.Payed,
+                    ReportNumber = wh.ReportNumber
                 });
 
                 result.TotalHours += wh.Hours;
@@ -686,7 +711,8 @@ namespace WorkShiftsApi.Services
                     Description = description,
                     Amount = amount,
                     AccountingInfo = accountingInfo,
-                    Payed = wd.Payed
+                    Payed = wd.Payed,
+                    ReportNumber = wd.ReportNumber
                 });
 
                 result.TotalWorkDays += 1;
@@ -724,19 +750,20 @@ namespace WorkShiftsApi.Services
                     Description = description,
                     Amount = amount,
                     AccountingInfo = accountingInfo,
-                    Payed = fo.Payed
+                    Payed = fo.Payed,
+                    ReportNumber = fo.ReportNumber
                 });
 
                 //TODO: неправильная логика
 
-                if (isPenalty)
+                /*if (isPenalty)
                 {
                     result.TotalPenalties += fo.Sum;
                 }
                 else
                 {
                     result.TotalBonuses += fo.Sum;
-                }
+                }*/
             }
 
             // Сортировка по дате
@@ -746,11 +773,13 @@ namespace WorkShiftsApi.Services
                 .ToList();
 
             // Итоговая сумма: работа + начисления - списания
-            result.TotalSalary =
+            //итоговой суммы нет - потому что она есть только в отчетах
+
+            /*result.TotalSalary =
                 result.TotalWorkHoursAmount +
                 result.TotalWorkDaysAmount +
                 result.TotalBonuses -
-                result.TotalPenalties;
+                result.TotalPenalties;*/
 
             result.ItemsCount = result.Items.Count;
 

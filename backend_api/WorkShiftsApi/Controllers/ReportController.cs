@@ -482,7 +482,7 @@ namespace WorkShiftsApi.Controllers
 
                 var emplList = _context.Employees.Where(x => list.Contains(x.Id)).ToList();
                 var mrData = _employeeService.PrepareMainReportDataVer3(start, end, emplList);
-                var fileBytes = _excelGenerator.CreateExcelFromMainReportVer4Table(mrData);
+                var fileBytes = _excelGenerator.CreateExcelFromMainReportVer5Table(mrData);
 
                 return File(
                     fileBytes,
@@ -1381,6 +1381,7 @@ namespace WorkShiftsApi.Controllers
         /// <summary>Признак выплаты (из revenue_reports_wh / revenue_reports_fin). null — не в отчете.</summary>
         //public bool? PayOff { get; set; }
         public bool? Payed { get; set; }
+        public int? ReportNumber { get; set; }
     }
 
     public class EmployeeFinancialReportResponse : ResponseBase

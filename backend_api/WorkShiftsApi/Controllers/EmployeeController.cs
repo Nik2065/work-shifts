@@ -121,9 +121,11 @@ namespace WorkShiftsApi.Controllers
 
             var result = new GetEmployeeListResponse { IsSuccess = true, Message = "" };
 
+            var employees = _context.Employees.Where(x => x.Dismissed != true);
+
             try
             {
-                var query = from emp in _context.Employees
+                var query = from emp in employees
                             join o in _context.Objects on emp.ObjectId equals o.Id
                             join b in _context.Banks on emp.BankId equals b.Id into empBanks
                             from bank in empBanks.DefaultIfEmpty()
@@ -186,10 +188,12 @@ namespace WorkShiftsApi.Controllers
                 if (!canParseDate)
                     throw new Exception("Передана ошибочная дата");
 
+                //var employees = _context.Employees.Where(x => x.Dismissed != true);
                 var employees = _context.Employees
                     .Include(e => e.Object)
                     .Include(e => e.Bank)
                     .Include(e => e.FinOperations)
+                    .Where(x => x.Dismissed != true)
                     .AsQueryable();
 
                 if (objectId!=-1)

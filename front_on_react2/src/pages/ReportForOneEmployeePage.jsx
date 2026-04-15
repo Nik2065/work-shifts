@@ -87,7 +87,7 @@ export function ReportForOneEmployeePage(){
       try {
         const data = await GetEmployeeFinancialReportApi(params);
         console.log("data", data);
-        
+
         if (data.isSuccess) {
           setReportItems(data.items || []);
         } else {
@@ -188,6 +188,7 @@ export function ReportForOneEmployeePage(){
                         <th>Описание</th>
                         <th>Сумма</th>
                         <th>Учет</th>
+                        <th>№ отчета с отметками</th>
                     </tr>
                 </thead>
                 
@@ -195,7 +196,7 @@ export function ReportForOneEmployeePage(){
                 {
                   reportItems.length === 0 ? (
                     <tr>
-                      <td colSpan={4} style={{ textAlign: "center" }}>
+                      <td colSpan={5} style={{ textAlign: "center" }}>
                         Нет данных за выбранный период
                       </td>
                     </tr>
@@ -209,6 +210,7 @@ export function ReportForOneEmployeePage(){
                           <td>{item.description}</td>
                           <td>{item.amount} руб.</td>
                           <td>{accountingText}{payOffText}</td>
+                          <td>{item.reportNumber}</td>
                         </tr>
                       );
                     })
